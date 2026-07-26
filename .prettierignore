@@ -1,0 +1,6 @@
+# Ignore build output and dependencies — Prettier should not format these
+next
+node_modules
+pnpm-lock.yaml
+public
+*.ico
