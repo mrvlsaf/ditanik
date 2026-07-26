@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 2 (current)
+## Step 3 (current)
 
-Responsive app shell: desktop sidebar, mobile/tablet drawer, placeholder pages for LPO / Fabric / Invoices.
+Prisma + Neon Postgres `User` model. App shell from Step 2 still in place.
 
 ## Run locally
 
@@ -13,17 +13,26 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) (redirects to `/lpo`).
+Open [http://localhost:3001](http://localhost:3001).
 
-> Port **3001** avoids clashes with other apps on 3000.
+## Database (Neon)
 
-## Folder map (high level)
+1. Create a project at [neon.tech](https://neon.tech)
+2. Put the connection string in `.env` as `DATABASE_URL`
+3. Run:
+   ```bash
+   pnpm db:deploy
+   pnpm db:generate
+   ```
+
+Useful scripts: `pnpm db:studio` (browse data), `pnpm db:migrate` (new migrations while developing).
+
+## Folder map
 
 | Path | Purpose |
 |------|---------|
-| `app/(app)/` | Authenticated app routes + shell layout |
+| `app/(app)/` | App routes + shell layout |
 | `components/app-shell/` | Shared sidebar / drawer / page container |
+| `lib/db.ts` | Prisma client singleton |
+| `prisma/` | Schema + migrations |
 | `modules/` | Feature business logic (later steps) |
-| `lib/` | Shared helpers (navigation, db, auth, …) |
-| `prisma/` | Database schema (Step 3+) |
-| `tests/` | Unit and e2e tests |
