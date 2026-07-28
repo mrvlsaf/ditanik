@@ -13,6 +13,11 @@ export default auth((request) => {
     return NextResponse.next();
   }
 
+  const isApiRoute = pathname.startsWith("/api/");
+  if (!isLoggedIn && isApiRoute) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   if (!isLoggedIn && !isLoginPage) {
     const loginUrl = new URL("/login", request.nextUrl.origin);
     loginUrl.searchParams.set("callbackUrl", pathname);

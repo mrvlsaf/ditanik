@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 7 (current)
+## Step 8–9 (current)
 
-Create LPO form + server action (local file stub). Review in Source Control before commit.
+PDF-only uploads + in-app PDF viewer/download for LPO originals.
 
 ## Run locally
 

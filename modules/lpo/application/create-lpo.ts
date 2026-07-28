@@ -1,3 +1,4 @@
+import { storePdfUpload } from "@/modules/files/application/store-pdf";
 import { fromZonedTime } from "date-fns-tz";
 
 import { BUSINESS_TIMEZONE } from "@/lib/dates/timezone";
@@ -6,7 +7,6 @@ import {
   calculateDueAtFromReceivedDate,
   isReceivedDateAllowed,
 } from "@/modules/lpo/domain/due-dates";
-import { saveOriginalLpoFileStub } from "@/modules/lpo/infrastructure/save-original-file-stub";
 import { createLpoFormSchema } from "@/modules/lpo/schemas/create-lpo";
 
 function parseReceivedDateInput(yyyyMmDd: string): Date {
@@ -30,10 +30,6 @@ export async function createLpo(input: CreateLpoInput) {
     deliveryDueDays: input.deliveryDueDays,
   });
 
-  if (input.file.size === 0) {
-    throw new Error("LPO file is required.");
-  }
-
   const receivedDate = parseReceivedDateInput(values.receivedDate);
   if (!isReceivedDateAllowed(receivedDate)) {
     throw new Error("Received date cannot be in the future.");
@@ -46,7 +42,7 @@ export async function createLpo(input: CreateLpoInput) {
     throw new Error("An LPO with this number already exists.");
   }
 
-  const storedFile = await saveOriginalLpoFileStub(input.file);
+  const storedFile = await storePdfUpload(input.file, "lpo-originals");
   const reviewDueAt = calculateDueAtFromReceivedDate(
     receivedDate,
     values.reviewDueDays,

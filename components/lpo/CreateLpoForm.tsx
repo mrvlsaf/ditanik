@@ -67,15 +67,16 @@ export function CreateLpoForm() {
         </label>
 
         <label className="block text-sm sm:col-span-2">
-          <span className="mb-1 block font-medium text-zinc-800">LPO file</span>
+          <span className="mb-1 block font-medium text-zinc-800">LPO PDF</span>
           <input
             type="file"
             name="file"
+            accept="application/pdf,.pdf"
             required
             className="block w-full text-sm text-zinc-700 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
           />
           <span className="mt-1 block text-xs text-zinc-500">
-            Stored locally for now (cloud upload in the next step).
+            PDF only (max 25MB). Viewable in-app after upload.
           </span>
         </label>
 

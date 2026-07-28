@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 
 import { PageContainer } from "@/components/app-shell/PageContainer";
+import { DocumentActions } from "@/components/documents/DocumentActions";
 import { CreateLpoForm } from "@/components/lpo/CreateLpoForm";
 import { prisma } from "@/lib/db";
 
@@ -8,6 +9,7 @@ type RecentLpo = {
   id: string;
   lpoNumber: string;
   receivedDate: Date;
+  originalFileKey: string;
   originalFileName: string;
   status: "PENDING" | "REVIEWED" | "DELIVERED";
 };
@@ -20,6 +22,7 @@ export default async function LpoPage() {
       id: true,
       lpoNumber: true,
       receivedDate: true,
+      originalFileKey: true,
       originalFileName: true,
       status: true,
     },
@@ -28,7 +31,7 @@ export default async function LpoPage() {
   return (
     <PageContainer
       title="LPO"
-      description="Create an LPO. Status starts as Pending."
+      description="Create an LPO. Status starts as Pending. View or download the original PDF."
     >
       <div className="space-y-8">
         <section>
@@ -51,18 +54,24 @@ export default async function LpoPage() {
               {lpos.map((lpo) => (
                 <li
                   key={lpo.id}
-                  className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium text-zinc-900">{lpo.lpoNumber}</p>
                     <p className="text-xs text-zinc-500 sm:text-sm">
-                      Received {format(lpo.receivedDate, "dd MMM yyyy")} · File{" "}
+                      Received {format(lpo.receivedDate, "dd MMM yyyy")} ·{" "}
                       {lpo.originalFileName}
                     </p>
                   </div>
-                  <span className="inline-flex w-fit rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
-                    {lpo.status}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="inline-flex w-fit rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      {lpo.status}
+                    </span>
+                    <DocumentActions
+                      fileKey={lpo.originalFileKey}
+                      fileName={lpo.originalFileName}
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
