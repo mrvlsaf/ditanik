@@ -1,37 +1,22 @@
-import { format } from "date-fns";
+import Link from "next/link";
 
 import { PageContainer } from "@/components/app-shell/PageContainer";
 import { DocumentActions } from "@/components/documents/DocumentActions";
 import { CreateLpoForm } from "@/components/lpo/CreateLpoForm";
-import { prisma } from "@/lib/db";
-
-type RecentLpo = {
-  id: string;
-  lpoNumber: string;
-  receivedDate: Date;
-  originalFileKey: string;
-  originalFileName: string;
-  status: "PENDING" | "REVIEWED" | "DELIVERED";
-};
+import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
+import {
+  formatBusinessDateTime,
+  formatCalendarDate,
+} from "@/lib/dates/format";
+import { listRecentLpos } from "@/modules/lpo/application/get-lpo";
 
 export default async function LpoPage() {
-  const lpos = (await prisma.lpo.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: {
-      id: true,
-      lpoNumber: true,
-      receivedDate: true,
-      originalFileKey: true,
-      originalFileName: true,
-      status: true,
-    },
-  })) as RecentLpo[];
+  const lpos = await listRecentLpos();
 
   return (
     <PageContainer
       title="LPO"
-      description="Create an LPO. Status starts as Pending. View or download the original PDF."
+      description="Create an LPO, then open it for dates, PDF, and comments."
     >
       <div className="space-y-8">
         <section>
@@ -57,20 +42,30 @@ export default async function LpoPage() {
                   className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-zinc-900">{lpo.lpoNumber}</p>
+                    <Link
+                      href={`/lpo/${lpo.id}`}
+                      className="font-medium text-zinc-900 hover:underline"
+                    >
+                      {lpo.lpoNumber}
+                    </Link>
                     <p className="text-xs text-zinc-500 sm:text-sm">
-                      Received {format(lpo.receivedDate, "dd MMM yyyy")} ·{" "}
-                      {lpo.originalFileName}
+                      Received {formatCalendarDate(lpo.receivedDate)} · Review{" "}
+                      {formatBusinessDateTime(lpo.reviewDueAt)} · Delivery{" "}
+                      {formatBusinessDateTime(lpo.deliveryDueAt)}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="inline-flex w-fit rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
-                      {lpo.status}
-                    </span>
+                    <LpoStatusBadge status={lpo.status} />
                     <DocumentActions
                       fileKey={lpo.originalFileKey}
                       fileName={lpo.originalFileName}
                     />
+                    <Link
+                      href={`/lpo/${lpo.id}`}
+                      className="inline-flex min-h-9 items-center text-sm font-medium text-zinc-700 hover:text-zinc-900"
+                    >
+                      Open →
+                    </Link>
                   </div>
                 </li>
               ))}

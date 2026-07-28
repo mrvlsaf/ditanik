@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 8–9 (current)
+## Step 10–11 (current)
 
-PDF-only uploads + in-app PDF viewer/download for LPO originals.
+LPO list + detail page (status, due dates, original PDF) and comments thread.
 
 ## Run locally
 
