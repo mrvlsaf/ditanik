@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 5 (current)
+## Step 6 (current)
 
-LPO database tables added (comments, due-date history, audit). UI for creating LPOs comes in later steps.
+LPO domain rules (status machine + Dubai due dates) with unit tests. No create-LPO UI yet.
 
 ## Run locally
 
