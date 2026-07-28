@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 6 (current)
+## Step 7 (current)
 
-LPO domain rules (status machine + Dubai due dates) with unit tests. No create-LPO UI yet.
+Create LPO form + server action (local file stub). Review in Source Control before commit.
 
 ## Run locally
 
