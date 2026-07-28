@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 10–11 (current)
+## Step 12–13 (current)
 
-LPO list + detail page (status, due dates, original PDF) and comments thread.
+Review PDF upload + Mark as Reviewed gate, and Mark as Delivered.
 
 ## Run locally
 
@@ -21,11 +21,14 @@ Copy from `.env.example` and fill in:
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | Neon connection string |
+| `DATABASE_URL` | Neon **pooled** URL (`…-pooler…`) for the app + longer timeouts |
+| `DIRECT_URL` | Neon **direct** URL (no `-pooler`) for `prisma migrate` |
 | `AUTH_SECRET` | Random secret (`openssl rand -base64 32`) |
 | `AUTH_GOOGLE_ID` | Google OAuth client ID |
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
 | `ALLOWED_EMAILS` | Comma-separated emails that may sign in |
+
+> If you see `Can't reach database server` on `findUnique` / `findMany`, Neon is sleeping or the wrong host is used. Use the **pooler** URL in `DATABASE_URL` with `connect_timeout=30`, then restart `pnpm dev`.
 
 ### Google OAuth setup
 

@@ -37,10 +37,10 @@ todos:
     status: completed
   - id: step-12-review-gate
     content: "Step 12: Upload review PDF + Mark as Reviewed gate"
-    status: pending
+    status: completed
   - id: step-13-delivered
     content: "Step 13: Mark as Delivered"
-    status: pending
+    status: completed
   - id: step-14-due-justify
     content: "Step 14: Change due dates with justification + history"
     status: pending

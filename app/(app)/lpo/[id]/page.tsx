@@ -5,6 +5,7 @@ import { PageContainer } from "@/components/app-shell/PageContainer";
 import { DocumentActions } from "@/components/documents/DocumentActions";
 import { LpoCommentsSection } from "@/components/lpo/LpoCommentsSection";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
+import { LpoWorkflowPanel } from "@/components/lpo/LpoWorkflowPanel";
 import {
   formatBusinessDateTime,
   formatCalendarDate,
@@ -28,7 +29,7 @@ export default async function LpoDetailPage({ params }: LpoDetailPageProps) {
   return (
     <PageContainer
       title={lpo.lpoNumber}
-      description="LPO detail — status, due dates, original PDF, and comments."
+      description="LPO detail — status, due dates, PDFs, review/delivery, and comments."
     >
       <div className="space-y-8">
         <div>
@@ -89,6 +90,15 @@ export default async function LpoDetailPage({ params }: LpoDetailPageProps) {
             />
           </div>
         </section>
+
+        <LpoWorkflowPanel
+          lpoId={lpo.id}
+          status={lpo.status}
+          reviewFileKey={lpo.reviewFileKey}
+          reviewFileName={lpo.reviewFileName}
+          reviewedAt={lpo.reviewedAt}
+          deliveredAt={lpo.deliveredAt}
+        />
 
         <LpoCommentsSection lpoId={lpo.id} comments={lpo.comments} />
       </div>
