@@ -11,7 +11,17 @@ enum Role {
   ADMIN
 }
 
-/** App users (Google login wires this up in Step 4). */
+enum LpoStatus {
+  PENDING
+  REVIEWED
+  DELIVERED
+}
+
+enum LpoDueDateField {
+  REVIEW
+  DELIVERY
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -21,5 +31,86 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  lposCreated       Lpo[]              @relation("LpoCreatedBy")
+  lpoComments       LpoComment[]
+  lpoDueDateChanges LpoDueDateChange[]
+  auditLogs         AuditLog[]
+
   @@map("users")
+}
+
+model Lpo {
+  id                   String    @id @default(cuid())
+  lpoNumber            String    @unique @map("lpo_number")
+  receivedDate         DateTime  @db.Date @map("received_date")
+  originalFileKey      String    @map("original_file_key")
+  originalFileName     String    @map("original_file_name")
+  originalMimeType     String    @map("original_mime_type")
+  reviewDueAt          DateTime  @map("review_due_at")
+  deliveryDueAt        DateTime  @map("delivery_due_at")
+  status               LpoStatus @default(PENDING)
+  reviewFileKey        String?   @map("review_file_key")
+  reviewFileName       String?   @map("review_file_name")
+  reviewMimeType       String?   @map("review_mime_type")
+  reviewedAt           DateTime? @map("reviewed_at")
+  deliveredAt          DateTime? @map("delivered_at")
+  createdById          String    @map("created_by_id")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  createdBy     User               @relation("LpoCreatedBy", fields: [createdById], references: [id])
+  comments      LpoComment[]
+  dueDateChanges LpoDueDateChange[]
+
+  @@index([status])
+  @@index([reviewDueAt])
+  @@index([deliveryDueAt])
+  @@map("lpos")
+}
+
+model LpoComment {
+  id        String   @id @default(cuid())
+  lpoId     String   @map("lpo_id")
+  body      String
+  createdById String @map("created_by_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lpo       Lpo  @relation(fields: [lpoId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([lpoId, createdAt])
+  @@map("lpo_comments")
+}
+
+model LpoDueDateChange {
+  id            String          @id @default(cuid())
+  lpoId         String          @map("lpo_id")
+  field         LpoDueDateField
+  oldValue      DateTime        @map("old_value")
+  newValue      DateTime        @map("new_value")
+  justification String
+  changedById   String          @map("changed_by_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  lpo       Lpo  @relation(fields: [lpoId], references: [id], onDelete: Cascade)
+  changedBy User @relation(fields: [changedById], references: [id])
+
+  @@index([lpoId, createdAt])
+  @@map("lpo_due_date_changes")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  action     String
+  actorId    String?  @map("actor_id")
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 3 (current)
+## Step 5 (current)
 
-Prisma + Neon Postgres `User` model. App shell from Step 2 still in place.
+LPO database tables added (comments, due-date history, audit). UI for creating LPOs comes in later steps.
 
 ## Run locally
 
@@ -13,26 +13,44 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001).
+Open [http://localhost:3001](http://localhost:3001) → redirects to `/login` until signed in.
 
-## Database (Neon)
+## Environment (`.env`)
 
-1. Create a project at [neon.tech](https://neon.tech)
-2. Put the connection string in `.env` as `DATABASE_URL`
-3. Run:
-   ```bash
-   pnpm db:deploy
-   pnpm db:generate
-   ```
+Copy from `.env.example` and fill in:
 
-Useful scripts: `pnpm db:studio` (browse data), `pnpm db:migrate` (new migrations while developing).
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | Neon connection string |
+| `AUTH_SECRET` | Random secret (`openssl rand -base64 32`) |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
+| `ALLOWED_EMAILS` | Comma-separated emails that may sign in |
+
+### Google OAuth setup
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → create/select a project  
+2. **APIs & Services → OAuth consent screen** (External is fine for testing)  
+3. **Credentials → Create OAuth client ID → Web application**  
+4. Authorized JavaScript origins: `http://localhost:3001`  
+5. Authorized redirect URIs: `http://localhost:3001/api/auth/callback/google`  
+6. Paste Client ID / Secret into `.env`  
+7. Put your Gmail in `ALLOWED_EMAILS`
+
+## Database
+
+```bash
+pnpm db:deploy
+pnpm db:generate
+pnpm db:studio
+```
 
 ## Folder map
 
 | Path | Purpose |
 |------|---------|
-| `app/(app)/` | App routes + shell layout |
-| `components/app-shell/` | Shared sidebar / drawer / page container |
-| `lib/db.ts` | Prisma client singleton |
+| `auth.ts` | Auth.js config (Google + allowlist + user upsert) |
+| `middleware.ts` | Redirects guests to `/login` |
+| `app/login/` | Sign-in page |
+| `lib/db.ts` | Prisma client |
 | `prisma/` | Schema + migrations |
-| `modules/` | Feature business logic (later steps) |
