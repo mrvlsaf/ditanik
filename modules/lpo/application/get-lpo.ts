@@ -15,6 +15,14 @@ export async function getLpoById(id: string) {
           },
         },
       },
+      dueDateChanges: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          changedBy: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      },
     },
   });
 }

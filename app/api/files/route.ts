@@ -20,19 +20,31 @@ export async function GET(request: Request) {
     where: {
       OR: [{ originalFileKey: fileKey }, { reviewFileKey: fileKey }],
     },
-    select: { id: true, originalFileName: true, reviewFileName: true, originalFileKey: true },
+    select: {
+      originalFileName: true,
+      reviewFileName: true,
+      originalFileKey: true,
+    },
   });
 
-  if (!lpo) {
+  const fabric = lpo
+    ? null
+    : await prisma.fabricEntry.findFirst({
+        where: { invoiceFileKey: fileKey },
+        select: { invoiceFileName: true },
+      });
+
+  if (!lpo && !fabric) {
     return new Response("File not found", { status: 404 });
   }
 
   try {
     const stored = await readStoredFile(fileKey);
-    const fileName =
-      fileKey === lpo.originalFileKey
+    const fileName = lpo
+      ? fileKey === lpo.originalFileKey
         ? lpo.originalFileName
-        : (lpo.reviewFileName ?? stored.fileName);
+        : (lpo.reviewFileName ?? stored.fileName)
+      : (fabric?.invoiceFileName ?? stored.fileName);
 
     const dispositionType = asDownload ? "attachment" : "inline";
     return new Response(new Uint8Array(stored.bytes), {

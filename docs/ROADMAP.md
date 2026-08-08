@@ -43,19 +43,19 @@ todos:
     status: completed
   - id: step-14-due-justify
     content: "Step 14: Change due dates with justification + history"
-    status: pending
+    status: completed
   - id: step-15-overdue-email
     content: "Step 15: Vercel Cron + Resend overdue emails + idempotency"
-    status: pending
+    status: completed
   - id: step-16-fabric-schema-ui
     content: "Step 16: Fabric Prisma model + create form + remaining meters"
-    status: pending
+    status: completed
   - id: step-17-fabric-invoice-view
     content: "Step 17: Fabric invoice upload + DocumentViewer on fabric"
-    status: pending
+    status: completed
   - id: step-18-invoices
     content: "Step 18: Invoices-by-vendor page + viewer for each invoice"
-    status: pending
+    status: completed
   - id: step-19-ci-deploy
     content: "Step 19: GitHub Actions CI + Vercel/Neon production checklist"
     status: pending

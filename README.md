@@ -2,9 +2,9 @@
 
 Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
 
-## Step 12–13 (current)
+## Step 14–18 (current)
 
-Review PDF upload + Mark as Reviewed gate, and Mark as Delivered.
+Due-date changes + justification, overdue email cron, Fabric inventory with invoice PDFs, and Invoices-by-vendor.
 
 ## Run locally
 
@@ -27,8 +27,18 @@ Copy from `.env.example` and fill in:
 | `AUTH_GOOGLE_ID` | Google OAuth client ID |
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
 | `ALLOWED_EMAILS` | Comma-separated emails that may sign in |
+| `CRON_SECRET` | Bearer token for `/api/cron/overdue` |
+| `OVERDUE_NOTIFY_EMAIL` | Recipient for overdue alerts (defaults to first allowlisted email) |
+| `RESEND_API_KEY` | Optional — without it, cron dry-runs and logs |
+| `RESEND_FROM_EMAIL` | Optional Resend from address |
 
 > If you see `Can't reach database server` on `findUnique` / `findMany`, Neon is sleeping or the wrong host is used. Use the **pooler** URL in `DATABASE_URL` with `connect_timeout=30`, then restart `pnpm dev`.
+
+### Overdue cron (local dry-run)
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3001/api/cron/overdue
+```
 
 ### Google OAuth setup
 
@@ -57,3 +67,4 @@ pnpm db:studio
 | `app/login/` | Sign-in page |
 | `lib/db.ts` | Prisma client |
 | `prisma/` | Schema + migrations |
+| `pnpm-workspace.yaml` | pnpm 11 settings (`allowBuilds` so Prisma install scripts run) |

@@ -41,3 +41,13 @@ const MIN_JUSTIFICATION_LENGTH = 10;
 export function isDueDateJustificationValid(justification: string): boolean {
   return justification.trim().length >= MIN_JUSTIFICATION_LENGTH;
 }
+
+export const MIN_DUE_DATE_JUSTIFICATION_LENGTH = MIN_JUSTIFICATION_LENGTH;
+
+/** Calendar day (YYYY-MM-DD) → 23:59:59.999 Asia/Dubai as UTC. */
+export function calculateDueAtFromCalendarDate(yyyyMmDd: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyyMmDd)) {
+    throw new Error("Due date must be YYYY-MM-DD.");
+  }
+  return fromZonedTime(`${yyyyMmDd}T23:59:59.999`, BUSINESS_TIMEZONE);
+}

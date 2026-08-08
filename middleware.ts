@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 
-/** Protect app pages; allow login + NextAuth API without a session. */
+/** Protect app pages; allow login, NextAuth, and cron (secret checked in route). */
 export default auth((request) => {
   const { pathname } = request.nextUrl;
   const isLoggedIn = !!request.auth;
   const isLoginPage = pathname.startsWith("/login");
   const isAuthApi = pathname.startsWith("/api/auth");
+  const isCronApi = pathname.startsWith("/api/cron/");
 
-  if (isAuthApi) {
+  if (isAuthApi || isCronApi) {
     return NextResponse.next();
   }
 

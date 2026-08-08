@@ -1,10 +1,11 @@
-import type { Role } from "@prisma/client";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
 import { isEmailAllowlisted } from "@/lib/auth/allowlist";
 
-function isAppRole(value: unknown): value is Role {
+type AppRole = "ADMIN";
+
+function isAppRole(value: unknown): value is AppRole {
   return value === "ADMIN";
 }
 

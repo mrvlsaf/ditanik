@@ -4,12 +4,10 @@ import { notFound } from "next/navigation";
 import { PageContainer } from "@/components/app-shell/PageContainer";
 import { DocumentActions } from "@/components/documents/DocumentActions";
 import { LpoCommentsSection } from "@/components/lpo/LpoCommentsSection";
+import { LpoDueDateSection } from "@/components/lpo/LpoDueDateSection";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
 import { LpoWorkflowPanel } from "@/components/lpo/LpoWorkflowPanel";
-import {
-  formatBusinessDateTime,
-  formatCalendarDate,
-} from "@/lib/dates/format";
+import { formatCalendarDate } from "@/lib/dates/format";
 import { getLpoById } from "@/modules/lpo/application/get-lpo";
 
 type LpoDetailPageProps = Readonly<{
@@ -58,22 +56,6 @@ export default async function LpoDetailPage({ params }: LpoDetailPageProps) {
             </div>
             <div>
               <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Review due (Dubai)
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-900">
-                {formatBusinessDateTime(lpo.reviewDueAt)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Delivery due (Dubai)
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-900">
-                {formatBusinessDateTime(lpo.deliveryDueAt)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
                 Original file
               </dt>
               <dd className="mt-1 text-sm text-zinc-900">{lpo.originalFileName}</dd>
@@ -90,6 +72,13 @@ export default async function LpoDetailPage({ params }: LpoDetailPageProps) {
             />
           </div>
         </section>
+
+        <LpoDueDateSection
+          lpoId={lpo.id}
+          reviewDueAt={lpo.reviewDueAt}
+          deliveryDueAt={lpo.deliveryDueAt}
+          history={lpo.dueDateChanges}
+        />
 
         <LpoWorkflowPanel
           lpoId={lpo.id}

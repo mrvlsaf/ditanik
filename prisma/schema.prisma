@@ -24,6 +24,11 @@ enum LpoDueDateField {
   DELIVERY
 }
 
+enum OverdueEmailType {
+  REVIEW_OVERDUE
+  DELIVERY_OVERDUE
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -36,6 +41,7 @@ model User {
   lposCreated       Lpo[]              @relation("LpoCreatedBy")
   lpoComments       LpoComment[]
   lpoDueDateChanges LpoDueDateChange[]
+  fabricEntries     FabricEntry[]
   auditLogs         AuditLog[]
 
   @@map("users")
@@ -63,6 +69,7 @@ model Lpo {
   createdBy     User               @relation("LpoCreatedBy", fields: [createdById], references: [id])
   comments      LpoComment[]
   dueDateChanges LpoDueDateChange[]
+  emailNotifications EmailNotification[]
 
   @@index([status])
   @@index([reviewDueAt])
@@ -115,4 +122,42 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model EmailNotification {
+  id        String           @id @default(cuid())
+  lpoId     String           @map("lpo_id")
+  type      OverdueEmailType
+  dueAt     DateTime         @map("due_at")
+  recipient String
+  dryRun    Boolean          @default(false) @map("dry_run")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  lpo Lpo @relation(fields: [lpoId], references: [id], onDelete: Cascade)
+
+  @@unique([lpoId, type, dueAt])
+  @@index([createdAt])
+  @@map("email_notifications")
+}
+
+model FabricEntry {
+  id                String   @id @default(cuid())
+  vendor            String
+  vendorNormalized  String   @map("vendor_normalized")
+  color             String
+  metersReceived    Decimal  @map("meters_received") @db.Decimal(12, 2)
+  metersDelivered   Decimal  @map("meters_delivered") @db.Decimal(12, 2)
+  destination       String
+  invoiceFileKey    String   @map("invoice_file_key")
+  invoiceFileName   String   @map("invoice_file_name")
+  invoiceMimeType   String   @map("invoice_mime_type")
+  createdById       String   @map("created_by_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([vendorNormalized])
+  @@index([createdAt])
+  @@map("fabric_entries")
 }
