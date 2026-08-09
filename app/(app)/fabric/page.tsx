@@ -1,66 +1,170 @@
 import { PageContainer } from "@/components/app-shell/PageContainer";
-import { DocumentActions } from "@/components/documents/DocumentActions";
-import { CreateFabricEntryForm } from "@/components/fabric/CreateFabricEntryForm";
-import { listFabricEntries } from "@/modules/fabric/application/create-fabric-entry";
-import { calculateMetersRemaining } from "@/modules/fabric/domain/meters";
+import { IssueFabricForm } from "@/components/fabric/IssueFabricForm";
+import { ReceiveFabricForm } from "@/components/fabric/ReceiveFabricForm";
+import { ReturnFabricForm } from "@/components/fabric/ReturnFabricForm";
+import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
+import {
+  listBatchesWithStock,
+  listRecentMovements,
+} from "@/modules/fabric/application/get-fabric";
+import { listRecentLpos } from "@/modules/lpo/application/get-lpo";
+import { listManufacturers } from "@/modules/manufacturer/application/manufacturers";
 
-export default async function FabricInventoryPage() {
-  const entries = await listFabricEntries();
+export default async function FabricPage() {
+  const [batches, movements, manufacturers, lpos] = await Promise.all([
+    listBatchesWithStock(),
+    listRecentMovements(40),
+    listManufacturers(),
+    listRecentLpos(100),
+  ]);
+
+  const batchOptions = batches.map((b) => ({
+    id: b.id,
+    fabricCode: b.fabricCode,
+    fabricType: b.fabricType,
+    colour: b.colour,
+    stockMeters: b.stockMeters,
+  }));
+
+  const manufacturerOptions = manufacturers.map((m) => ({
+    id: m.id,
+    name: m.name,
+  }));
+
+  const lpoOptions = lpos.map((l) => ({
+    id: l.id,
+    lpoNumber: l.lpoNumber,
+    nickname: l.nickname,
+  }));
 
   return (
     <PageContainer
-      title="Fabric Inventory"
-      description="Track fabric received, delivered, remaining meters, and invoice PDFs."
+      title="Fabric"
+      description="Receive supplier invoices (multi-batch), track available stock, and issue fabric to manufacturers. Movements are append-only."
     >
-      <div className="space-y-8">
+      <div className="space-y-10">
         <section>
           <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Add fabric
+            Receive fabric
           </h2>
-          <CreateFabricEntryForm />
+          <ReceiveFabricForm />
         </section>
 
         <section>
           <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Recent entries
+            Available stock
           </h2>
-          {entries.length === 0 ? (
+          {batches.length === 0 ? (
             <p className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-8 text-center text-sm text-zinc-500">
-              No fabric entries yet.
+              No fabric batches yet.
             </p>
           ) : (
-            <ul className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 bg-white">
-              {entries.map((entry) => {
-                const remaining = calculateMetersRemaining(
-                  Number(entry.metersReceived),
-                  Number(entry.metersDelivered),
-                );
-                return (
-                  <li
-                    key={entry.id}
-                    className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium text-zinc-900">
-                        {entry.vendor} · {entry.color}
-                      </p>
-                      <p className="text-xs text-zinc-500 sm:text-sm">
-                        In {Number(entry.metersReceived)} m · Out{" "}
-                        {Number(entry.metersDelivered)} m · Remaining{" "}
-                        {remaining} m · {entry.destination}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        Invoice: {entry.invoiceFileName}
-                      </p>
-                    </div>
-                    <DocumentActions
-                      fileKey={entry.invoiceFileKey}
-                      fileName={entry.invoiceFileName}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                  <tr>
+                    <th className="px-3 py-3">Fabric ID</th>
+                    <th className="px-3 py-3">Type</th>
+                    <th className="px-3 py-3">Colour</th>
+                    <th className="px-3 py-3">Supplier</th>
+                    <th className="px-3 py-3">Received</th>
+                    <th className="px-3 py-3">Available</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {batches.map((b) => (
+                    <tr key={b.id}>
+                      <td className="px-3 py-3 font-medium text-zinc-900">
+                        {b.fabricCode}
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">{b.fabricType}</td>
+                      <td className="px-3 py-3 text-zinc-700">{b.colour}</td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {b.invoice.supplierName} ({b.invoice.invoiceRef})
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {b.qtyReceived}m ·{" "}
+                        {formatCalendarDate(b.invoice.receivedDate)}
+                      </td>
+                      <td className="px-3 py-3 font-medium text-zinc-900">
+                        {b.stockMeters}m
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="grid gap-8 lg:grid-cols-2">
+          <div>
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
+              Issue to manufacturer
+            </h2>
+            <IssueFabricForm
+              batches={batchOptions}
+              manufacturers={manufacturerOptions}
+              lpos={lpoOptions}
+            />
+          </div>
+          <div>
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
+              Return from manufacturer
+            </h2>
+            <ReturnFabricForm
+              batches={batchOptions}
+              manufacturers={manufacturerOptions}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
+            Movement ledger
+          </h2>
+          {movements.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-8 text-center text-sm text-zinc-500">
+              No movements yet.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                  <tr>
+                    <th className="px-3 py-3">When</th>
+                    <th className="px-3 py-3">Type</th>
+                    <th className="px-3 py-3">Batch</th>
+                    <th className="px-3 py-3">Qty</th>
+                    <th className="px-3 py-3">Manufacturer</th>
+                    <th className="px-3 py-3">LPO</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {movements.map((m) => (
+                    <tr key={m.id}>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {formatBusinessDateTime(m.occurredAt)}
+                      </td>
+                      <td className="px-3 py-3 text-zinc-900">{m.type}</td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {m.batch.fabricCode}
+                      </td>
+                      <td className="px-3 py-3 font-medium text-zinc-900">
+                        {m.quantityMeters > 0 ? "+" : ""}
+                        {m.quantityMeters}m
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {m.manufacturer?.name ?? "—"}
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {m.lpo?.lpoNumber ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       </div>

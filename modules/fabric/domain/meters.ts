@@ -1,20 +1,38 @@
-/** Remaining meters = received − delivered. */
-export function calculateMetersRemaining(
-  metersReceived: number,
-  metersDelivered: number,
+/** Remaining stock from signed movement quantities (receipts +, issues −). */
+export function calculateStockFromMovements(
+  movements: ReadonlyArray<{ quantityMeters: number }>,
 ): number {
-  if (!Number.isFinite(metersReceived) || !Number.isFinite(metersDelivered)) {
-    throw new Error("Meters must be valid numbers.");
-  }
-  if (metersReceived < 0 || metersDelivered < 0) {
-    throw new Error("Meters cannot be negative.");
-  }
-  if (metersDelivered > metersReceived) {
-    throw new Error("Meters delivered cannot exceed meters received.");
-  }
-  return Number((metersReceived - metersDelivered).toFixed(2));
+  return movements.reduce((sum, row) => sum + row.quantityMeters, 0);
 }
 
-export function normalizeVendorName(vendor: string): string {
-  return vendor.trim().replace(/\s+/g, " ").toLowerCase();
+export function calculateExpectedMeters(
+  quantity: number,
+  metersPerUnit: number,
+): number {
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    throw new Error("Quantity must be an integer of at least 1.");
+  }
+  if (!(metersPerUnit > 0)) {
+    throw new Error("Meters per unit must be greater than 0.");
+  }
+  return roundMeters(quantity * metersPerUnit);
+}
+
+export function calculateVarianceDifference(
+  expectedMeters: number,
+  actualMeters: number,
+): number {
+  return roundMeters(actualMeters - expectedMeters);
+}
+
+/** Additional fabric to send = max(0, required − availableWithManufacturer). */
+export function calculateAdditionalFabricRequired(
+  requiredMeters: number,
+  availableWithManufacturer: number,
+): number {
+  return roundMeters(Math.max(0, requiredMeters - availableWithManufacturer));
+}
+
+export function roundMeters(value: number): number {
+  return Math.round(value * 1000) / 1000;
 }

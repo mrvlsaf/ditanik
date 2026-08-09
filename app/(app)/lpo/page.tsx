@@ -16,7 +16,7 @@ export default async function LpoPage() {
   return (
     <PageContainer
       title="LPO"
-      description="Create an LPO, then open it for dates, PDF, and comments."
+      description="Receive LPOs, track internal review and manufacturer production deadlines, then complete client delivery."
     >
       <div className="space-y-8">
         <section>
@@ -28,48 +28,67 @@ export default async function LpoPage() {
 
         <section>
           <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Recent LPOs
+            Dashboard
           </h2>
           {lpos.length === 0 ? (
             <p className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-8 text-center text-sm text-zinc-500">
               No LPOs yet. Create the first one above.
             </p>
           ) : (
-            <ul className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 bg-white">
-              {lpos.map((lpo) => (
-                <li
-                  key={lpo.id}
-                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <Link
-                      href={`/lpo/${lpo.id}`}
-                      className="font-medium text-zinc-900 hover:underline"
-                    >
-                      {lpo.lpoNumber}
-                    </Link>
-                    <p className="text-xs text-zinc-500 sm:text-sm">
-                      Received {formatCalendarDate(lpo.receivedDate)} · Review{" "}
-                      {formatBusinessDateTime(lpo.reviewDueAt)} · Delivery{" "}
-                      {formatBusinessDateTime(lpo.deliveryDueAt)}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <LpoStatusBadge status={lpo.status} />
-                    <DocumentActions
-                      fileKey={lpo.originalFileKey}
-                      fileName={lpo.originalFileName}
-                    />
-                    <Link
-                      href={`/lpo/${lpo.id}`}
-                      className="inline-flex min-h-9 items-center text-sm font-medium text-zinc-700 hover:text-zinc-900"
-                    >
-                      Open →
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+              <table className="min-w-full text-left text-sm">
+                <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                  <tr>
+                    <th className="px-3 py-3">LPO</th>
+                    <th className="px-3 py-3">Nickname</th>
+                    <th className="px-3 py-3">Client</th>
+                    <th className="px-3 py-3">Received</th>
+                    <th className="px-3 py-3">Manufacturer</th>
+                    <th className="px-3 py-3">Production due</th>
+                    <th className="px-3 py-3">Client delivery</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3">Document</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {lpos.map((lpo) => (
+                    <tr key={lpo.id} className="hover:bg-zinc-50">
+                      <td className="px-3 py-3">
+                        <Link
+                          href={`/lpo/${lpo.id}`}
+                          className="font-medium text-zinc-900 hover:underline"
+                        >
+                          {lpo.lpoNumber}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">{lpo.nickname}</td>
+                      <td className="px-3 py-3 text-zinc-700">{lpo.clientName}</td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {formatCalendarDate(lpo.receivedDate)}
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {lpo.manufacturer?.name ?? "Pending"}
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {formatBusinessDateTime(lpo.productionDeadlineAt)}
+                      </td>
+                      <td className="px-3 py-3 text-zinc-700">
+                        {formatBusinessDateTime(lpo.clientDeliveryAt)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <LpoStatusBadge status={lpo.status} />
+                      </td>
+                      <td className="px-3 py-3">
+                        <DocumentActions
+                          fileKey={lpo.originalFileKey}
+                          fileName={lpo.originalFileName}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       </div>

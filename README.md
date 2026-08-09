@@ -1,10 +1,16 @@
 # Ditanik
 
-Internal admin app for **LPO**, **Fabric Inventory**, and **Invoices**.
+Internal admin app for **LPO management**, **fabric inventory**, **manufacturer fabric ledgers**, and **consumption rates**.
 
-## Step 14–18 (current)
+## Current position
 
-Due-date changes + justification, overdue email cron, Fabric inventory with invoice PDFs, and Invoices-by-vendor.
+**Phases 0–5 complete** — greenfield LPO + Fabric product with deadline email cron and GitHub Actions CI.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for product rules.
+
+## Breaking change note
+
+Dev databases were reset for the greenfield schema. Do not expect old LPO/fabric rows to migrate.
 
 ## Run locally
 
@@ -14,6 +20,13 @@ pnpm dev
 ```
 
 Open [http://localhost:3001](http://localhost:3001) → redirects to `/login` until signed in.
+
+If Neon was sleeping, open the Neon dashboard once, then:
+
+```bash
+pnpm exec prisma migrate deploy
+pnpm exec prisma generate
+```
 
 ## Environment (`.env`)
 
@@ -28,43 +41,39 @@ Copy from `.env.example` and fill in:
 | `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
 | `ALLOWED_EMAILS` | Comma-separated emails that may sign in |
 | `CRON_SECRET` | Bearer token for `/api/cron/overdue` |
-| `OVERDUE_NOTIFY_EMAIL` | Recipient for overdue alerts (defaults to first allowlisted email) |
-| `RESEND_API_KEY` | Optional — without it, cron dry-runs and logs |
+| `OVERDUE_NOTIFY_EMAIL` | Optional overdue recipient |
+| `RESEND_API_KEY` | Optional — without it, deadline emails dry-run |
 | `RESEND_FROM_EMAIL` | Optional Resend from address |
 
-> If you see `Can't reach database server` on `findUnique` / `findMany`, Neon is sleeping or the wrong host is used. Use the **pooler** URL in `DATABASE_URL` with `connect_timeout=30`, then restart `pnpm dev`.
+## Scripts
 
-### Overdue cron (local dry-run)
+```bash
+pnpm test
+pnpm lint
+pnpm exec tsc --noEmit
+pnpm db:deploy
+pnpm db:generate
+```
+
+### Deadline cron (local dry-run)
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3001/api/cron/overdue
 ```
 
-### Google OAuth setup
+## Nav
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → create/select a project  
-2. **APIs & Services → OAuth consent screen** (External is fine for testing)  
-3. **Credentials → Create OAuth client ID → Web application**  
-4. Authorized JavaScript origins: `http://localhost:3001`  
-5. Authorized redirect URIs: `http://localhost:3001/api/auth/callback/google`  
-6. Paste Client ID / Secret into `.env`  
-7. Put your Gmail in `ALLOWED_EMAILS`
+| Route | Purpose |
+|-------|---------|
+| `/lpo` | LPO dashboard + create |
+| `/invoices` | Supplier invoices (filter by supplier/month) |
+| `/manufacturers` | Registry + fabric ledger per manufacturer |
+| `/consumption` | Garment meters table |
 
-## Database
+## Deploy checklist
 
-```bash
-pnpm db:deploy
-pnpm db:generate
-pnpm db:studio
-```
-
-## Folder map
-
-| Path | Purpose |
-|------|---------|
-| `auth.ts` | Auth.js config (Google + allowlist + user upsert) |
-| `middleware.ts` | Redirects guests to `/login` |
-| `app/login/` | Sign-in page |
-| `lib/db.ts` | Prisma client |
-| `prisma/` | Schema + migrations |
-| `pnpm-workspace.yaml` | pnpm 11 settings (`allowBuilds` so Prisma install scripts run) |
+1. Set all env vars on Vercel (pooled + direct DB URLs, Auth, cron secret, Resend optional)
+2. `prisma migrate deploy` on release
+3. Confirm `vercel.json` cron hits `/api/cron/overdue` with `CRON_SECRET`
+4. Swap local `uploads/` for cloud blob before relying on production file storage
+5. Google OAuth redirect URIs for the production domain

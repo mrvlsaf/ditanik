@@ -14,19 +14,37 @@ enum Role {
 }
 
 enum LpoStatus {
-  PENDING
-  REVIEWED
-  DELIVERED
+  LPO_RECEIVED
+  UNDER_REVIEW
+  ASSIGNED_TO_MANUFACTURER
+  CLIENT_DELIVERY_COMPLETED
 }
 
-enum LpoDueDateField {
-  REVIEW
-  DELIVERY
+enum LpoDateField {
+  ASSIGNMENT
+  PRODUCTION_DEADLINE
+  CLIENT_DELIVERY
 }
 
-enum OverdueEmailType {
-  REVIEW_OVERDUE
-  DELIVERY_OVERDUE
+enum FabricMovementType {
+  RECEIVED
+  ISSUED
+  USED_FOR_LPO
+  RETURNED
+  ADJUSTMENT
+}
+
+enum FabricVarianceReason {
+  CUTTING_WASTAGE
+  DAMAGE
+  SIZE_ALTERATION
+  PRODUCTION_MISTAKE
+  OTHER
+}
+
+enum DeadlineEmailType {
+  PRODUCTION_OVERDUE
+  CLIENT_DELIVERY_OVERDUE
 }
 
 model User {
@@ -39,73 +57,105 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   lposCreated       Lpo[]              @relation("LpoCreatedBy")
-  lpoComments       LpoComment[]
-  lpoDueDateChanges LpoDueDateChange[]
-  fabricEntries     FabricEntry[]
+  lpoDateChanges    LpoDateChange[]
+  manufacturersCreated Manufacturer[]  @relation("ManufacturerCreatedBy")
+  fabricInvoices    FabricSupplierInvoice[]
+  fabricMovements   FabricMovement[]
+  fabricVariances   FabricVariance[]
   auditLogs         AuditLog[]
 
   @@map("users")
 }
 
-model Lpo {
-  id                   String    @id @default(cuid())
-  lpoNumber            String    @unique @map("lpo_number")
-  receivedDate         DateTime  @db.Date @map("received_date")
-  originalFileKey      String    @map("original_file_key")
-  originalFileName     String    @map("original_file_name")
-  originalMimeType     String    @map("original_mime_type")
-  reviewDueAt          DateTime  @map("review_due_at")
-  deliveryDueAt        DateTime  @map("delivery_due_at")
-  status               LpoStatus @default(PENDING)
-  reviewFileKey        String?   @map("review_file_key")
-  reviewFileName       String?   @map("review_file_name")
-  reviewMimeType       String?   @map("review_mime_type")
-  reviewedAt           DateTime? @map("reviewed_at")
-  deliveredAt          DateTime? @map("delivered_at")
-  createdById          String    @map("created_by_id")
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
+model Manufacturer {
+  id              String   @id @default(cuid())
+  name            String
+  nameNormalized  String   @unique @map("name_normalized")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdById     String?  @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  createdBy     User               @relation("LpoCreatedBy", fields: [createdById], references: [id])
-  comments      LpoComment[]
-  dueDateChanges LpoDueDateChange[]
+  createdBy User? @relation("ManufacturerCreatedBy", fields: [createdById], references: [id])
+  lpos      Lpo[]
+  movements FabricMovement[]
+  variances FabricVariance[]
+
+  @@index([isActive])
+  @@map("manufacturers")
+}
+
+model Lpo {
+  id                         String    @id @default(cuid())
+  lpoNumber                  String    @unique @map("lpo_number")
+  nickname                   String
+  clientName                 String    @map("client_name")
+  lpoDate                    DateTime  @db.Date @map("lpo_date")
+  receivedDate               DateTime  @db.Date @map("received_date")
+  originalFileKey            String    @map("original_file_key")
+  originalFileName           String    @map("original_file_name")
+  originalMimeType           String    @map("original_mime_type")
+  status                     LpoStatus @default(LPO_RECEIVED)
+  manufacturerAssignmentAt   DateTime  @map("manufacturer_assignment_at")
+  productionDeadlineAt       DateTime  @map("production_deadline_at")
+  clientDeliveryAt           DateTime  @map("client_delivery_at")
+  manufacturerId             String?   @map("manufacturer_id")
+  productionFileKey          String?   @map("production_file_key")
+  productionFileName         String?   @map("production_file_name")
+  productionMimeType         String?   @map("production_mime_type")
+  clientDeliveredAt          DateTime? @map("client_delivered_at")
+  createdById                String    @map("created_by_id")
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+
+  createdBy      User                @relation("LpoCreatedBy", fields: [createdById], references: [id])
+  manufacturer   Manufacturer?       @relation(fields: [manufacturerId], references: [id])
+  dateChanges    LpoDateChange[]
+  fabricRequirements LpoFabricRequirement[]
+  movements      FabricMovement[]
+  variances      FabricVariance[]
   emailNotifications EmailNotification[]
 
   @@index([status])
-  @@index([reviewDueAt])
-  @@index([deliveryDueAt])
+  @@index([manufacturerAssignmentAt])
+  @@index([productionDeadlineAt])
+  @@index([clientDeliveryAt])
+  @@index([manufacturerId])
   @@map("lpos")
 }
 
-model LpoComment {
-  id        String   @id @default(cuid())
-  lpoId     String   @map("lpo_id")
-  body      String
-  createdById String @map("created_by_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  lpo       Lpo  @relation(fields: [lpoId], references: [id], onDelete: Cascade)
-  createdBy User @relation(fields: [createdById], references: [id])
-
-  @@index([lpoId, createdAt])
-  @@map("lpo_comments")
-}
-
-model LpoDueDateChange {
-  id            String          @id @default(cuid())
-  lpoId         String          @map("lpo_id")
-  field         LpoDueDateField
-  oldValue      DateTime        @map("old_value")
-  newValue      DateTime        @map("new_value")
-  justification String
-  changedById   String          @map("changed_by_id")
-  createdAt     DateTime        @default(now()) @map("created_at")
+model LpoDateChange {
+  id          String       @id @default(cuid())
+  lpoId       String       @map("lpo_id")
+  field       LpoDateField
+  oldValue    DateTime     @map("old_value")
+  newValue    DateTime     @map("new_value")
+  reason      String?
+  changedById String       @map("changed_by_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
 
   lpo       Lpo  @relation(fields: [lpoId], references: [id], onDelete: Cascade)
   changedBy User @relation(fields: [changedById], references: [id])
 
   @@index([lpoId, createdAt])
-  @@map("lpo_due_date_changes")
+  @@map("lpo_date_changes")
+}
+
+model LpoFabricRequirement {
+  id                       String   @id @default(cuid())
+  lpoId                    String   @map("lpo_id")
+  garmentName              String   @map("garment_name")
+  quantity                 Int
+  metersPerUnit            Decimal  @map("meters_per_unit") @db.Decimal(12, 3)
+  expectedMeters           Decimal  @map("expected_meters") @db.Decimal(12, 3)
+  consumptionRateId        String?  @map("consumption_rate_id")
+  createdAt                DateTime @default(now()) @map("created_at")
+
+  lpo             Lpo                     @relation(fields: [lpoId], references: [id], onDelete: Cascade)
+  consumptionRate GarmentConsumptionRate? @relation(fields: [consumptionRateId], references: [id])
+
+  @@index([lpoId])
+  @@map("lpo_fabric_requirements")
 }
 
 model AuditLog {
@@ -124,40 +174,120 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model FabricSupplierInvoice {
+  id            String   @id @default(cuid())
+  supplierName  String   @map("supplier_name")
+  invoiceRef    String   @map("invoice_ref")
+  receivedDate  DateTime @db.Date @map("received_date")
+  invoiceFileKey  String? @map("invoice_file_key")
+  invoiceFileName String? @map("invoice_file_name")
+  invoiceMimeType String? @map("invoice_mime_type")
+  createdById   String   @map("created_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  createdBy User          @relation(fields: [createdById], references: [id])
+  batches   FabricBatch[]
+
+  @@index([supplierName])
+  @@index([receivedDate])
+  @@map("fabric_supplier_invoices")
+}
+
+model FabricBatch {
+  id           String   @id @default(cuid())
+  fabricCode   String   @unique @map("fabric_code")
+  fabricType   String   @map("fabric_type")
+  colour       String
+  remarks      String?
+  qtyReceived  Decimal  @map("qty_received") @db.Decimal(12, 3)
+  invoiceId    String   @map("invoice_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  invoice   FabricSupplierInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  movements FabricMovement[]
+  variances FabricVariance[]
+
+  @@index([invoiceId])
+  @@index([fabricType, colour])
+  @@map("fabric_batches")
+}
+
+model FabricMovement {
+  id             String              @id @default(cuid())
+  type           FabricMovementType
+  batchId        String              @map("batch_id")
+  manufacturerId String?             @map("manufacturer_id")
+  lpoId          String?             @map("lpo_id")
+  /// Signed meters: receipts positive; issues/usage negative; returns positive.
+  quantityMeters Decimal             @map("quantity_meters") @db.Decimal(12, 3)
+  transportRef   String?             @map("transport_ref")
+  note           String?
+  createdById    String              @map("created_by_id")
+  occurredAt     DateTime            @map("occurred_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  batch        FabricBatch    @relation(fields: [batchId], references: [id])
+  manufacturer Manufacturer?  @relation(fields: [manufacturerId], references: [id])
+  lpo          Lpo?           @relation(fields: [lpoId], references: [id])
+  createdBy    User           @relation(fields: [createdById], references: [id])
+
+  @@index([batchId, createdAt])
+  @@index([manufacturerId, createdAt])
+  @@index([lpoId])
+  @@index([type])
+  @@map("fabric_movements")
+}
+
+model GarmentConsumptionRate {
+  id            String   @id @default(cuid())
+  garmentName   String   @unique @map("garment_name")
+  metersPerUnit Decimal  @map("meters_per_unit") @db.Decimal(12, 3)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  requirements LpoFabricRequirement[]
+
+  @@map("garment_consumption_rates")
+}
+
+model FabricVariance {
+  id             String               @id @default(cuid())
+  batchId        String?              @map("batch_id")
+  manufacturerId String?              @map("manufacturer_id")
+  lpoId          String?              @map("lpo_id")
+  expectedMeters Decimal              @map("expected_meters") @db.Decimal(12, 3)
+  actualMeters   Decimal              @map("actual_meters") @db.Decimal(12, 3)
+  differenceMeters Decimal            @map("difference_meters") @db.Decimal(12, 3)
+  reason         FabricVarianceReason
+  note           String?
+  createdById    String               @map("created_by_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+
+  batch        FabricBatch?   @relation(fields: [batchId], references: [id])
+  manufacturer Manufacturer?  @relation(fields: [manufacturerId], references: [id])
+  lpo          Lpo?           @relation(fields: [lpoId], references: [id])
+  createdBy    User           @relation(fields: [createdById], references: [id])
+
+  @@index([lpoId])
+  @@index([manufacturerId])
+  @@map("fabric_variances")
+}
+
 model EmailNotification {
-  id        String           @id @default(cuid())
-  lpoId     String           @map("lpo_id")
-  type      OverdueEmailType
-  dueAt     DateTime         @map("due_at")
+  id        String            @id @default(cuid())
+  lpoId     String            @map("lpo_id")
+  type      DeadlineEmailType
+  dueAt     DateTime          @map("due_at")
   recipient String
-  dryRun    Boolean          @default(false) @map("dry_run")
-  createdAt DateTime         @default(now()) @map("created_at")
+  dryRun    Boolean           @default(false) @map("dry_run")
+  createdAt DateTime          @default(now()) @map("created_at")
 
   lpo Lpo @relation(fields: [lpoId], references: [id], onDelete: Cascade)
 
   @@unique([lpoId, type, dueAt])
   @@index([createdAt])
   @@map("email_notifications")
-}
-
-model FabricEntry {
-  id                String   @id @default(cuid())
-  vendor            String
-  vendorNormalized  String   @map("vendor_normalized")
-  color             String
-  metersReceived    Decimal  @map("meters_received") @db.Decimal(12, 2)
-  metersDelivered   Decimal  @map("meters_delivered") @db.Decimal(12, 2)
-  destination       String
-  invoiceFileKey    String   @map("invoice_file_key")
-  invoiceFileName   String   @map("invoice_file_name")
-  invoiceMimeType   String   @map("invoice_mime_type")
-  createdById       String   @map("created_by_id")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-
-  createdBy User @relation(fields: [createdById], references: [id])
-
-  @@index([vendorNormalized])
-  @@index([createdAt])
-  @@map("fabric_entries")
 }

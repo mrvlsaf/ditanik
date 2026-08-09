@@ -4,23 +4,12 @@ export async function getLpoById(id: string) {
   return prisma.lpo.findUnique({
     where: { id },
     include: {
-      createdBy: {
-        select: { id: true, name: true, email: true },
-      },
-      comments: {
-        orderBy: { createdAt: "asc" },
-        include: {
-          createdBy: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-      },
-      dueDateChanges: {
+      createdBy: { select: { id: true, email: true, name: true } },
+      manufacturer: { select: { id: true, name: true } },
+      dateChanges: {
         orderBy: { createdAt: "desc" },
         include: {
-          changedBy: {
-            select: { id: true, name: true, email: true },
-          },
+          changedBy: { select: { email: true, name: true } },
         },
       },
     },
@@ -29,17 +18,10 @@ export async function getLpoById(id: string) {
 
 export async function listRecentLpos(take = 50) {
   return prisma.lpo.findMany({
-    orderBy: { createdAt: "desc" },
     take,
-    select: {
-      id: true,
-      lpoNumber: true,
-      receivedDate: true,
-      reviewDueAt: true,
-      deliveryDueAt: true,
-      originalFileKey: true,
-      originalFileName: true,
-      status: true,
+    orderBy: { createdAt: "desc" },
+    include: {
+      manufacturer: { select: { id: true, name: true } },
     },
   });
 }

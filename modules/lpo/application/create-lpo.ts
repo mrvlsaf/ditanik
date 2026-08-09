@@ -1,23 +1,20 @@
-import { storePdfUpload } from "@/modules/files/application/store-pdf";
-import { fromZonedTime } from "date-fns-tz";
+import { LpoStatus } from "@prisma/client";
 
-import { BUSINESS_TIMEZONE } from "@/lib/dates/timezone";
 import { prisma } from "@/lib/db";
+import { storePdfUpload } from "@/modules/files/application/store-pdf";
 import {
-  calculateDueAtFromReceivedDate,
+  defaultLpoDatesFromReceived,
   isReceivedDateAllowed,
+  parseCalendarDateInput,
 } from "@/modules/lpo/domain/due-dates";
+import { initialStatusAfterCreate } from "@/modules/lpo/domain/lpo-status";
 import { createLpoFormSchema } from "@/modules/lpo/schemas/create-lpo";
-
-function parseReceivedDateInput(yyyyMmDd: string): Date {
-  return fromZonedTime(`${yyyyMmDd}T12:00:00.000`, BUSINESS_TIMEZONE);
-}
 
 export type CreateLpoInput = {
   lpoNumber: string;
+  nickname: string;
+  clientName: string;
   receivedDate: string;
-  reviewDueDays: number;
-  deliveryDueDays: number;
   file: File;
   createdByUserId: string;
 };
@@ -25,12 +22,12 @@ export type CreateLpoInput = {
 export async function createLpo(input: CreateLpoInput) {
   const values = createLpoFormSchema.parse({
     lpoNumber: input.lpoNumber,
+    nickname: input.nickname,
+    clientName: input.clientName,
     receivedDate: input.receivedDate,
-    reviewDueDays: input.reviewDueDays,
-    deliveryDueDays: input.deliveryDueDays,
   });
 
-  const receivedDate = parseReceivedDateInput(values.receivedDate);
+  const receivedDate = parseCalendarDateInput(values.receivedDate);
   if (!isReceivedDateAllowed(receivedDate)) {
     throw new Error("Received date cannot be in the future.");
   }
@@ -43,28 +40,32 @@ export async function createLpo(input: CreateLpoInput) {
   }
 
   const storedFile = await storePdfUpload(input.file, "lpo-originals");
-  const reviewDueAt = calculateDueAtFromReceivedDate(
-    receivedDate,
-    values.reviewDueDays,
-  );
-  const deliveryDueAt = calculateDueAtFromReceivedDate(
-    receivedDate,
-    values.deliveryDueDays,
-  );
+  const dates = defaultLpoDatesFromReceived(receivedDate);
+  const status = initialStatusAfterCreate();
 
   return prisma.$transaction(async (tx) => {
     const created = await tx.lpo.create({
       data: {
         lpoNumber: values.lpoNumber,
+        nickname: values.nickname,
+        clientName: values.clientName,
+        // Stored for schema compatibility; business dates use receivedDate only.
+        lpoDate: receivedDate,
         receivedDate,
         originalFileKey: storedFile.fileKey,
         originalFileName: storedFile.fileName,
         originalMimeType: storedFile.mimeType,
-        reviewDueAt,
-        deliveryDueAt,
-        status: "PENDING",
+        status: LpoStatus.LPO_RECEIVED,
+        manufacturerAssignmentAt: dates.manufacturerAssignmentAt,
+        productionDeadlineAt: dates.productionDeadlineAt,
+        clientDeliveryAt: dates.clientDeliveryAt,
         createdById: input.createdByUserId,
       },
+    });
+
+    const underReview = await tx.lpo.update({
+      where: { id: created.id },
+      data: { status },
     });
 
     await tx.auditLog.create({
@@ -75,12 +76,15 @@ export async function createLpo(input: CreateLpoInput) {
         actorId: input.createdByUserId,
         payload: {
           lpoNumber: created.lpoNumber,
-          reviewDueAt: created.reviewDueAt.toISOString(),
-          deliveryDueAt: created.deliveryDueAt.toISOString(),
+          nickname: created.nickname,
+          statusAfterCreate: status,
+          manufacturerAssignmentAt: dates.manufacturerAssignmentAt.toISOString(),
+          productionDeadlineAt: dates.productionDeadlineAt.toISOString(),
+          clientDeliveryAt: dates.clientDeliveryAt.toISOString(),
         },
       },
     });
 
-    return created;
+    return underReview;
   });
 }

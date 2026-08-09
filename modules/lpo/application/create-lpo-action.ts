@@ -5,10 +5,6 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createLpo } from "@/modules/lpo/application/create-lpo";
-import {
-  DEFAULT_DELIVERY_DUE_DAYS,
-  DEFAULT_REVIEW_DUE_DAYS,
-} from "@/modules/lpo/domain/due-dates";
 
 export type CreateLpoActionState = {
   ok: boolean;
@@ -41,18 +37,15 @@ export async function createLpoAction(
 
   const fileValue = formData.get("file");
   if (!(fileValue instanceof File) || fileValue.size === 0) {
-    return { ok: false, message: "LPO file is required." };
+    return { ok: false, message: "LPO document PDF is required." };
   }
-
-  const reviewDueDaysRaw = formData.get("reviewDueDays");
-  const deliveryDueDaysRaw = formData.get("deliveryDueDays");
 
   try {
     await createLpo({
       lpoNumber: readFormString(formData, "lpoNumber"),
+      nickname: readFormString(formData, "nickname"),
+      clientName: readFormString(formData, "clientName"),
       receivedDate: readFormString(formData, "receivedDate"),
-      reviewDueDays: Number(reviewDueDaysRaw ?? DEFAULT_REVIEW_DUE_DAYS),
-      deliveryDueDays: Number(deliveryDueDaysRaw ?? DEFAULT_DELIVERY_DUE_DAYS),
       file: fileValue,
       createdByUserId: dbUser.id,
     });
