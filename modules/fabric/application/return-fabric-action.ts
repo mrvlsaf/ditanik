@@ -30,12 +30,14 @@ export async function returnFabricAction(
       manufacturerId: readFormString(formData, "manufacturerId"),
       quantityMeters: Number(readFormString(formData, "quantityMeters")),
       occurredAt: readFormString(formData, "occurredAt"),
+      lpoId: readFormString(formData, "lpoId") || undefined,
       note: readFormString(formData, "note") || undefined,
       createdByUserId: session.user.id,
     });
 
     revalidatePath("/fabric");
     revalidatePath("/manufacturers");
+    revalidatePath(`/manufacturers/${readFormString(formData, "manufacturerId")}`);
     return { ok: true, message: "Fabric returned to stock." };
   } catch (error: unknown) {
     const message =

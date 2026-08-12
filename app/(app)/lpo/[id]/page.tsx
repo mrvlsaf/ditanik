@@ -71,13 +71,14 @@ export default async function LpoDetailPage({
           fileKey={lpo.originalFileKey}
           fileName={lpo.originalFileName}
           redirectTo="/lpo"
+          includeDocumentActions={false}
         />
       </div>
 
       <LpoDeepLinkFocus action={action} />
 
       <div className="space-y-8">
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">
+        <section className="surface-card p-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <LpoStatusBadge status={lpo.status} />
             <p className="text-sm text-zinc-500">

@@ -52,7 +52,7 @@ async function FabricStockAndActions() {
             No fabric batches yet.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+          <div className="overflow-x-auto surface-card">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
                 <tr>
@@ -115,6 +115,7 @@ async function FabricStockAndActions() {
           <ReturnFabricForm
             batches={batchOptions}
             manufacturers={manufacturerOptions}
+            lpos={lpoOptions}
           />
         </div>
       </section>
@@ -128,7 +129,7 @@ async function FabricStockAndActions() {
             No movements yet.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+          <div className="overflow-x-auto surface-card">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
                 <tr>

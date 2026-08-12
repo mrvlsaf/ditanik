@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { DocumentViewer } from "@/components/documents/DocumentViewer";
-import { ActionsMenu, type ActionsMenuItem } from "@/components/ui/ActionsMenu";
 
 type DocumentActionsProps = Readonly<{
   fileKey: string;
@@ -18,28 +17,24 @@ function fileUrl(fileKey: string, download = false): string {
   return `/api/files?${params.toString()}`;
 }
 
-/** View + Download in a three-dot menu for a stored PDF. */
+/** Explicit View + Download buttons for a stored PDF. */
 export function DocumentActions({ fileKey, fileName }: DocumentActionsProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
-  const items: ActionsMenuItem[] = [
-    {
-      kind: "button",
-      id: "view",
-      label: "View",
-      onSelect: () => setIsViewerOpen(true),
-    },
-    {
-      kind: "link",
-      id: "download",
-      label: "Download",
-      href: fileUrl(fileKey, true),
-    },
-  ];
-
   return (
     <>
-      <ActionsMenu items={items} label={`Document actions for ${fileName}`} />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => setIsViewerOpen(true)}
+        >
+          View
+        </button>
+        <a href={fileUrl(fileKey, true)} className="btn-secondary">
+          Download
+        </a>
+      </div>
       {isViewerOpen ? (
         <DocumentViewer
           fileUrl={fileUrl(fileKey)}

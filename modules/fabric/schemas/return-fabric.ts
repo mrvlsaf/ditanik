@@ -7,6 +7,8 @@ export const returnFabricSchema = z.object({
   occurredAt: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  /** When set, return is attributed to that LPO bucket; empty = standalone. */
+  lpoId: z.string().trim().optional(),
   note: z.string().trim().optional(),
 });
 

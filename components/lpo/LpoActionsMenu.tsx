@@ -21,12 +21,15 @@ export function LpoActionsMenu({
   fileKey,
   fileName,
   redirectTo,
+  includeDocumentActions = true,
 }: Readonly<{
   lpoId: string;
   lpoNumber: string;
   fileKey: string;
   fileName: string;
   redirectTo?: string;
+  /** When false, only Delete stays in the ⋮ menu (detail page shows View/Download inline). */
+  includeDocumentActions?: boolean;
 }>) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { requestDelete, isPending, dialog } = useConfirmDelete({
@@ -37,34 +40,39 @@ export function LpoActionsMenu({
     redirectTo,
   });
 
-  const items: ActionsMenuItem[] = [
-    {
-      kind: "button",
-      id: "view",
-      label: "View",
-      onSelect: () => setIsViewerOpen(true),
-    },
-    {
-      kind: "link",
-      id: "download",
-      label: "Download",
-      href: fileUrl(fileKey, true),
-    },
-    {
-      kind: "button",
-      id: "delete",
-      label: "Delete",
-      tone: "danger",
-      disabled: isPending,
-      onSelect: requestDelete,
-    },
-  ];
+  const items: ActionsMenuItem[] = [];
+
+  if (includeDocumentActions) {
+    items.push(
+      {
+        kind: "button",
+        id: "view",
+        label: "View",
+        onSelect: () => setIsViewerOpen(true),
+      },
+      {
+        kind: "link",
+        id: "download",
+        label: "Download",
+        href: fileUrl(fileKey, true),
+      },
+    );
+  }
+
+  items.push({
+    kind: "button",
+    id: "delete",
+    label: "Delete",
+    tone: "danger",
+    disabled: isPending,
+    onSelect: requestDelete,
+  });
 
   return (
     <>
       <ActionsMenu items={items} label={`Actions for LPO ${lpoNumber}`} />
       {dialog}
-      {isViewerOpen ? (
+      {includeDocumentActions && isViewerOpen ? (
         <DocumentViewer
           fileUrl={fileUrl(fileKey)}
           title={fileName}

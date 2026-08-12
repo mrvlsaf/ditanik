@@ -38,7 +38,7 @@ export function IssueFabricForm({
   return (
     <form
       action={formAction}
-      className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6"
+      className="space-y-4 surface-card p-4 sm:p-6"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
@@ -121,13 +121,17 @@ export function IssueFabricForm({
             defaultValue=""
             className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
           >
-            <option value="">None</option>
+            <option value="">None — additional fabric (not tied to an LPO)</option>
             {lpos.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.lpoNumber} · {l.nickname}
               </option>
             ))}
           </select>
+          <span className="mt-1 block text-xs text-zinc-500">
+            Leave empty to keep this issue as standalone fabric on the
+            manufacturer ledger. Choose an LPO to attribute meters to that job.
+          </span>
         </label>
       </div>
 
@@ -143,7 +147,7 @@ export function IssueFabricForm({
       <button
         type="submit"
         disabled={isPending || batches.length === 0 || manufacturers.length === 0}
-        className="inline-flex min-h-11 items-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+        className="btn-primary min-h-11"
       >
         {isPending ? "Issuing…" : "Issue to manufacturer"}
       </button>

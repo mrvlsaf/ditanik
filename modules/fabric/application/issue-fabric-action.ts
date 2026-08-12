@@ -38,7 +38,8 @@ export async function issueFabricAction(
     revalidatePath("/fabric");
     const manufacturerId = readFormString(formData, "manufacturerId");
     if (manufacturerId) {
-      revalidatePath(`/manufacturers`);
+      revalidatePath("/manufacturers");
+      revalidatePath(`/manufacturers/${manufacturerId}`);
     }
     const lpoId = readFormString(formData, "lpoId");
     if (lpoId) {

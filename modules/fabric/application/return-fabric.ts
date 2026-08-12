@@ -11,6 +11,7 @@ export type ReturnFabricInput = {
   manufacturerId: string;
   quantityMeters: number;
   occurredAt: string;
+  lpoId?: string;
   note?: string;
   createdByUserId: string;
 };
@@ -21,8 +22,11 @@ export async function returnFabric(input: ReturnFabricInput) {
     manufacturerId: input.manufacturerId,
     quantityMeters: input.quantityMeters,
     occurredAt: input.occurredAt,
+    lpoId: input.lpoId,
     note: input.note,
   });
+
+  const lpoId = values.lpoId?.trim() ? values.lpoId.trim() : null;
 
   const batch = await prisma.fabricBatch.findUnique({
     where: { id: values.batchId },
@@ -38,10 +42,21 @@ export async function returnFabric(input: ReturnFabricInput) {
     throw new Error("Manufacturer not found.");
   }
 
+  if (lpoId) {
+    const lpo = await prisma.lpo.findUnique({
+      where: { id: lpoId },
+      select: { id: true },
+    });
+    if (!lpo) {
+      throw new Error("LPO not found.");
+    }
+  }
+
   const manufacturerMovements = await prisma.fabricMovement.findMany({
     where: {
       batchId: values.batchId,
       manufacturerId: values.manufacturerId,
+      lpoId,
     },
     select: { type: true, quantityMeters: true },
   });
@@ -55,8 +70,9 @@ export async function returnFabric(input: ReturnFabricInput) {
 
   const qty = roundMeters(values.quantityMeters);
   if (ledger.expectedBalance + 1e-9 < qty) {
+    const scope = lpoId ? "for this LPO" : "with no LPO";
     throw new Error(
-      `Cannot return ${qty} m; manufacturer expected balance is ${ledger.expectedBalance} m.`,
+      `Cannot return ${qty} m; manufacturer expected balance ${scope} is ${ledger.expectedBalance} m.`,
     );
   }
 
@@ -68,6 +84,7 @@ export async function returnFabric(input: ReturnFabricInput) {
         type: FabricMovementType.RETURNED,
         batchId: values.batchId,
         manufacturerId: values.manufacturerId,
+        lpoId,
         quantityMeters: qty,
         note: values.note?.trim() || null,
         createdById: input.createdByUserId,
@@ -84,6 +101,7 @@ export async function returnFabric(input: ReturnFabricInput) {
         payload: {
           movementId: movement.id,
           manufacturerId: values.manufacturerId,
+          lpoId,
           quantityMeters: qty,
           occurredAt: values.occurredAt,
           note: values.note ?? null,

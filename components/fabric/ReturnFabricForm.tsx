@@ -17,6 +17,7 @@ function todayInputValue(): string {
 export function ReturnFabricForm({
   batches,
   manufacturers,
+  lpos,
 }: Readonly<{
   batches: Array<{
     id: string;
@@ -25,6 +26,7 @@ export function ReturnFabricForm({
     colour: string;
   }>;
   manufacturers: Array<{ id: string; name: string }>;
+  lpos: Array<{ id: string; lpoNumber: string; nickname: string }>;
 }>) {
   const [state, formAction, isPending] = useActionState(
     returnFabricAction,
@@ -35,7 +37,7 @@ export function ReturnFabricForm({
   return (
     <form
       action={formAction}
-      className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6"
+      className="space-y-4 surface-card p-4 sm:p-6"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
@@ -100,6 +102,27 @@ export function ReturnFabricForm({
           />
         </label>
         <label className="block text-sm sm:col-span-2">
+          <span className="mb-1 block font-medium text-zinc-800">
+            Related LPO (optional)
+          </span>
+          <select
+            name="lpoId"
+            defaultValue=""
+            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+          >
+            <option value="">None — return from additional (no LPO) fabric</option>
+            {lpos.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.lpoNumber} · {l.nickname}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-xs text-zinc-500">
+            Pick the same LPO used when the fabric was issued, so that LPO’s
+            balance updates correctly.
+          </span>
+        </label>
+        <label className="block text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-zinc-800">Note</span>
           <input
             name="note"
@@ -120,7 +143,7 @@ export function ReturnFabricForm({
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex min-h-11 items-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+        className="btn-primary min-h-11"
       >
         {isPending ? "Saving…" : "Record return"}
       </button>

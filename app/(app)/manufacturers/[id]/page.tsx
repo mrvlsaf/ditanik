@@ -6,8 +6,51 @@ import { VarianceForm } from "@/components/fabric/VarianceForm";
 import { ManufacturerActionsMenu } from "@/components/manufacturer/ManufacturerActionsMenu";
 import { formatBusinessDateTime } from "@/lib/dates/format";
 import { prisma } from "@/lib/db";
-import { calculateAdditionalFabricRequired } from "@/modules/fabric/domain/meters";
-import { getManufacturerFabricLedger } from "@/modules/fabric/application/manufacturer-ledger";
+import {
+  getManufacturerFabricLedger,
+  type ManufacturerFabricLedgerBatch,
+} from "@/modules/fabric/application/manufacturer-ledger";
+
+function LedgerBatchTable({
+  batches,
+  emptyLabel,
+}: Readonly<{
+  batches: ManufacturerFabricLedgerBatch[];
+  emptyLabel: string;
+}>) {
+  if (batches.length === 0) {
+    return <p className="text-sm text-zinc-500">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-zinc-200 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+          <tr>
+            <th className="px-2 py-2">Fabric</th>
+            <th className="px-2 py-2">Sent</th>
+            <th className="px-2 py-2">Expected used</th>
+            <th className="px-2 py-2">Returned</th>
+            <th className="px-2 py-2">Expected balance</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-100">
+          {batches.map((b) => (
+            <tr key={b.batchId}>
+              <td className="px-2 py-2 text-zinc-900">
+                {b.fabricCode} · {b.fabricType} / {b.colour}
+              </td>
+              <td className="px-2 py-2">{b.sent}m</td>
+              <td className="px-2 py-2">{b.used}m</td>
+              <td className="px-2 py-2">{b.returned}m</td>
+              <td className="px-2 py-2 font-medium">{b.expectedBalance}m</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default async function ManufacturerDetailPage({
   params,
@@ -42,19 +85,14 @@ export default async function ManufacturerDetailPage({
     }),
   ]);
 
-  const totalExpectedBalance = ledger.batches.reduce(
-    (sum, b) => sum + b.expectedBalance,
-    0,
-  );
-  const additionalForOpenRequirements = calculateAdditionalFabricRequired(
-    ledger.totalExpectedFabricRequirement,
-    totalExpectedBalance,
-  );
+  const hasAnyFabric =
+    ledger.lpoSections.some((s) => s.batches.length > 0) ||
+    ledger.standalone.batches.length > 0;
 
   return (
     <PageContainer
       title={manufacturer.name}
-      description="Manufacturer fabric account — sent, expected used, expected balance, and variance."
+      description="Manufacturer fabric account — per LPO and additional fabric issued without an LPO."
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
@@ -72,17 +110,81 @@ export default async function ManufacturerDetailPage({
       </div>
 
       <div className="space-y-8">
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">
-          <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Fabric currently with them
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
+            Fabric by LPO
           </h2>
-          <dl className="mb-4 grid gap-3 sm:grid-cols-3">
+          {ledger.lpoSections.length === 0 ? (
+            <p className="text-sm text-zinc-500">
+              No LPOs assigned to this manufacturer yet.
+            </p>
+          ) : (
+            ledger.lpoSections.map((section) => (
+              <div key={section.lpoId} className="surface-card p-4 sm:p-6">
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-zinc-900">
+                    <Link
+                      href={`/lpo/${section.lpoId}`}
+                      className="hover:underline"
+                    >
+                      LPO {section.lpoNumber}
+                    </Link>
+                    {section.nickname ? (
+                      <span className="font-normal text-zinc-600">
+                        {" "}
+                        · {section.nickname}
+                      </span>
+                    ) : null}
+                  </h3>
+                </div>
+                <dl className="mb-4 grid gap-3 sm:grid-cols-3">
+                  <div>
+                    <dt className="text-xs text-zinc-500 uppercase">
+                      LPO expected fabric
+                    </dt>
+                    <dd className="text-sm font-medium text-zinc-900">
+                      {section.expectedFabricRequirement}m
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-zinc-500 uppercase">
+                      Expected balance on hand
+                    </dt>
+                    <dd className="text-sm font-medium text-zinc-900">
+                      {section.totalExpectedBalance}m
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-zinc-500 uppercase">
+                      Additional fabric required
+                    </dt>
+                    <dd className="text-sm font-medium text-zinc-900">
+                      {section.additionalFabricRequired}m
+                    </dd>
+                  </div>
+                </dl>
+                <LedgerBatchTable
+                  batches={section.batches}
+                  emptyLabel="No fabric issued against this LPO yet."
+                />
+              </div>
+            ))
+          )}
+        </section>
+
+        <section className="surface-card p-4 sm:p-6">
+          <h2 className="mb-1 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
+            Additional fabric (no LPO)
+          </h2>
+          <p className="mb-4 text-sm text-zinc-600">
+            Fabric issued to this manufacturer without linking an LPO. It is not
+            counted toward any LPO expected balance.
+          </p>
+          <dl className="mb-4 grid gap-3 sm:grid-cols-2">
             <div>
-              <dt className="text-xs text-zinc-500 uppercase">
-                LPO expected fabric
-              </dt>
+              <dt className="text-xs text-zinc-500 uppercase">Sent</dt>
               <dd className="text-sm font-medium text-zinc-900">
-                {ledger.totalExpectedFabricRequirement}m
+                {ledger.standalone.totalSent}m
               </dd>
             </div>
             <div>
@@ -90,51 +192,18 @@ export default async function ManufacturerDetailPage({
                 Expected balance on hand
               </dt>
               <dd className="text-sm font-medium text-zinc-900">
-                {totalExpectedBalance}m
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-zinc-500 uppercase">
-                Additional fabric required
-              </dt>
-              <dd className="text-sm font-medium text-zinc-900">
-                {additionalForOpenRequirements}m
+                {ledger.standalone.totalExpectedBalance}m
               </dd>
             </div>
           </dl>
-
-          {ledger.batches.length === 0 ? (
-            <p className="text-sm text-zinc-500">
-              No fabric issued to this manufacturer yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-zinc-200 text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  <tr>
-                    <th className="px-2 py-2">Fabric</th>
-                    <th className="px-2 py-2">Received</th>
-                    <th className="px-2 py-2">Expected used</th>
-                    <th className="px-2 py-2">Returned</th>
-                    <th className="px-2 py-2">Expected balance</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {ledger.batches.map((b) => (
-                    <tr key={b.batchId}>
-                      <td className="px-2 py-2 text-zinc-900">
-                        {b.fabricCode} · {b.fabricType} / {b.colour}
-                      </td>
-                      <td className="px-2 py-2">{b.sent}m</td>
-                      <td className="px-2 py-2">{b.used}m</td>
-                      <td className="px-2 py-2">{b.returned}m</td>
-                      <td className="px-2 py-2 font-medium">{b.expectedBalance}m</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <LedgerBatchTable
+            batches={ledger.standalone.batches}
+            emptyLabel={
+              hasAnyFabric
+                ? "No standalone (no-LPO) fabric for this manufacturer."
+                : "No fabric issued to this manufacturer yet."
+            }
+          />
         </section>
 
         <VarianceForm
@@ -154,7 +223,7 @@ export default async function ManufacturerDetailPage({
           {variances.length === 0 ? (
             <p className="text-sm text-zinc-500">No variance records yet.</p>
           ) : (
-            <ul className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 bg-white">
+            <ul className="divide-y divide-zinc-200 overflow-hidden surface-card">
               {variances.map((v) => (
                 <li key={v.id} className="px-4 py-3 text-sm">
                   <p className="font-medium text-zinc-900">
@@ -165,9 +234,7 @@ export default async function ManufacturerDetailPage({
                   </p>
                   <p className="text-zinc-600">
                     {v.reason.replace(/_/g, " ")}
-                    {v.batch
-                      ? ` · ${v.batch.fabricCode}`
-                      : ""}
+                    {v.batch ? ` · ${v.batch.fabricCode}` : ""}
                     {v.lpo ? ` · LPO ${v.lpo.lpoNumber}` : ""}
                   </p>
                   <p className="text-xs text-zinc-500">
