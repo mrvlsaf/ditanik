@@ -176,7 +176,7 @@ export function ActionsMenu({
               minWidth: MENU_MIN_WIDTH,
               zIndex: 80,
             }}
-            className="flex flex-col rounded-md border border-zinc-200 bg-white py-1 shadow-lg"
+            className="flex flex-col rounded-md border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg"
           >
             {items.map((item) => {
               if (item.kind === "link") {
@@ -185,7 +185,7 @@ export function ActionsMenu({
                     key={item.id}
                     href={item.href}
                     role="menuitem"
-                    className={`${itemClass} text-zinc-800 hover:bg-zinc-50`}
+                    className={`${itemClass} text-[var(--foreground)] hover:bg-[var(--surface-muted)]`}
                     onClick={() => setOpen(false)}
                   >
                     {item.label}
@@ -195,8 +195,8 @@ export function ActionsMenu({
 
               const toneClass =
                 item.tone === "danger"
-                  ? "text-red-700 hover:bg-red-50"
-                  : "text-zinc-800 hover:bg-zinc-50";
+                  ? "text-[var(--danger)] hover:bg-[var(--danger-muted)]"
+                  : "text-[var(--foreground)] hover:bg-[var(--surface-muted)]";
 
               return (
                 <button
@@ -235,7 +235,7 @@ export function ActionsMenu({
           }
           openMenu();
         }}
-        className="inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+        className="inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
       >
         <KebabIcon />
       </button>

@@ -42,9 +42,18 @@ enum FabricVarianceReason {
   OTHER
 }
 
-enum DeadlineEmailType {
+enum NotificationType {
+  REVIEW_PENDING
+  ASSIGNMENT_OVERDUE
   PRODUCTION_OVERDUE
   CLIENT_DELIVERY_OVERDUE
+}
+
+enum NotificationEmailStatus {
+  PENDING
+  SENT
+  DRY_RUN
+  FAILED
 }
 
 model User {
@@ -114,7 +123,7 @@ model Lpo {
   fabricRequirements LpoFabricRequirement[]
   movements      FabricMovement[]
   variances      FabricVariance[]
-  emailNotifications EmailNotification[]
+  notifications  Notification[]
 
   @@index([status])
   @@index([manufacturerAssignmentAt])
@@ -276,18 +285,27 @@ model FabricVariance {
   @@map("fabric_variances")
 }
 
-model EmailNotification {
-  id        String            @id @default(cuid())
-  lpoId     String            @map("lpo_id")
-  type      DeadlineEmailType
-  dueAt     DateTime          @map("due_at")
-  recipient String
-  dryRun    Boolean           @default(false) @map("dry_run")
-  createdAt DateTime          @default(now()) @map("created_at")
+model Notification {
+  id           String                   @id @default(cuid())
+  type         NotificationType
+  lpoId        String                   @map("lpo_id")
+  dueAt        DateTime?                @map("due_at")
+  businessDay  DateTime?                @map("business_day") @db.Date
+  /// Stable unique key for idempotency (overdue: id+type+dueAt ISO; pending: id+type+YYYY-MM-DD).
+  dedupeKey    String                   @unique @map("dedupe_key")
+  title        String
+  body         String
+  actionPath   String                   @map("action_path")
+  emailStatus  NotificationEmailStatus  @default(PENDING) @map("email_status")
+  emailSentAt  DateTime?                @map("email_sent_at")
+  readAt       DateTime?                @map("read_at")
+  recipient    String
+  createdAt    DateTime                 @default(now()) @map("created_at")
 
   lpo Lpo @relation(fields: [lpoId], references: [id], onDelete: Cascade)
 
-  @@unique([lpoId, type, dueAt])
-  @@index([createdAt])
-  @@map("email_notifications")
+  @@index([readAt, createdAt])
+  @@index([type, createdAt])
+  @@index([lpoId, createdAt])
+  @@map("notifications")
 }

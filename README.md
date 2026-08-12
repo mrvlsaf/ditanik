@@ -6,7 +6,8 @@ Internal admin app for **LPO management**, **fabric inventory**, **manufacturer 
 
 **Phases 0–5 complete** — greenfield LPO + Fabric product with deadline email cron and GitHub Actions CI.
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for product rules.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for product rules.  
+See [docs/QA.md](docs/QA.md) for the end-to-end manual test plan.
 
 ## Breaking change note
 
@@ -69,6 +70,8 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3001/api/cron/over
 | `/invoices` | Supplier invoices (filter by supplier/month) |
 | `/manufacturers` | Registry + fabric ledger per manufacturer |
 | `/consumption` | Garment meters table |
+| `/notifications` | Due reminders inbox |
+| `/help` | In-app knowledge base & user flows |
 
 ## Deploy checklist
 

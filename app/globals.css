@@ -1,13 +1,42 @@
 @import "tailwindcss";
 
+/* Panda theme — charcoal + soft white, bamboo green brand, rose danger */
 :root {
-  --background: #fafafa;
-  --foreground: #171717;
+  --background: #f3f4f2;
+  --foreground: #1a1a1a;
+  --brand: #3f6b4a;
+  --brand-hover: #345a3e;
+  --brand-muted: #e4efe6;
+  --brand-foreground: #ffffff;
+  --danger: #e11d48;
+  --danger-hover: #be123c;
+  --danger-muted: #ffe4e6;
+  --danger-foreground: #ffffff;
+  --surface: #ffffff;
+  --surface-muted: #f7f7f5;
+  --border: #d8dbd4;
+  --text-muted: #5c635c;
+  --sidebar-bg: #141414;
+  --sidebar-fg: #f4f4f4;
+  --sidebar-muted: #9a9a9a;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active: #7eb089;
+  --header-bg: rgba(255, 255, 255, 0.9);
+  --ring: rgba(63, 107, 74, 0.35);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-muted: var(--brand-muted);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-muted: var(--danger-muted);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -21,4 +50,128 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Shared UI primitives — keep pages tidy, theme-aware */
+@layer components {
+  .btn-primary {
+    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md px-4 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    background: var(--brand);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--brand-hover);
+  }
+
+  .btn-danger {
+    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md px-4 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    background: var(--danger);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--danger-hover);
+  }
+
+  .btn-danger-outline {
+    @apply inline-flex min-h-9 cursor-pointer items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    border-color: color-mix(in srgb, var(--danger) 35%, white);
+    color: var(--danger);
+    background: transparent;
+  }
+  .btn-danger-outline:hover:not(:disabled) {
+    background: var(--danger-muted);
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md border px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    border-color: var(--border);
+    color: var(--foreground);
+    background: var(--surface);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--surface-muted);
+  }
+
+  .btn-ghost {
+    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    color: var(--text-muted);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--surface-muted);
+    color: var(--foreground);
+  }
+
+  .file-btn {
+    @apply block w-full text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white;
+    color: var(--text-muted);
+  }
+  .file-btn::file-selector-button {
+    background: var(--brand);
+  }
+
+  .surface-card {
+    @apply rounded-lg border;
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  .app-canvas {
+    background-color: var(--background);
+    background-image:
+      /* Soft “ear patch” charcoal blooms + bamboo wash */
+      radial-gradient(520px 320px at -4% -8%, rgba(20, 20, 20, 0.07), transparent 60%),
+      radial-gradient(480px 300px at 104% -4%, rgba(20, 20, 20, 0.06), transparent 58%),
+      radial-gradient(700px 380px at 50% 120%, rgba(63, 107, 74, 0.08), transparent 55%),
+      linear-gradient(to right, rgba(63, 107, 74, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(63, 107, 74, 0.045) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      auto,
+      56px 56px,
+      56px 56px;
+  }
+
+  .app-header {
+    border-bottom: 1px solid var(--border);
+    background: var(--header-bg);
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 -2px 0 0 color-mix(in srgb, var(--brand) 55%, transparent);
+  }
+
+  .app-sidebar {
+    background: var(--sidebar-bg);
+    color: var(--sidebar-fg);
+  }
+
+  .nav-link {
+    @apply rounded-md px-3 py-2.5 text-sm font-medium transition-colors;
+    color: var(--sidebar-muted);
+  }
+  .nav-link:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-fg);
+  }
+  .nav-link-active {
+    background: color-mix(in srgb, var(--sidebar-active) 22%, transparent);
+    color: #fff;
+    box-shadow: inset 3px 0 0 0 var(--sidebar-active);
+  }
+  .nav-link-pending {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-fg);
+  }
+
+  /* Soft focus for form controls */
+  input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+  input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+    border-color: var(--brand);
+  }
 }

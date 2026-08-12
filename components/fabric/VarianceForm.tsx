@@ -35,7 +35,7 @@ export function VarianceForm({
   return (
     <form
       action={formAction}
-      className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6"
+      className="space-y-3 surface-card p-4 sm:p-6"
     >
       <input type="hidden" name="manufacturerId" value={manufacturerId} />
       <h3 className="text-sm font-medium text-zinc-800">Record variance</h3>
@@ -124,7 +124,7 @@ export function VarianceForm({
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex min-h-10 items-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+        className="btn-primary"
       >
         {isPending ? "Saving…" : "Save variance"}
       </button>

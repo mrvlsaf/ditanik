@@ -20,7 +20,7 @@ async function ManufacturerDirectory() {
   }
 
   return (
-    <ul className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 bg-white">
+    <ul className="divide-y divide-zinc-200 overflow-hidden surface-card">
       {manufacturers.map((m) => (
         <li
           key={m.id}

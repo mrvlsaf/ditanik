@@ -55,7 +55,10 @@ export function LpoAssignmentPanel({
   const [isCompleting, startComplete] = useTransition();
 
   return (
-    <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">
+    <section
+      id="lpo-assign"
+      className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6"
+    >
       <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
         Manufacturer assignment
       </h2>
@@ -142,7 +145,7 @@ export function LpoAssignmentPanel({
               name="productionFile"
               accept="application/pdf,.pdf"
               required
-              className="block w-full text-sm text-zinc-700 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+              className="file-btn"
             />
           </label>
 
@@ -158,7 +161,7 @@ export function LpoAssignmentPanel({
           <button
             type="submit"
             disabled={assignPending}
-            className="inline-flex min-h-10 items-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+            className="btn-primary"
           >
             {assignPending ? "Assigning…" : "Assign manufacturer"}
           </button>
@@ -166,7 +169,10 @@ export function LpoAssignmentPanel({
       ) : null}
 
       {showComplete ? (
-        <div className="border-t border-zinc-100 pt-4">
+        <div
+          id="lpo-complete"
+          className="scroll-mt-4 border-t border-zinc-100 pt-4"
+        >
           {completeMessage ? (
             <p className="mb-2 text-sm text-red-700" role="status">
               {completeMessage}
@@ -183,7 +189,7 @@ export function LpoAssignmentPanel({
                 }
               });
             }}
-            className="inline-flex min-h-10 items-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+            className="btn-secondary"
           >
             {isCompleting ? "Saving…" : "Mark client delivery completed"}
           </button>

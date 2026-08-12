@@ -57,9 +57,7 @@ export function ConfirmDialog({
   }
 
   const confirmClass =
-    tone === "danger"
-      ? "bg-red-600 text-white hover:bg-red-700"
-      : "bg-zinc-900 text-white hover:bg-zinc-800";
+    tone === "danger" ? "btn-danger" : "btn-primary";
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -79,7 +77,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="relative z-10 w-full max-w-md rounded-lg border border-zinc-200 bg-white p-5 shadow-xl"
+        className="relative z-10 w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-xl"
       >
         <h2
           id={titleId}
@@ -101,7 +99,7 @@ export function ConfirmDialog({
             type="button"
             disabled={isPending}
             onClick={onCancel}
-            className="inline-flex min-h-10 items-center rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+            className="btn-secondary"
           >
             {cancelLabel}
           </button>
@@ -109,7 +107,7 @@ export function ConfirmDialog({
             type="button"
             disabled={isPending}
             onClick={onConfirm}
-            className={`inline-flex min-h-10 items-center rounded-md px-4 text-sm font-medium disabled:opacity-60 ${confirmClass}`}
+            className={`${confirmClass} disabled:opacity-60`}
           >
             {isPending ? "Working…" : confirmLabel}
           </button>

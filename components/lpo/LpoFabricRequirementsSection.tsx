@@ -35,7 +35,7 @@ export function LpoFabricRequirementsSection({
   );
 
   return (
-    <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">
+    <section className="space-y-4 surface-card p-4 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
           Expected fabric requirement
@@ -65,7 +65,7 @@ export function LpoFabricRequirementsSection({
                     await deleteLpoFabricRequirementAction(row.id, lpoId);
                   });
                 }}
-                className="text-xs text-red-700 hover:underline"
+                className="btn-danger-outline text-xs"
               >
                 Remove
               </button>
@@ -120,7 +120,7 @@ export function LpoFabricRequirementsSection({
         <button
           type="submit"
           disabled={isPending || rates.length === 0}
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 sm:col-span-3 sm:w-fit"
+          className="btn-primary min-h-11 sm:col-span-3 sm:w-fit"
         >
           {isPending ? "Adding…" : "Add requirement"}
         </button>

@@ -16,13 +16,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Ditanik",
   description: "LPO, fabric inventory, and invoice management",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon", type: "image/png" }],
+  },
 };
 
 /** Correct scaling on phones/tablets. */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fafafa",
+  themeColor: "#3f6b4a",
 };
 
 export default function RootLayout({

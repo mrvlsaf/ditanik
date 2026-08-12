@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { processDeadlineEmails } from "@/modules/notification/application/process-deadline-emails";
+import { processDueNotifications } from "@/modules/notification/application/process-due-notifications";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -11,11 +11,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await processDeadlineEmails();
+    const result = await processDueNotifications();
     return NextResponse.json({ ok: true, ...result });
   } catch (error: unknown) {
     const message =
-      error instanceof Error ? error.message : "Deadline email job failed.";
+      error instanceof Error ? error.message : "Notification job failed.";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

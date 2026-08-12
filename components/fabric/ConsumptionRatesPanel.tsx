@@ -25,7 +25,7 @@ export function ConsumptionRatesPanel({
     <div className="space-y-6">
       <form
         action={formAction}
-        className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-3 sm:items-end sm:p-6"
+        className="grid gap-3 surface-card p-4 sm:grid-cols-3 sm:items-end sm:p-6"
       >
         <label className="block text-sm sm:col-span-1">
           <span className="mb-1 block font-medium text-zinc-800">Garment</span>
@@ -53,7 +53,7 @@ export function ConsumptionRatesPanel({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+          className="btn-primary min-h-11"
         >
           {isPending ? "Saving…" : "Add rate"}
         </button>
@@ -72,7 +72,7 @@ export function ConsumptionRatesPanel({
           No consumption rates yet. Add Chef Jacket, Pant, Shirt, etc.
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200 bg-white">
+        <ul className="divide-y divide-zinc-200 overflow-hidden surface-card">
           {rates.map((rate) => (
             <li
               key={rate.id}
@@ -92,7 +92,7 @@ export function ConsumptionRatesPanel({
                     await deactivateConsumptionRateAction(rate.id);
                   });
                 }}
-                className="text-sm text-red-700 hover:underline disabled:opacity-60"
+                className="btn-danger-outline text-xs"
               >
                 Deactivate
               </button>

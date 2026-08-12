@@ -22,11 +22,7 @@ export function AppErrorFallback({
           : "An unexpected error occurred. You can try again, or reload the page."}
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex min-h-10 items-center justify-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800"
-        >
+        <button type="button" onClick={reset} className="btn-primary">
           Try again
         </button>
         <button

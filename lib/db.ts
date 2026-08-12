@@ -7,10 +7,32 @@ import {
 
 const MAX_CONNECT_ATTEMPTS = 3;
 
+/** Shared options for interactive transactions over Neon (higher latency). */
+export const DB_TRANSACTION_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 20_000,
+} as const;
+
 function sleep(ms: number) {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function isInteractiveTransactionError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const message =
+    "message" in error && typeof error.message === "string"
+      ? error.message
+      : "";
+  return (
+    message.includes("Transaction not found") ||
+    message.includes("Transaction API error") ||
+    message.includes("Transaction already closed") ||
+    message.includes("response from the engine was empty")
+  );
 }
 
 function createPrismaClient() {
@@ -27,6 +49,12 @@ function createPrismaClient() {
               return await query(args);
             } catch (error) {
               lastError = error;
+
+              // Never reconnect+retry mid interactive transaction — that produces
+              // "Transaction not found" after Neon drops the session.
+              if (isInteractiveTransactionError(error)) {
+                break;
+              }
 
               if (
                 !isDbUnreachableError(error) ||

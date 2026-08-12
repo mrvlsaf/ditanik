@@ -37,7 +37,7 @@ async function InvoicesContent({
     <div className="space-y-6">
       <form
         method="get"
-        className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-4"
+        className="grid gap-3 surface-card p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-4"
       >
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-zinc-800">Supplier</span>
@@ -72,9 +72,7 @@ async function InvoicesContent({
         </label>
 
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Invoice ref
-          </span>
+          <span className="mb-1 block font-medium text-zinc-800">Invoice ref</span>
           <input
             name="q"
             defaultValue={q ?? ""}
@@ -84,10 +82,7 @@ async function InvoicesContent({
         </label>
 
         <div className="flex flex-wrap items-end gap-2">
-          <button
-            type="submit"
-            className="inline-flex min-h-11 items-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800"
-          >
+          <button type="submit" className="btn-primary min-h-11">
             Apply filters
           </button>
           {hasFilters ? (
@@ -108,7 +103,7 @@ async function InvoicesContent({
             : "No supplier invoices yet. Receive fabric with an invoice PDF on the Fabric page."}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+        <div className="overflow-x-auto surface-card">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
               <tr>
@@ -129,9 +124,7 @@ async function InvoicesContent({
                   <td className="px-3 py-3 font-medium text-zinc-900">
                     {invoice.supplierName}
                   </td>
-                  <td className="px-3 py-3 text-zinc-700">
-                    {invoice.invoiceRef}
-                  </td>
+                  <td className="px-3 py-3 text-zinc-700">{invoice.invoiceRef}</td>
                   <td className="px-3 py-3 text-zinc-700">{invoice.month}</td>
                   <td className="px-3 py-3 text-zinc-700">
                     <p className="font-medium text-zinc-900">
@@ -141,8 +134,8 @@ async function InvoicesContent({
                     <ul className="mt-1 space-y-0.5 text-xs text-zinc-500">
                       {invoice.batches.slice(0, 3).map((batch) => (
                         <li key={batch.id}>
-                          {batch.fabricCode}: {batch.fabricType} /{" "}
-                          {batch.colour} ({batch.qtyReceived}m)
+                          {batch.fabricCode}: {batch.fabricType} / {batch.colour} (
+                          {batch.qtyReceived}m)
                         </li>
                       ))}
                       {invoice.batches.length > 3 ? (

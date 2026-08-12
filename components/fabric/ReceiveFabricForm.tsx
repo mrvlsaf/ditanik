@@ -32,9 +32,7 @@ export function ReceiveFabricForm() {
     ): Promise<ReceiveFabricActionState> => {
       const result = await receiveFabricAction(previous, formData);
       if (result.ok) {
-        setBatches([
-          { fabricType: "", colour: "", remarks: "", qtyReceived: "" },
-        ]);
+        setBatches([{ fabricType: "", colour: "", remarks: "", qtyReceived: "" }]);
       }
       return result;
     },
@@ -51,11 +49,7 @@ export function ReceiveFabricForm() {
   const today = todayInputValue();
 
   return (
-    <form
-      ref={formRef}
-      action={formAction}
-      className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6"
-    >
+    <form ref={formRef} action={formAction} className="space-y-4 surface-card p-4 sm:p-6">
       <input
         type="hidden"
         name="batchesJson"
@@ -89,9 +83,7 @@ export function ReceiveFabricForm() {
           />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Date received
-          </span>
+          <span className="mb-1 block font-medium text-zinc-800">Date received</span>
           <input
             type="date"
             name="receivedDate"
@@ -110,7 +102,7 @@ export function ReceiveFabricForm() {
             name="invoiceFile"
             accept="application/pdf,.pdf"
             required
-            className="block w-full text-sm text-zinc-700 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+            className="file-btn"
           />
         </label>
       </div>
@@ -146,9 +138,7 @@ export function ReceiveFabricForm() {
                 onChange={(e) => {
                   const value = e.target.value;
                   setBatches((rows) =>
-                    rows.map((r, i) =>
-                      i === index ? { ...r, fabricType: value } : r,
-                    ),
+                    rows.map((r, i) => (i === index ? { ...r, fabricType: value } : r)),
                   );
                 }}
                 className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
@@ -162,9 +152,7 @@ export function ReceiveFabricForm() {
                 onChange={(e) => {
                   const value = e.target.value;
                   setBatches((rows) =>
-                    rows.map((r, i) =>
-                      i === index ? { ...r, colour: value } : r,
-                    ),
+                    rows.map((r, i) => (i === index ? { ...r, colour: value } : r)),
                   );
                 }}
                 className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
@@ -181,9 +169,7 @@ export function ReceiveFabricForm() {
                 onChange={(e) => {
                   const value = e.target.value;
                   setBatches((rows) =>
-                    rows.map((r, i) =>
-                      i === index ? { ...r, qtyReceived: value } : r,
-                    ),
+                    rows.map((r, i) => (i === index ? { ...r, qtyReceived: value } : r)),
                   );
                 }}
                 className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
@@ -197,9 +183,7 @@ export function ReceiveFabricForm() {
                   onChange={(e) => {
                     const value = e.target.value;
                     setBatches((rows) =>
-                      rows.map((r, i) =>
-                        i === index ? { ...r, remarks: value } : r,
-                      ),
+                      rows.map((r, i) => (i === index ? { ...r, remarks: value } : r)),
                     );
                   }}
                   className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
@@ -210,7 +194,7 @@ export function ReceiveFabricForm() {
                     onClick={() =>
                       setBatches((rows) => rows.filter((_, i) => i !== index))
                     }
-                    className="shrink-0 text-xs text-red-700"
+                    className="btn-danger-outline shrink-0 text-xs"
                   >
                     Remove
                   </button>
@@ -230,11 +214,7 @@ export function ReceiveFabricForm() {
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={isPending}
-        className="inline-flex min-h-11 items-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-      >
+      <button type="submit" disabled={isPending} className="btn-primary min-h-11">
         {isPending ? "Saving…" : "Receive fabric"}
       </button>
     </form>

@@ -54,7 +54,10 @@ export function LpoDatesSection({
   );
 
   return (
-    <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">
+    <section
+      id="lpo-dates"
+      className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6"
+    >
       <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
         Dates
       </h2>
@@ -137,7 +140,7 @@ export function LpoDatesSection({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex min-h-10 items-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+          className="btn-primary"
         >
           {isPending ? "Saving…" : "Save date change"}
         </button>

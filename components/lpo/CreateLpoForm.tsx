@@ -39,7 +39,7 @@ export function CreateLpoForm() {
     <form
       ref={formRef}
       action={formAction}
-      className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 sm:p-6"
+      className="space-y-4 surface-card p-4 sm:p-6"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm">
@@ -95,7 +95,7 @@ export function CreateLpoForm() {
             name="file"
             accept="application/pdf,.pdf"
             required
-            className="block w-full text-sm text-zinc-700 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+            className="file-btn"
           />
           <span className="mt-1 block text-xs text-zinc-500">
             PDF only (max 25MB). Assignment +2 / production +12 / client delivery
@@ -116,7 +116,7 @@ export function CreateLpoForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex min-h-11 items-center justify-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+        className="btn-primary min-h-11"
       >
         {isPending ? "Creating…" : "Create LPO"}
       </button>

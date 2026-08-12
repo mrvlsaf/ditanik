@@ -24,7 +24,7 @@ async function LpoDashboard() {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+    <div className="overflow-x-auto surface-card">
       <table className="min-w-full text-left text-sm">
         <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
           <tr>
