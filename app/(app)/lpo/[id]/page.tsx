@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageContainer } from "@/components/app-shell/PageContainer";
-import { DocumentActions } from "@/components/documents/DocumentActions";
+import { LpoActionsMenu } from "@/components/lpo/LpoActionsMenu";
 import { LpoAssignmentPanel } from "@/components/lpo/LpoAssignmentPanel";
 import { LpoDatesSection } from "@/components/lpo/LpoDatesSection";
+import { LpoDeepLinkFocus } from "@/components/lpo/LpoDeepLinkFocus";
 import { LpoFabricRequirementsSection } from "@/components/lpo/LpoFabricRequirementsSection";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
+import { DocumentActions } from "@/components/documents/DocumentActions";
 import {
   formatBusinessDateTime,
   formatCalendarDate,
@@ -15,14 +17,29 @@ import { listActiveRates } from "@/modules/fabric/application/consumption";
 import { listForLpo } from "@/modules/fabric/application/lpo-fabric-requirements";
 import { getLpoById } from "@/modules/lpo/application/get-lpo";
 import { lpoStatusDetailLabel } from "@/modules/lpo/domain/lpo-status";
+import type { NotificationAction } from "@/modules/notification/domain/due-notification-rules";
 import { listManufacturers } from "@/modules/manufacturer/application/manufacturers";
+
+function parseActionParam(
+  value: string | string[] | undefined,
+): NotificationAction | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw === "assign" || raw === "dates" || raw === "complete") {
+    return raw;
+  }
+  return null;
+}
 
 export default async function LpoDetailPage({
   params,
+  searchParams,
 }: Readonly<{
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ action?: string | string[] }>;
 }>) {
   const { id } = await params;
+  const query = await searchParams;
+  const action = parseActionParam(query.action);
   const [lpo, manufacturers, rates, requirements] = await Promise.all([
     getLpoById(id),
     listManufacturers(),
@@ -41,14 +58,23 @@ export default async function LpoDetailPage({
       title={`LPO ${lpo.lpoNumber}`}
       description={lpo.nickname}
     >
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/lpo"
           className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
         >
           ← Back to LPO dashboard
         </Link>
+        <LpoActionsMenu
+          lpoId={lpo.id}
+          lpoNumber={lpo.lpoNumber}
+          fileKey={lpo.originalFileKey}
+          fileName={lpo.originalFileName}
+          redirectTo="/lpo"
+        />
       </div>
+
+      <LpoDeepLinkFocus action={action} />
 
       <div className="space-y-8">
         <section className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6">

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { PageContainer } from "@/components/app-shell/PageContainer";
 import { VarianceForm } from "@/components/fabric/VarianceForm";
+import { ManufacturerActionsMenu } from "@/components/manufacturer/ManufacturerActionsMenu";
 import { formatBusinessDateTime } from "@/lib/dates/format";
 import { prisma } from "@/lib/db";
 import { calculateAdditionalFabricRequired } from "@/modules/fabric/domain/meters";
@@ -18,7 +19,7 @@ export default async function ManufacturerDetailPage({
   const manufacturer = await prisma.manufacturer.findUnique({
     where: { id },
   });
-  if (!manufacturer) {
+  if (!manufacturer || !manufacturer.isActive) {
     notFound();
   }
 
@@ -55,13 +56,19 @@ export default async function ManufacturerDetailPage({
       title={manufacturer.name}
       description="Manufacturer fabric account — sent, expected used, expected balance, and variance."
     >
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/manufacturers"
           className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
         >
           ← Back to manufacturers
         </Link>
+        <ManufacturerActionsMenu
+          manufacturerId={manufacturer.id}
+          name={manufacturer.name}
+          redirectTo="/manufacturers"
+          showLedgerLink={false}
+        />
       </div>
 
       <div className="space-y-8">
