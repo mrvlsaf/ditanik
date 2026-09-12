@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "25mb",
     },
   },
+  // Ship the real Deezano .xlsx templates (modules/documents/infrastructure/*)
+  // inside the Vercel serverless function bundle — without this they're only
+  // present in local dev, not in the deployed function's file system.
+  outputFileTracingIncludes: {
+    "/**": ["./templates/documents/*.xlsx"],
+  },
 };
 
 export default nextConfig;

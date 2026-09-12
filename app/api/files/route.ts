@@ -34,17 +34,30 @@ export async function GET(request: Request) {
         select: { invoiceFileName: true },
       });
 
-  if (!lpo && !invoice) {
+  const generatedDocument =
+    lpo || invoice
+      ? null
+      : await prisma.generatedDocument.findFirst({
+          where: { OR: [{ fileKey }, { pdfFileKey: fileKey }] },
+          select: { fileName: true, fileKey: true, pdfFileName: true, pdfFileKey: true },
+        });
+
+  if (!lpo && !invoice && !generatedDocument) {
     return new Response("File not found", { status: 404 });
   }
 
   try {
     const stored = await readStoredFile(fileKey);
+    const generatedDocumentName =
+      generatedDocument?.pdfFileKey === fileKey
+        ? generatedDocument.pdfFileName
+        : generatedDocument?.fileName;
+
     const fileName = lpo
       ? fileKey === lpo.originalFileKey
         ? lpo.originalFileName
         : (lpo.productionFileName ?? stored.fileName)
-      : (invoice?.invoiceFileName ?? stored.fileName);
+      : (invoice?.invoiceFileName ?? generatedDocumentName ?? stored.fileName);
 
     const dispositionType = asDownload ? "attachment" : "inline";
     return new Response(new Uint8Array(stored.bytes), {

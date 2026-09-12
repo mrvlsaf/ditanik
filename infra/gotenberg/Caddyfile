@@ -1,0 +1,7 @@
+{$GOTENBERG_DOMAIN} {
+	basicauth /* {
+		{$GOTENBERG_BASIC_AUTH_USER} {$GOTENBERG_BASIC_AUTH_HASH}
+	}
+
+	reverse_proxy gotenberg:3000
+}

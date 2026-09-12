@@ -16,6 +16,19 @@ function assertSafeFileKey(fileKey: string): void {
   }
 }
 
+/** Best-effort mimeType by extension — local storage keeps no separate metadata file. */
+function mimeTypeFromFileName(fileName: string): string {
+  const extension = path.extname(fileName).toLowerCase();
+  switch (extension) {
+    case ".pdf":
+      return "application/pdf";
+    case ".xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    default:
+      return "application/octet-stream";
+  }
+}
+
 export const localFileStorage: FileStorage = {
   async save({ file, folder }): Promise<StoredFile> {
     const safeFolder = folder.replace(/[^a-zA-Z0-9/_-]/g, "");
@@ -33,6 +46,22 @@ export const localFileStorage: FileStorage = {
     };
   },
 
+  async saveBuffer({ bytes, fileName, mimeType, folder }): Promise<StoredFile> {
+    const safeFolder = folder.replace(/[^a-zA-Z0-9/_-]/g, "");
+    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const fileKey = `${safeFolder}/${randomUUID()}-${safeName}`;
+    const absolutePath = path.join(UPLOAD_ROOT, fileKey);
+
+    await mkdir(path.dirname(absolutePath), { recursive: true });
+    await writeFile(absolutePath, bytes);
+
+    return {
+      fileKey,
+      fileName,
+      mimeType,
+    };
+  },
+
   async read(fileKey: string): Promise<StoredFileBytes> {
     assertSafeFileKey(fileKey);
     const absolutePath = path.join(UPLOAD_ROOT, fileKey);
@@ -42,7 +71,7 @@ export const localFileStorage: FileStorage = {
     return {
       bytes,
       fileName,
-      mimeType: "application/pdf",
+      mimeType: mimeTypeFromFileName(fileName),
     };
   },
 };

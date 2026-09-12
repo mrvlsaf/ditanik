@@ -60,6 +60,13 @@ export function LpoActionsMenu({
   }
 
   items.push({
+    kind: "link",
+    id: "edit",
+    label: "Edit details",
+    href: `/lpo/${lpoId}/edit`,
+  });
+
+  items.push({
     kind: "button",
     id: "delete",
     label: "Delete",

@@ -56,6 +56,13 @@ enum NotificationEmailStatus {
   FAILED
 }
 
+enum DocumentType {
+  QUOTATION
+  QUOTE
+  TAX_INVOICE
+  DELIVERY_NOTE
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -72,6 +79,7 @@ model User {
   fabricMovements   FabricMovement[]
   fabricVariances   FabricVariance[]
   auditLogs         AuditLog[]
+  generatedDocuments GeneratedDocument[]
 
   @@map("users")
 }
@@ -117,13 +125,26 @@ model Lpo {
   createdAt                  DateTime  @default(now()) @map("created_at")
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 
+  /// Client/commercial details captured for document generation (Quotation/Quote/Invoice/Delivery Note).
+  clientSubEntityName        String?   @map("client_sub_entity_name")
+  clientTrn                  String?   @map("client_trn")
+  invoiceAddress             String?   @map("invoice_address") @db.Text
+  deliveryAddress            String?   @map("delivery_address") @db.Text
+  /// Delivery-site abbreviation used in generated document numbers (e.g. "AHO").
+  siteCode                   String?   @map("site_code")
+  paymentTerms               String?   @map("payment_terms")
+  deliveryTerms              String?   @map("delivery_terms")
+  currency                   String    @default("AED")
+
   createdBy      User                @relation("LpoCreatedBy", fields: [createdById], references: [id])
   manufacturer   Manufacturer?       @relation(fields: [manufacturerId], references: [id])
   dateChanges    LpoDateChange[]
   fabricRequirements LpoFabricRequirement[]
+  lineItems      LpoLineItem[]
   movements      FabricMovement[]
   variances      FabricVariance[]
   notifications  Notification[]
+  documents      GeneratedDocument[]
 
   @@index([status])
   @@index([manufacturerAssignmentAt])
@@ -283,6 +304,95 @@ model FabricVariance {
   @@index([lpoId])
   @@index([manufacturerId])
   @@map("fabric_variances")
+}
+
+/// One row of an LPO's commercial line items (source data for generated documents).
+model LpoLineItem {
+  id              String   @id @default(cuid())
+  lpoId           String   @map("lpo_id")
+  /// Display order within the LPO.
+  position        Int
+  /// Optional grouping label (e.g. "CHEF", "BARISTA") for role-grouped orders.
+  category        String?
+  description     String   @db.Text
+  articleNo       String?  @map("article_no")
+  quantity        Int
+  unitPrice       Decimal  @map("unit_price") @db.Decimal(12, 2)
+  discountPercent Decimal  @default(0) @map("discount_percent") @db.Decimal(5, 2)
+  lineTotal       Decimal  @map("line_total") @db.Decimal(14, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  lpo Lpo @relation(fields: [lpoId], references: [id], onDelete: Cascade)
+
+  @@index([lpoId])
+  @@map("lpo_line_items")
+}
+
+/// Single-row settings: Deezano's own letterhead/bank details for generated documents.
+model CompanyProfile {
+  id                String    @id
+  legalName         String    @map("legal_name")
+  trn               String?
+  addressLine1      String?   @map("address_line1")
+  addressLine2      String?   @map("address_line2")
+  phone             String?
+  email             String?
+  website           String?
+  bankName          String?   @map("bank_name")
+  bankAccountName   String?   @map("bank_account_name")
+  bankAccountNumber String?   @map("bank_account_number")
+  bankIban          String?   @map("bank_iban")
+  bankSwiftCode     String?   @map("bank_swift_code")
+  defaultTermsText  String?   @map("default_terms_text") @db.Text
+  defaultFooterText String?   @map("default_footer_text")
+  updatedById       String?   @map("updated_by_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("company_profile")
+}
+
+/// Per (document type, calendar day) counter — atomic source for the daily sequence
+/// number embedded in generated document numbers (e.g. the "09" in AHO-INV-23072026-09).
+model DocumentSequence {
+  id           String       @id @default(cuid())
+  type         DocumentType
+  calendarDay  DateTime     @map("calendar_day") @db.Date
+  lastSequence Int          @default(0) @map("last_sequence")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@unique([type, calendarDay])
+  @@map("document_sequences")
+}
+
+/// One row per generated Quotation/Quote/Tax Invoice/Delivery Note file — the audit
+/// trail and re-download source. Keeps its own snapshot of the data used so a document
+/// generated today still reads the same on re-download even if the LPO or company
+/// profile changes afterwards.
+model GeneratedDocument {
+  id             String       @id @default(cuid())
+  type           DocumentType
+  documentNumber String       @unique @map("document_number")
+  lpoId          String       @map("lpo_id")
+  fileKey        String       @map("file_key")
+  fileName       String       @map("file_name")
+  mimeType       String       @map("mime_type")
+  /// Set once someone converts the Excel file to PDF (Phase 3) — same document,
+  /// second artifact, converted on demand rather than at generation time.
+  pdfFileKey     String?      @map("pdf_file_key")
+  pdfFileName    String?      @map("pdf_file_name")
+  /// Frozen copy of the company profile, client details, and line items used to fill
+  /// this document — never re-read live from the LPO after generation.
+  snapshot       Json
+  generatedById  String       @map("generated_by_id")
+  generatedAt    DateTime     @default(now()) @map("generated_at")
+
+  lpo         Lpo  @relation(fields: [lpoId], references: [id], onDelete: Cascade)
+  generatedBy User @relation(fields: [generatedById], references: [id])
+
+  @@index([lpoId])
+  @@index([type, generatedAt])
+  @@map("generated_documents")
 }
 
 model Notification {

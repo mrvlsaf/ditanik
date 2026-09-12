@@ -7,14 +7,25 @@ import {
   isReceivedDateAllowed,
   parseCalendarDateInput,
 } from "@/modules/lpo/domain/due-dates";
+import { calculateLineTotal } from "@/modules/lpo/domain/line-items";
 import { initialStatusAfterCreate } from "@/modules/lpo/domain/lpo-status";
 import { createLpoFormSchema } from "@/modules/lpo/schemas/create-lpo";
+import type { LpoLineItemValues } from "@/modules/lpo/schemas/line-items";
 
 export type CreateLpoInput = {
   lpoNumber: string;
   nickname: string;
   clientName: string;
   receivedDate: string;
+  clientSubEntityName?: string;
+  clientTrn?: string;
+  invoiceAddress: string;
+  deliveryAddress?: string;
+  siteCode: string;
+  paymentTerms?: string;
+  deliveryTerms?: string;
+  currency?: string;
+  lineItems: LpoLineItemValues[];
   file: File;
   createdByUserId: string;
 };
@@ -25,6 +36,15 @@ export async function createLpo(input: CreateLpoInput) {
     nickname: input.nickname,
     clientName: input.clientName,
     receivedDate: input.receivedDate,
+    clientSubEntityName: input.clientSubEntityName,
+    clientTrn: input.clientTrn,
+    invoiceAddress: input.invoiceAddress,
+    deliveryAddress: input.deliveryAddress,
+    siteCode: input.siteCode,
+    paymentTerms: input.paymentTerms,
+    deliveryTerms: input.deliveryTerms,
+    currency: input.currency,
+    lineItems: input.lineItems,
   });
 
   const receivedDate = parseCalendarDateInput(values.receivedDate);
@@ -43,6 +63,18 @@ export async function createLpo(input: CreateLpoInput) {
   const dates = defaultLpoDatesFromReceived(receivedDate);
   const status = initialStatusAfterCreate();
 
+  // Compute line totals up front so a bad line fails before any writes happen.
+  const lineItemsWithTotals = values.lineItems.map((line, index) => ({
+    position: index + 1,
+    category: line.category?.trim() || null,
+    description: line.description,
+    articleNo: line.articleNo?.trim() || null,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    discountPercent: line.discountPercent ?? 0,
+    lineTotal: calculateLineTotal(line),
+  }));
+
   return prisma.$transaction(async (tx) => {
     const created = await tx.lpo.create({
       data: {
@@ -60,6 +92,17 @@ export async function createLpo(input: CreateLpoInput) {
         productionDeadlineAt: dates.productionDeadlineAt,
         clientDeliveryAt: dates.clientDeliveryAt,
         createdById: input.createdByUserId,
+        clientSubEntityName: values.clientSubEntityName?.trim() || null,
+        clientTrn: values.clientTrn?.trim() || null,
+        invoiceAddress: values.invoiceAddress,
+        deliveryAddress: values.deliveryAddress?.trim() || null,
+        siteCode: values.siteCode,
+        paymentTerms: values.paymentTerms?.trim() || null,
+        deliveryTerms: values.deliveryTerms?.trim() || null,
+        currency: values.currency,
+        lineItems: {
+          create: lineItemsWithTotals,
+        },
       },
     });
 
@@ -81,6 +124,8 @@ export async function createLpo(input: CreateLpoInput) {
           manufacturerAssignmentAt: dates.manufacturerAssignmentAt.toISOString(),
           productionDeadlineAt: dates.productionDeadlineAt.toISOString(),
           clientDeliveryAt: dates.clientDeliveryAt.toISOString(),
+          siteCode: values.siteCode,
+          lineItemCount: lineItemsWithTotals.length,
         },
       },
     });

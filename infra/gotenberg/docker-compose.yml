@@ -1,0 +1,36 @@
+# Gotenberg (LibreOffice-backed document conversion) behind a Caddy reverse
+# proxy that adds HTTPS + Basic Auth — Gotenberg's own HTTP API has no
+# authentication, so it must never be exposed to the internet directly.
+#
+# Setup: see README.md in this folder.
+
+services:
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+    # No `ports:` here on purpose — only Caddy (on the same Docker network)
+    # can reach it. It is never bound to a host port.
+    command:
+      - "gotenberg"
+      - "--chromium-disable-routes=true" # this deployment only converts Office files, not HTML/URLs
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      GOTENBERG_DOMAIN: ${GOTENBERG_DOMAIN:?set this to your subdomain, e.g. gotenberg.yourcompany.com}
+      GOTENBERG_BASIC_AUTH_USER: ${GOTENBERG_BASIC_AUTH_USER:?set this}
+      GOTENBERG_BASIC_AUTH_HASH: ${GOTENBERG_BASIC_AUTH_HASH:?bcrypt hash — see README.md}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - gotenberg
+
+volumes:
+  caddy_data:
+  caddy_config:

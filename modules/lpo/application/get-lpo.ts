@@ -12,6 +12,9 @@ export async function getLpoById(id: string) {
           changedBy: { select: { email: true, name: true } },
         },
       },
+      lineItems: {
+        orderBy: { position: "asc" },
+      },
     },
   });
 }
