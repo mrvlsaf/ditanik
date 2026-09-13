@@ -12,6 +12,15 @@ export async function deleteLpo(input: {
     throw new Error("LPO not found.");
   }
 
+  const generatedDocumentCount = await prisma.generatedDocument.count({
+    where: { lpoId: input.lpoId },
+  });
+  if(generatedDocumentCount > 0) {
+    throw new Error(
+      `This LPO has ${generatedDocumentCount} generated documents (quotations, invoices, etc.) and can't be deleted - they're the permanent record for this order. Remove those documents first if you really need to delete it.`
+    );
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.fabricMovement.updateMany({
       where: { lpoId: input.lpoId },

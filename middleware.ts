@@ -9,8 +9,9 @@ export default auth((request) => {
   const isLoginPage = pathname.startsWith("/login");
   const isAuthApi = pathname.startsWith("/api/auth");
   const isCronApi = pathname.startsWith("/api/cron/");
+  const isHealthApi = pathname === "/api/health";
 
-  if (isAuthApi || isCronApi) {
+  if (isAuthApi || isCronApi || isHealthApi) {
     return NextResponse.next();
   }
 

@@ -387,7 +387,7 @@ model GeneratedDocument {
   generatedById  String       @map("generated_by_id")
   generatedAt    DateTime     @default(now()) @map("generated_at")
 
-  lpo         Lpo  @relation(fields: [lpoId], references: [id], onDelete: Cascade)
+  lpo         Lpo  @relation(fields: [lpoId], references: [id], onDelete: Restrict)
   generatedBy User @relation(fields: [generatedById], references: [id])
 
   @@index([lpoId])
