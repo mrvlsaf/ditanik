@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { extractLpoFromPdf } from "@/modules/lpo/application/extract-lpo-from-pdf";
 import type { ExtractedLpoData } from "@/modules/lpo/domain/lpo-extraction";
+import { assertPdfFile } from "@/modules/files/domain/pdf-rules";
 
 export type ExtractLpoFromPdfActionState = {
   ok: boolean;
@@ -49,6 +50,13 @@ export async function extractLpoFromPdfAction(
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, message: "Choose the LPO PDF above first.", data: null };
+  }
+
+  try {
+    assertPdfFile(file);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Only PDF files are allowed.";
+    return { ok: false, message, data: null };
   }
 
   try {

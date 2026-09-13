@@ -4,3 +4,7 @@ allowBuilds:
   prisma: true
   sharp: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@next/swc-darwin-x64@16.3.5'
+  - '@next/swc-win32-x64-msvc@16.3.5'
+  - next@16.3.5
