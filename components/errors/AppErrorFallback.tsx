@@ -1,6 +1,8 @@
 "use client";
 
 import { isDatabaseUnavailableError } from "@/lib/db-errors";
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 export function AppErrorFallback({
   error,
@@ -10,6 +12,12 @@ export function AppErrorFallback({
   reset: () => void;
 }>) {
   const databaseUnavailable = isDatabaseUnavailableError(error);
+
+  useEffect(() => {
+    if (!databaseUnavailable) {
+      Sentry.captureException(error);
+    }
+  }, [error, databaseUnavailable]);
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 py-16">

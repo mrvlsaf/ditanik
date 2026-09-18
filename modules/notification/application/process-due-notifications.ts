@@ -4,6 +4,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { Resend } from "resend";
+import * as Sentry from "@sentry/nextjs";
 
 import { absoluteAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/db";
@@ -144,7 +145,10 @@ async function sendOverdueEmail(input: {
       },
     });
     return "sent";
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { notificationId: input.notificationId, notificationType: "overdue" },
+    });
     await prisma.notification.update({
       where: { id: input.notificationId },
       data: { emailStatus: NotificationEmailStatus.FAILED },
@@ -378,7 +382,10 @@ export async function processDueNotifications(
         });
         digestStatus = NotificationEmailStatus.SENT;
         emailsSent += 1;
-      } catch {
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: { notificationType: "review_pending_digest" },
+        });
         digestStatus = NotificationEmailStatus.FAILED;
       }
     }
