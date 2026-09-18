@@ -83,3 +83,5 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3001/api/cron/over
 4. Confirm `vercel.json` cron hits `/api/cron/overdue` with `CRON_SECRET`
 5. Google OAuth redirect URIs for the deployed domain(s) — a Preview deployment's URL changes per-commit unless you assign a stable branch domain, so use that for testing sign-in rather than the raw preview URL
 6. Optional at launch: stand up Gotenberg (`infra/gotenberg/README.md`) for Excel→PDF conversion — everything else works without it
+
+<!-- Testing Preview deployment DB isolation (H7) -->
