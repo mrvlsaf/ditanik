@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
+import { authConfig } from "@/auth.config";
 import { isEmailAllowlisted } from "@/lib/auth/allowlist";
 
 type AppRole = "ADMIN";
@@ -10,23 +11,19 @@ function isAppRole(value: unknown): value is AppRole {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
     }),
   ],
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
   callbacks: {
     async signIn({ user, account }) {
       if (!user.email || !isEmailAllowlisted(user.email)) {
         return "/login?error=AccessDenied";
       }
 
-      // Dynamic import keeps Prisma out of Edge middleware bundle.
       const { prisma } = await import("@/lib/db");
 
       await prisma.user.upsert({
@@ -69,5 +66,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-  trustHost: true,
 });

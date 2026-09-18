@@ -1,6 +1,9 @@
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { authConfig } from "@/auth.config";
+
+const { auth } = NextAuth(authConfig);
 
 /** Protect app pages; allow login, NextAuth, and cron (secret checked in route). */
 export default auth((request) => {
