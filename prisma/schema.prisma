@@ -215,12 +215,14 @@ model FabricSupplierInvoice {
   createdById   String   @map("created_by_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
+  isActive      Boolean   @default(true) @map("is_active")
 
   createdBy User          @relation(fields: [createdById], references: [id])
   batches   FabricBatch[]
 
   @@index([supplierName])
   @@index([receivedDate])
+  @@index([isActive])
   @@map("fabric_supplier_invoices")
 }
 
@@ -234,6 +236,7 @@ model FabricBatch {
   invoiceId    String   @map("invoice_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  isActive     Boolean  @default(true) @map("is_active")
 
   invoice   FabricSupplierInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   movements FabricMovement[]
@@ -241,6 +244,7 @@ model FabricBatch {
 
   @@index([invoiceId])
   @@index([fabricType, colour])
+  @@index([isActive])
   @@map("fabric_batches")
 }
 

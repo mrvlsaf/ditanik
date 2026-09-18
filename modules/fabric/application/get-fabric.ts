@@ -14,6 +14,7 @@ export async function getBatchStock(batchId: string): Promise<number> {
 
 export async function listBatchesWithStock() {
   const batches = await prisma.fabricBatch.findMany({
+    where: { isActive: true },
     orderBy: { createdAt: "desc" },
     include: {
       invoice: {

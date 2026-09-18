@@ -46,7 +46,7 @@ export async function listFabricInvoices(filters: ListFabricInvoicesFilters = {}
     throw new Error("Month must be YYYY-MM.");
   }
 
-  const where: Prisma.FabricSupplierInvoiceWhereInput = {};
+  const where: Prisma.FabricSupplierInvoiceWhereInput = { isActive: true };
 
   if (supplier) {
     where.supplierName = supplier;

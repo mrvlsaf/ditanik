@@ -75,6 +75,7 @@ function createPrismaClient() {
           }
 
           if (isDbUnreachableError(lastError)) {
+            console.error("[db] wrapping as DatabaseUnavailableError, original error:", lastError);
             throw new DatabaseUnavailableError();
           }
 
