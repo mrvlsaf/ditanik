@@ -19,7 +19,7 @@ import {
 const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-/** Fixed on every real example seen so far — see docs/DOCUMENT-GENERATION-PLAN.md §8. */
+/** Default note type — confirmed on every real example seen so far; verify it still holds if a new delivery-note pattern shows up. */
 const DEFAULT_NOTE_TYPE = "Job work";
 
 export type GenerateDeliveryNoteInput = {

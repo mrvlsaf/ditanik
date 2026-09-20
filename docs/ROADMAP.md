@@ -248,6 +248,20 @@ flowchart LR
 
 **Current position: Phases 0–5 complete.** Product rewrite delivered; use CI + deploy checklist for production.
 
+## Document generation module (shipped, 2026-09)
+
+Added after the Phase 0–5 rewrite above and not part of that phase table — a
+separate track, planned in `docs/DOCUMENT-GENERATION-PLAN.md`. Ships four
+generated document types (Quotation, Quote, Tax Invoice, Delivery Note) as
+ExcelJS-filled templates extracted from Deezano's own workbooks, an optional
+Convert-to-PDF step via a self-hosted Gotenberg service (design finalized,
+deployment still pending — see `infra/gotenberg/README.md` and
+`docs/DECISIONS.md` D-027), and a best-effort PDF prefill step in front of
+Create LPO (rule-based text-layer parsing, calibrated to one client's PO
+layout — see `modules/lpo/domain/lpo-extraction.ts`). Production decisions
+from deploying this and the rest of the app to Vercel are recorded in
+`docs/DECISIONS.md` D-022–D-027.
+
 ---
 
 ## FE layout direction

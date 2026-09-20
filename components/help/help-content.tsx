@@ -42,7 +42,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Create an LPO",
         detail:
-          "Enter number, nickname, client, received date, and upload the LPO PDF. Status becomes Under Review automatically.",
+          "Enter number, nickname, client, received date, and upload the LPO PDF — uploading a PDF also tries to auto-fill the form fields and line items (best-effort; always review before saving). Status becomes Under Review automatically.",
         href: "/lpo",
       },
       {
@@ -103,6 +103,8 @@ export const HELP_SECTIONS: HelpSection[] = [
       "You cannot assign until the LPO is Under Review with a production PDF ready.",
       "Dashboard columns show production due and client delivery for operational tracking.",
       "Deep links from notifications open ?action=assign, dates, or complete on the LPO page.",
+      "PDF auto-fill is calibrated to a specific client's LPO layout — always review auto-filled fields and line items before saving, especially for a new client's PO format.",
+      "Use Edit on the LPO detail page to correct client, dates, or line items. Once any document has been generated for an LPO, the LPO itself can no longer be deleted.",
     ],
   },
   {
@@ -170,6 +172,35 @@ export const HELP_SECTIONS: HelpSection[] = [
         detail:
           "When expected vs actual differs, submit a variance with a reason (wastage, damage, size alteration, production mistake, other).",
       },
+    ],
+  },
+  {
+    id: "document-generation",
+    title: "Document generation & PDF conversion",
+    summary:
+      "Generate the client-facing paperwork for an LPO — Quotation, Quote, Tax Invoice, Delivery Note — as branded Excel files, then optionally convert each to PDF.",
+    steps: [
+      {
+        title: "Generate a document",
+        detail:
+          "From an LPO detail page, choose the document type and generate it. Each one is numbered automatically and snapshotted from the LPO and company profile at that moment — later LPO edits don't change a document already generated.",
+        href: "/lpo",
+      },
+      {
+        title: "Download the Excel file",
+        detail:
+          "Every generated document downloads immediately as a formatted .xlsx file. This always works and needs no extra setup.",
+      },
+      {
+        title: "Convert to PDF (optional)",
+        detail:
+          "Turns a generated document into a PDF via the Gotenberg service. This needs Gotenberg configured first — if it isn't set up, you'll see a clear \"PDF conversion isn't set up\" message, and the Excel file remains available as a fallback.",
+        href: "/documents/convert",
+      },
+    ],
+    tips: [
+      "Generated documents are the permanent audit trail — deleting an LPO is blocked once any document exists against it.",
+      "If Convert to PDF isn't available yet, the .xlsx download is the reliable option in the meantime.",
     ],
   },
   {

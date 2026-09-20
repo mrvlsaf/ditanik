@@ -5,8 +5,7 @@ const ALLOWED_EXTENSIONS = [".xlsx", ".xls", ".ods"];
 
 /**
  * Standalone "browse and convert" flow — accepts a hand-edited Excel file
- * (the exact re-upload-and-convert flow from docs/DOCUMENT-GENERATION-PLAN.md
- * §4) with no LPO context and no stored history, and streams the converted
+ * with no LPO context and no stored history, and streams the converted
  * PDF straight back as the response. A plain HTML file-upload form can POST
  * here directly; the browser handles the resulting download on its own.
  */

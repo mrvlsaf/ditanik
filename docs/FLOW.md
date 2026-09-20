@@ -3,7 +3,7 @@
 How requests travel through Ditanik: files, functions, and order.  
 **Bugs live in the gaps between files** — use this map before changing a path.
 
-Last updated: 2026-08-11 (greenfield LPO + fabric product).
+Last updated: 2026-09-20 (Vercel Blob storage, Sentry error tracking, Vercel Firewall rate limiting, Preview/Production DB isolation, and the document-generation module added since the greenfield rewrite).
 
 ---
 
@@ -153,7 +153,7 @@ app/api/files/route.ts
 
 **Modify storage backend?** Implement `FileStorage` + change `getFileStorage()` only. Do not scatter `fs` calls in features.
 
-**Current gap:** `getFileStorage()` returns `localFileStorage` — breaks durable storage on Vercel until Blob/S3 adapter exists.
+**Current state:** `getFileStorage()` returns `vercelBlobStorage` whenever `BLOB_READ_WRITE_TOKEN` is set (auto-injected once a Blob store is connected in Vercel — see README's deploy checklist), and falls back to `localFileStorage` otherwise so local dev needs no extra setup. Durable on Vercel; local disk is dev-only.
 
 ---
 
@@ -236,7 +236,47 @@ Used by LPO fabric requirement dropdown.
 
 ---
 
-## 10. Due notifications cron + inbox
+## 10. Document generation + Convert to PDF
+
+```text
+app/(app)/lpo/[id]/page.tsx
+  → GenerateDocumentButtons (Quotation | Quote | Tax Invoice | Delivery Note)
+      → generate{Quotation,Quote,Invoice,DeliveryNote}Action
+          → generate{...}(lpoId, generatedByUserId, notes?)
+              → getCompanyProfile()
+              → allocateDocumentSequence (type, calendarDay) — atomic counter
+              → formatDocumentNumber (site code + type + date + sequence)
+              → build{...}Workbook (ExcelJS fills the checked-in .xlsx template)
+              → storeGeneratedFile → getFileStorage().save
+              → GeneratedDocument row (type, documentNumber, file key, JSON snapshot)
+          → revalidatePath("/lpo/[id]")
+```
+
+**Snapshot matters:** each `GeneratedDocument` keeps its own copy of the line items and totals it was generated with — editing the LPO afterward never changes an already-generated document.
+
+### Convert to PDF
+
+```text
+GeneratedDocumentRow "Convert to PDF" button
+  → convertDocumentToPdfAction
+      → convertOfficeFileToPdf (modules/documents/infrastructure/pdf-conversion.ts)
+          → POST {GOTENBERG_URL}/forms/libreoffice/convert
+          → no GOTENBERG_URL set → PdfConversionNotConfiguredError (friendly message, not a crash)
+          → Gotenberg unreachable/non-2xx → PdfConversionFailedError (friendly message)
+  → on success: PDF stored alongside the Excel file
+
+Standalone flow: app/(app)/documents/convert/page.tsx → POST /api/documents/convert-to-pdf
+  → same convertOfficeFileToPdf, no LPO/DB involvement, streams the PDF back directly
+```
+
+**Modify Gotenberg wiring?** `pdf-conversion.ts` is the single swap point (same pattern as `get-file-storage.ts`) — see `infra/gotenberg/README.md` for standing up the service itself.
+
+### In progress / last change
+- 2026-09-20: documented the document-generation + Convert-to-PDF flow (missing from this file since the module shipped); confirmed Gotenberg being unset only disables Convert to PDF, not document generation itself.
+
+---
+
+## 11. Due notifications cron + inbox
 
 ```text
 Vercel Cron (vercel.json) GET /api/cron/overdue  @ 06:00 UTC
@@ -259,7 +299,7 @@ Vercel Cron (vercel.json) GET /api/cron/overdue  @ 06:00 UTC
 
 ---
 
-## 11. Database access & errors
+## 12. Database access & errors
 
 ```text
 Any prisma.* call
@@ -272,7 +312,7 @@ Any prisma.* call
 
 ---
 
-## 12. Nav surface map
+## 13. Nav surface map
 
 | Route | Entry | Primary modules |
 |-------|--------|-----------------|
@@ -323,7 +363,9 @@ Example:
 | Wrong LPO status / button missing | `domain/lpo-status.ts` → assignment panel |
 | Wrong due dates | `domain/due-dates.ts` |
 | PDF upload fails size | `next.config.ts` bodySizeLimit + `pdf-rules.ts` |
-| PDF missing on Vercel | `get-file-storage.ts` (local FS) |
+| PDF missing on Vercel | Fixed — `get-file-storage.ts` uses Vercel Blob whenever `BLOB_READ_WRITE_TOKEN` is set |
+| Convert to PDF failing | `GOTENBERG_URL` env var (not yet deployed — see `infra/gotenberg/README.md`), `pdf-conversion.ts` |
+| PDF auto-fill (prefill) failing | `lpo-extraction.ts`, `pdf-text-extraction.ts`, `serverExternalPackages` in `next.config.ts` |
 | Stock math wrong | `domain/meters.ts` + movement types in issue/receive |
 | Invoice not listed | `list-fabric-invoices.ts` filters; invoice required on receive |
 | Cron 401 | `CRON_SECRET` vs `Authorization` header on route |

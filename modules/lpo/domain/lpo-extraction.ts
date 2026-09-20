@@ -1,9 +1,8 @@
 import type { PdfLine } from "@/modules/lpo/infrastructure/pdf-text-extraction";
 
 /**
- * Rule-based prefill parser for the client LPO PDF a company like Ishraq
- * Hospitality's procurement system emits — see
- * docs/DOCUMENT-GENERATION-PLAN.md §2. This is deliberately NOT a general
+ * Rule-based prefill parser for the client LPO PDF format Ishraq
+ * Hospitality's procurement system emits. This is deliberately NOT a general
  * PDF-understanding engine: it matches fixed labels ("Order Number", "Order
  * date", "Invoice address", "Delivery address", ...) and a fixed table
  * column layout, calibrated against a real sample LPO
@@ -249,10 +248,10 @@ function parseDeliveryColumn(column: AddressColumn, clientName: string | null): 
 }
 
 // Line-item table column x-bands, calibrated against tests/fixtures/JOHNLPO.pdf
-// (an Ishraq Hospitality-issued PO — see docs/DOCUMENT-GENERATION-PLAN.md §2).
-// Re-tune these against a couple more real client LPOs before trusting this
-// table parser the way the label-based header fields above can be trusted;
-// the plan flagged the item table as the harder, more layout-sensitive half.
+// (an Ishraq Hospitality-issued PO). Re-tune these against a couple more real
+// client LPOs before trusting this table parser the way the label-based
+// header fields above can be trusted — the table is the harder,
+// more layout-sensitive half of this parser.
 const TABLE_COLUMNS = {
   position: { min: 55, max: 96 },
   itemName: { min: 96, max: 225 },

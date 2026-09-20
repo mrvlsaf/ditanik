@@ -6,11 +6,11 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the real Delivery Note template — extracted from the client's own
+ * Fills the Delivery Note template — extracted from the client's own
  * workbook (DELIVERY NOTE AMERICAN.xlsx, "khin" tab; the embedded Deezano
  * logo was missing from every per-order tab in that source file, so it was
  * copied in from the same byte-identical logo used on the other three
- * templates), see docs/DOCUMENT-GENERATION-PLAN.md §8.
+ * templates).
  */
 
 const TEMPLATE_ROW = 30; // the template's two sample line-item rows (30-31).

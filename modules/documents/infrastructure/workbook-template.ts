@@ -3,10 +3,10 @@ import path from "node:path";
 import ExcelJS from "exceljs";
 
 /**
- * Loads one of the real Deezano Excel templates checked into
- * templates/documents/ (extracted from the client's own workbooks — see
- * docs/DOCUMENT-GENERATION-PLAN.md §8). `templates/` is included in the
- * Vercel serverless bundle via `outputFileTracingIncludes` in next.config.ts.
+ * Loads one of the Deezano Excel templates checked into
+ * templates/documents/ (extracted from the client's own workbooks).
+ * `templates/` is included in the Vercel serverless bundle via
+ * `outputFileTracingIncludes` in next.config.ts.
  *
  * Returns both the workbook (needed to serialize the result) and its one
  * worksheet, already resolved and non-null — every template is a single

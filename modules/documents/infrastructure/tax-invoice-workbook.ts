@@ -6,10 +6,9 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the real Tax Invoice template — extracted from the client's own
- * workbook (INVOICES COPY AMERICAN N CANVAS.xlsx, "baser" tab) via ExcelJS's
- * removeWorksheet API, see docs/DOCUMENT-GENERATION-PLAN.md §8 — instead of
- * building the layout from scratch in code.
+ * Fills the Tax Invoice template — extracted from the client's own workbook
+ * (INVOICES COPY AMERICAN N CANVAS.xlsx, "baser" tab) via ExcelJS's
+ * removeWorksheet API, instead of building the layout from scratch in code.
  */
 
 const TEMPLATE_ROW = 18; // the template's single sample line-item row.

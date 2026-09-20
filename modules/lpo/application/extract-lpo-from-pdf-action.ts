@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
+import * as Sentry from "@sentry/nextjs";
 import { extractLpoFromPdf } from "@/modules/lpo/application/extract-lpo-from-pdf";
 import type { ExtractedLpoData } from "@/modules/lpo/domain/lpo-extraction";
 import { assertPdfFile } from "@/modules/files/domain/pdf-rules";
@@ -30,13 +31,12 @@ function countFilledFields(data: ExtractedLpoData): number {
 }
 
 /**
- * Prefill step in front of the Create LPO form (docs/DOCUMENT-GENERATION-PLAN.md
- * §2/§7 Phase 6) — never saves or generates anything. The person filling out
- * the form still sees and can correct every field before it goes anywhere;
- * this only saves them re-typing what the parser could confidently read off
- * the PDF. A PDF the parser can't make sense of (a scan, an unrelated file,
- * a differently-formatted client) fails back to an empty/manual form rather
- * than blocking LPO creation.
+ * Prefill step in front of the Create LPO form — never saves or generates
+ * anything. The person filling out the form still sees and can correct
+ * every field before it goes anywhere; this only saves them re-typing what
+ * the parser could confidently read off the PDF. A PDF the parser can't
+ * make sense of (a scan, an unrelated file, a differently-formatted client)
+ * fails back to an empty/manual form rather than blocking LPO creation.
  */
 export async function extractLpoFromPdfAction(
   _previous: ExtractLpoFromPdfActionState,
@@ -78,7 +78,8 @@ export async function extractLpoFromPdfAction(
       message: `Prefilled ${filledCount} field${filledCount === 1 ? "" : "s"} from the PDF — check every one before saving, especially the line items.`,
       data,
     };
-  } catch {
+  } catch (error) {
+    Sentry.captureException(error, { tags: { feature: "lpo_pdf_prefill" } });
     return {
       ok: false,
       message: "Couldn't read that PDF — fill in the form manually.",
