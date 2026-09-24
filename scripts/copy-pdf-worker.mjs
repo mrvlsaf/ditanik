@@ -10,9 +10,15 @@ import { fileURLToPath } from "node:url";
 // open this PDF." — no console-visible network error, just a rejected
 // getDocument() promise.
 //
-// Copying the exact worker file this install's pdfjs-dist ships (rather
-// than committing a copy to git) keeps it in sync automatically whenever
-// the pinned pdfjs-dist version in package.json changes.
+// The copied file is committed to git (public/pdf.worker.min.mjs is NOT
+// gitignored) rather than left to be regenerated at deploy time: Vercel's
+// build container did not reliably run this project's own postinstall
+// script, which silently left the worker file missing from the deployed
+// static assets and broke the viewer with a 404 for /pdf.worker.min.mjs
+// (as opposed to the CSP failure this script exists to avoid in the first
+// place). Running this script locally after bumping pdfjs-dist keeps the
+// committed copy in sync; nothing depends on it running automatically
+// during install anymore.
 const root = dirname(fileURLToPath(import.meta.url));
 const src = join(root, "..", "node_modules", "pdfjs-dist", "build", "pdf.worker.min.mjs");
 const destDir = join(root, "..", "public");

@@ -20,8 +20,6 @@
 # production
 /build
 
-# generated: copied from the installed pdfjs-dist by scripts/copy-pdf-worker.mjs
-/public/pdf.worker.min.mjs
 
 # misc
 .DS_Store
