@@ -10,7 +10,16 @@ const nextConfig: NextConfig = {
     },
   },
   outputFileTracingIncludes: {
-    "/**": ["./templates/documents/*.xlsx"],
+    "/**": [
+      "./templates/documents/*.xlsx",
+      // pdfjs-dist's Node build loads its "worker" via a dynamically computed
+      // path (a fake in-process worker, since real Worker threads don't
+      // exist server-side) rather than a plain import, so Next's file
+      // tracer can't see it's needed and prunes it from the deployed
+      // function by default — breaking PDF prefill only on Vercel, never
+      // in local dev where the full package is always on disk.
+      "./node_modules/pdfjs-dist/legacy/build/*.mjs",
+    ],
   },
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
