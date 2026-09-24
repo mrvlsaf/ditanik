@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
@@ -28,6 +30,7 @@ export function NotificationsList({
 }>) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  useGlobalPending(isPending);
 
   if (items.length === 0) {
     return (

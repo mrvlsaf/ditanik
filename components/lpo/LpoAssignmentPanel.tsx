@@ -3,6 +3,8 @@
 import { LpoStatus } from "@prisma/client";
 import { useActionState, useState, useTransition } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   assignManufacturerAction,
   markClientDeliveryCompletedAction,
@@ -53,21 +55,17 @@ export function LpoAssignmentPanel({
   );
   const [completeMessage, setCompleteMessage] = useState<string | null>(null);
   const [isCompleting, startComplete] = useTransition();
+  useGlobalPending(assignPending || isCompleting);
 
   return (
-    <section
-      id="lpo-assign"
-      className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6"
-    >
+    <section id="lpo-assign" className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6">
       <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
         Manufacturer assignment
       </h2>
 
       <p className="text-sm text-zinc-600">
         Status:{" "}
-        <span className="font-medium text-zinc-900">
-          {lpoStatusDetailLabel(status)}
-        </span>
+        <span className="font-medium text-zinc-900">{lpoStatusDetailLabel(status)}</span>
         {manufacturerName ? (
           <>
             {" "}
@@ -103,9 +101,7 @@ export function LpoAssignmentPanel({
 
           {mode === "existing" ? (
             <label className="block text-sm">
-              <span className="mb-1 block font-medium text-zinc-800">
-                Manufacturer
-              </span>
+              <span className="mb-1 block font-medium text-zinc-800">Manufacturer</span>
               <select
                 name="manufacturerId"
                 required
@@ -158,21 +154,14 @@ export function LpoAssignmentPanel({
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={assignPending}
-            className="btn-primary"
-          >
+          <button type="submit" disabled={assignPending} className="btn-primary">
             {assignPending ? "Assigning…" : "Assign manufacturer"}
           </button>
         </form>
       ) : null}
 
       {showComplete ? (
-        <div
-          id="lpo-complete"
-          className="scroll-mt-4 border-t border-zinc-100 pt-4"
-        >
+        <div id="lpo-complete" className="scroll-mt-4 border-t border-zinc-100 pt-4">
           {completeMessage ? (
             <p className="mb-2 text-sm text-red-700" role="status">
               {completeMessage}

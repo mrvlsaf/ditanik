@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   receiveFabricAction,
   type ReceiveFabricActionState,
@@ -38,6 +40,7 @@ export function ReceiveFabricForm() {
     },
     initialState,
   );
+  useGlobalPending(isPending);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

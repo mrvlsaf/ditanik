@@ -3,15 +3,14 @@
 import { LpoDateField } from "@prisma/client";
 import { useActionState } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   changeLpoDateAction,
   type ChangeLpoDateActionState,
 } from "@/modules/lpo/application/change-lpo-date-action";
 import { MIN_DATE_CHANGE_REASON_LENGTH } from "@/modules/lpo/domain/due-dates";
-import {
-  formatBusinessDateTime,
-  formatCalendarDate,
-} from "@/lib/dates/format";
+import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
 
 const initialState: ChangeLpoDateActionState = {
   ok: false,
@@ -48,16 +47,11 @@ export function LpoDatesSection({
   dateChanges: DateChangeRow[];
 }>) {
   const boundAction = changeLpoDateAction.bind(null, lpoId);
-  const [state, formAction, isPending] = useActionState(
-    boundAction,
-    initialState,
-  );
+  const [state, formAction, isPending] = useActionState(boundAction, initialState);
+  useGlobalPending(isPending);
 
   return (
-    <section
-      id="lpo-dates"
-      className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6"
-    >
+    <section id="lpo-dates" className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6">
       <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
         Dates
       </h2>
@@ -118,8 +112,8 @@ export function LpoDatesSection({
           </label>
           <label className="block text-sm sm:col-span-2">
             <span className="mb-1 block text-zinc-700">
-              Reason (required for assignment &amp; production deadline; optional
-              for client delivery)
+              Reason (required for assignment &amp; production deadline; optional for
+              client delivery)
             </span>
             <textarea
               name="reason"
@@ -137,11 +131,7 @@ export function LpoDatesSection({
             {state.message}
           </p>
         ) : null}
-        <button
-          type="submit"
-          disabled={isPending}
-          className="btn-primary"
-        >
+        <button type="submit" disabled={isPending} className="btn-primary">
           {isPending ? "Saving…" : "Save date change"}
         </button>
       </form>
@@ -161,9 +151,7 @@ export function LpoDatesSection({
                   {FIELD_LABELS[row.field]}: {formatCalendarDate(row.oldValue)} →{" "}
                   {formatCalendarDate(row.newValue)}
                 </p>
-                {row.reason ? (
-                  <p className="mt-0.5 text-zinc-600">{row.reason}</p>
-                ) : null}
+                {row.reason ? <p className="mt-0.5 text-zinc-600">{row.reason}</p> : null}
                 <p className="mt-0.5 text-xs text-zinc-500">
                   {row.changedBy.name ?? row.changedBy.email} ·{" "}
                   {formatBusinessDateTime(row.createdAt)}
