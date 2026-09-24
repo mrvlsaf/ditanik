@@ -9,13 +9,55 @@ import { extractPdfLines } from "@/modules/lpo/infrastructure/pdf-text-extractio
 describe("extractLpoData — synthetic layouts", () => {
   it("reads label/value header fields, including a value wrapped onto the next line", () => {
     const lines: PdfLine[] = [
-      { page: 1, y: 700, tokens: [{ x: 327, text: "Order Number" }, { x: 422, text: "999AAA111" }] },
+      {
+        page: 1,
+        y: 700,
+        tokens: [
+          { x: 327, text: "Order Number" },
+          { x: 422, text: "999AAA111" },
+        ],
+      },
       { page: 1, y: 690, tokens: [{ x: 422, text: "#00777" }] },
-      { page: 1, y: 680, tokens: [{ x: 327, text: "Order date" }, { x: 422, text: "01.03.2027 09:00:00" }] },
-      { page: 1, y: 670, tokens: [{ x: 327, text: "Date of delivery" }, { x: 422, text: "02.03.2027" }] },
-      { page: 1, y: 660, tokens: [{ x: 327, text: "Currency" }, { x: 422, text: "UAE Dirhams" }] },
-      { page: 1, y: 640, tokens: [{ x: 66, text: "Terms of delivery" }, { x: 192, text: "---" }] },
-      { page: 1, y: 630, tokens: [{ x: 66, text: "Terms of payment" }, { x: 192, text: "30 DAYS CREDIT" }] },
+      {
+        page: 1,
+        y: 680,
+        tokens: [
+          { x: 327, text: "Order date" },
+          { x: 422, text: "01.03.2027 09:00:00" },
+        ],
+      },
+      {
+        page: 1,
+        y: 670,
+        tokens: [
+          { x: 327, text: "Date of delivery" },
+          { x: 422, text: "02.03.2027" },
+        ],
+      },
+      {
+        page: 1,
+        y: 660,
+        tokens: [
+          { x: 327, text: "Currency" },
+          { x: 422, text: "UAE Dirhams" },
+        ],
+      },
+      {
+        page: 1,
+        y: 640,
+        tokens: [
+          { x: 66, text: "Terms of delivery" },
+          { x: 192, text: "---" },
+        ],
+      },
+      {
+        page: 1,
+        y: 630,
+        tokens: [
+          { x: 66, text: "Terms of payment" },
+          { x: 192, text: "30 DAYS CREDIT" },
+        ],
+      },
     ];
 
     const result = extractLpoData(lines);
@@ -56,11 +98,21 @@ describe("extractLpoData — synthetic layouts", () => {
           { x: 329, text: "Warehouse 2, Al Quoz" },
         ],
       },
-      { page: 1, y: 450, tokens: [{ x: 66, text: "Dubai, UAE" }, { x: 329, text: "Dubai, UAE" }] },
+      {
+        page: 1,
+        y: 450,
+        tokens: [
+          { x: 66, text: "Dubai, UAE" },
+          { x: 329, text: "Dubai, UAE" },
+        ],
+      },
       {
         page: 1,
         y: 430,
-        tokens: [{ x: 66, text: "Position Item name" }, { x: 230, text: "Article no./" }],
+        tokens: [
+          { x: 66, text: "Position Item name" },
+          { x: 230, text: "Article no./" },
+        ],
       },
     ];
 
@@ -75,7 +127,14 @@ describe("extractLpoData — synthetic layouts", () => {
 
   it("parses one line item per Position-column marker, reading price/quantity only off the item's first line", () => {
     const lines: PdfLine[] = [
-      { page: 1, y: 500, tokens: [{ x: 66, text: "Position Item name" }, { x: 230, text: "Article no./" }] },
+      {
+        page: 1,
+        y: 500,
+        tokens: [
+          { x: 66, text: "Position Item name" },
+          { x: 230, text: "Article no./" },
+        ],
+      },
       {
         page: 1,
         y: 480,
@@ -112,7 +171,14 @@ describe("extractLpoData — synthetic layouts", () => {
           { x: 400, text: "100.00" },
         ],
       },
-      { page: 1, y: 410, tokens: [{ x: 66, text: "Total value of order" }, { x: 425, text: "235.00" }] },
+      {
+        page: 1,
+        y: 410,
+        tokens: [
+          { x: 66, text: "Total value of order" },
+          { x: 425, text: "235.00" },
+        ],
+      },
     ];
 
     const result = extractLpoData(lines);
@@ -120,7 +186,9 @@ describe("extractLpoData — synthetic layouts", () => {
 
     const [apron, hat] = result.lineItems;
     if (!apron || !hat) throw new Error("expected two line items");
-    expect(apron.description).toBe("APRON -Full-length kitchen apron in white polycotton");
+    expect(apron.description).toBe(
+      "APRON -Full-length kitchen apron in white polycotton",
+    );
     expect(apron.articleNo).toBe("12-000111");
     expect(apron.unitPrice).toBe(45);
     expect(apron.quantity).toBe(3);
@@ -136,7 +204,11 @@ describe("extractLpoData — synthetic layouts", () => {
 
   it("returns an all-null/empty result rather than throwing when nothing recognizable is present", () => {
     const result = extractLpoData([
-      { page: 1, y: 100, tokens: [{ x: 10, text: "Just some unrelated document text." }] },
+      {
+        page: 1,
+        y: 100,
+        tokens: [{ x: 10, text: "Just some unrelated document text." }],
+      },
     ]);
     expect(result.orderNumber).toBeNull();
     expect(result.clientName).toBeNull();
@@ -186,5 +258,55 @@ describe("extractLpoData — real sample LPO (Ishraq Hospitality layout)", () =>
     expect(trousers.quantity).toBe(2);
     expect(trousers.unitPrice).toBe(75);
     expect(trousers.discountPercent).toBe(0);
+  });
+
+  it("prefills all six line items from a real order with an extra 'Order unit' column (johnlpo-sample-2.pdf)", async () => {
+    // This layout shifted the Price/Quantity columns further right than
+    // johnlpo-sample.pdf's, and previously made extractLineItems drop every
+    // item silently (the fixed pixel bands it used to rely on missed this
+    // document's columns entirely) — this is the regression test for that.
+    const bytes = readFileSync(
+      path.join(__dirname, "..", "fixtures", "johnlpo-sample-2.pdf"),
+    );
+    const lines = await extractPdfLines(bytes);
+    const result = extractLpoData(lines);
+
+    expect(result.orderNumber).toBe("32610199732776UFAOE6");
+    expect(result.clientName).toBe("The Plaza Bistro Restaurant & Cafe LLC");
+
+    expect(result.lineItems).toHaveLength(6);
+    const [jacket1, jacket2, apron, shirt, trousers, waistcoat] = result.lineItems;
+    if (!jacket1 || !jacket2 || !apron || !shirt || !trousers || !waistcoat) {
+      throw new Error("expected six line items");
+    }
+
+    expect(jacket1.description).toContain("CHEF JACKET");
+    expect(jacket1.articleNo).toBe("99-342740");
+    expect(jacket1.unitPrice).toBe(90);
+    expect(jacket1.quantity).toBe(33);
+
+    expect(jacket2.description).toContain("JACKET");
+    expect(jacket2.articleNo).toBe("99-396554");
+    expect(jacket2.unitPrice).toBe(275);
+    expect(jacket2.quantity).toBe(4);
+
+    expect(apron.articleNo).toBe("99-368152");
+    expect(apron.unitPrice).toBe(70);
+    expect(apron.quantity).toBe(41);
+
+    expect(shirt.description).toContain("SHIRT/BLOUSE");
+    expect(shirt.articleNo).toBe("99-471979");
+    expect(shirt.unitPrice).toBe(80);
+    expect(shirt.quantity).toBe(30);
+
+    expect(trousers.description).toContain("TROUSERS");
+    expect(trousers.articleNo).toBe("99-274265");
+    expect(trousers.unitPrice).toBe(75);
+    expect(trousers.quantity).toBe(62);
+
+    expect(waistcoat.description).toContain("WAIST COAT");
+    expect(waistcoat.articleNo).toBe("99-489544");
+    expect(waistcoat.unitPrice).toBe(130);
+    expect(waistcoat.quantity).toBe(5);
   });
 });
