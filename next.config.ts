@@ -18,7 +18,14 @@ const nextConfig: NextConfig = {
       // tracer can't see it's needed and prunes it from the deployed
       // function by default — breaking PDF prefill only on Vercel, never
       // in local dev where the full package is always on disk.
-      "./node_modules/pdfjs-dist/legacy/build/*.mjs",
+      //
+      // This must go through pnpm's real ".pnpm" store path, not the
+      // top-level "node_modules/pdfjs-dist" symlink pnpm creates — Vercel's
+      // packaging step rejects any serverless function whose files were
+      // reached via a symlinked directory ("invalid deployment package").
+      // The "*" wildcards the version segment so a future patch/minor bump
+      // of the ^6.3.289-ranged dependency doesn't silently break this.
+      "./node_modules/.pnpm/pdfjs-dist@*/node_modules/pdfjs-dist/legacy/build/*.mjs",
     ],
   },
   async headers() {
