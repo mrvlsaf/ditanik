@@ -3,14 +3,30 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  serverExternalPackages: ["pdfjs-dist"],
+  serverExternalPackages: ["pdfjs-dist", "@napi-rs/canvas"],
   experimental: {
     serverActions: {
       bodySizeLimit: "25mb",
     },
   },
   outputFileTracingIncludes: {
-    "/**": ["./templates/documents/*.xlsx"],
+    "/**": [
+      "./templates/documents/*.xlsx",
+      // pdfjs-dist's Node build loads its "worker" via a dynamically computed
+      // path (a fake in-process worker, since real Worker threads don't
+      // exist server-side) rather than a plain import, so Next's file
+      // tracer can't see it's needed and prunes it from the deployed
+      // function by default — breaking PDF prefill only on Vercel, never
+      // in local dev where the full package is always on disk.
+      //
+      // This must go through pnpm's real ".pnpm" store path, not the
+      // top-level "node_modules/pdfjs-dist" symlink pnpm creates — Vercel's
+      // packaging step rejects any serverless function whose files were
+      // reached via a symlinked directory ("invalid deployment package").
+      // The "*" wildcards the version segment so a future patch/minor bump
+      // of the ^6.3.289-ranged dependency doesn't silently break this.
+      "./node_modules/.pnpm/pdfjs-dist@*/node_modules/pdfjs-dist/legacy/build/*.mjs",
+    ],
   },
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
@@ -36,7 +52,12 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
-              "connect-src 'self'",
+              // Direct-to-Blob uploads (lib/direct-blob-upload.ts) PUT the
+              // file straight from the browser to Vercel Blob storage, bypassing
+              // this app's own functions for the large binary — that request
+              // goes to Blob's own domain, not this origin, so it needs its own
+              // connect-src allowance.
+              "connect-src 'self' https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },

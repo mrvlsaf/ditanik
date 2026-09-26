@@ -6,7 +6,10 @@ import {
   receiveFabricSchema,
   type ReceiveFabricBatchValues,
 } from "@/modules/fabric/schemas/receive-fabric";
-import { storePdfUpload } from "@/modules/files/application/store-pdf";
+import {
+  storePdfUpload,
+  type UploadedFileRef,
+} from "@/modules/files/application/store-pdf";
 import { parseCalendarDateInput } from "@/modules/lpo/domain/due-dates";
 
 export type ReceiveFabricInput = {
@@ -14,7 +17,7 @@ export type ReceiveFabricInput = {
   invoiceRef: string;
   receivedDate: string;
   batches: ReadonlyArray<ReceiveFabricBatchValues>;
-  invoiceFile: File;
+  invoiceFile: File | UploadedFileRef;
   createdByUserId: string;
 };
 
@@ -51,7 +54,12 @@ export async function receiveFabric(input: ReceiveFabricInput) {
     batches: input.batches,
   });
 
-  if (!(input.invoiceFile instanceof File) || input.invoiceFile.size === 0) {
+  // `input.invoiceFile` is either a raw upload (validated the normal way)
+  // or an UploadedFileRef the browser already PUT to Blob directly (see
+  // lib/direct-blob-upload.ts) — `storePdfUpload` below validates/adopts
+  // whichever it is, so this only needs to reject the raw-upload case being
+  // empty; an UploadedFileRef always has real content by construction.
+  if (input.invoiceFile instanceof File && input.invoiceFile.size === 0) {
     throw new Error("Supplier invoice PDF is required.");
   }
 
@@ -123,13 +131,8 @@ export async function receiveFabric(input: ReceiveFabricInput) {
       return { invoice, batches: createdBatches };
     }, DB_TRANSACTION_OPTIONS);
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new Error(
-        "A fabric code collided. Please submit Receive fabric again.",
-      );
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new Error("A fabric code collided. Please submit Receive fabric again.");
     }
     if (
       error instanceof Error &&

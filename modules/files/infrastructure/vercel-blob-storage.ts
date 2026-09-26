@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { head, put } from "@vercel/blob";
+import { get, head, put } from "@vercel/blob";
 
+import { BLOB_KEY_PREFIX } from "@/modules/files/domain/pdf-rules";
 import type {
   FileStorage,
   StoredFile,
@@ -24,15 +25,15 @@ import type {
  * local storage already works, rather than handing out public Blob URLs.
  */
 
-const BLOB_KEY_PREFIX = "ditanik/";
-
 function toBlobPath(fileKey: string): string {
   return `${BLOB_KEY_PREFIX}${fileKey}`;
 }
 
 /** The `fileKey` this app hands around everywhere is the blob path with the fixed prefix stripped. */
 function fromBlobPath(pathname: string): string {
-  return pathname.startsWith(BLOB_KEY_PREFIX) ? pathname.slice(BLOB_KEY_PREFIX.length) : pathname;
+  return pathname.startsWith(BLOB_KEY_PREFIX)
+    ? pathname.slice(BLOB_KEY_PREFIX.length)
+    : pathname;
 }
 
 export const vercelBlobStorage: FileStorage = {
@@ -72,24 +73,55 @@ export const vercelBlobStorage: FileStorage = {
     };
   },
 
+  /**
+   * The browser already PUT this file directly to Blob (see
+   * lib/direct-blob-upload.ts and app/api/blob-upload/route.ts) using the
+   * exact same fileKey convention `save()` above uses — that upload's own
+   * `onBeforeGenerateToken` check already confined it to an allowed folder
+   * prefix. This only has to confirm the blob genuinely exists at that path
+   * (never trust a client-supplied key without checking) before the caller
+   * commits it to the database; nothing is re-uploaded.
+   */
+  async adopt({ fileKey, fileName, mimeType }): Promise<StoredFile> {
+    if (!fileKey || fileKey.includes("..")) {
+      throw new Error("Invalid file key.");
+    }
+
+    const metadata = await head(toBlobPath(fileKey));
+    return {
+      fileKey,
+      fileName,
+      mimeType: metadata.contentType || mimeType,
+    };
+  },
+
   async read(fileKey: string): Promise<StoredFileBytes> {
     if (!fileKey || fileKey.includes("..")) {
       throw new Error("Invalid file key.");
     }
 
+    // `head()` + a bare `fetch(metadata.url)` looked reasonable but silently
+    // 403'd: this store is private, and a private blob's content URL still
+    // requires the same auth as everything else in this SDK — `head()`
+    // never carries that over into the plain URL it returns. `get()` is the
+    // SDK's own helper for reading blob content and attaches that auth
+    // itself, so it's what actually works here.
     const blobPath = toBlobPath(fileKey);
-    const metadata = await head(blobPath);
-    const response = await fetch(metadata.url);
-    if (!response.ok) {
-      throw new Error(`Could not read stored file "${fileKey}" (${response.status}).`);
+    const result = await get(blobPath, { access: "private" });
+    if (!result || result.statusCode !== 200) {
+      throw new Error(`Could not read stored file "${fileKey}".`);
     }
 
-    const fileName = fileKey.split("/").pop()?.replace(/^[0-9a-f-]+-/i, "") ?? fileKey;
+    const fileName =
+      fileKey
+        .split("/")
+        .pop()
+        ?.replace(/^[0-9a-f-]+-/i, "") ?? fileKey;
 
     return {
-      bytes: Buffer.from(await response.arrayBuffer()),
+      bytes: Buffer.from(await new Response(result.stream).arrayBuffer()),
       fileName,
-      mimeType: metadata.contentType || "application/octet-stream",
+      mimeType: result.blob.contentType || "application/octet-stream",
     };
   },
 };

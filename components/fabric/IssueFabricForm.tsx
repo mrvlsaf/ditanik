@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   issueFabricAction,
   type IssueFabricActionState,
@@ -29,17 +31,12 @@ export function IssueFabricForm({
   manufacturers: Array<{ id: string; name: string }>;
   lpos: Array<{ id: string; lpoNumber: string; nickname: string }>;
 }>) {
-  const [state, formAction, isPending] = useActionState(
-    issueFabricAction,
-    initialState,
-  );
+  const [state, formAction, isPending] = useActionState(issueFabricAction, initialState);
+  useGlobalPending(isPending);
   const today = todayInputValue();
 
   return (
-    <form
-      action={formAction}
-      className="space-y-4 surface-card p-4 sm:p-6"
-    >
+    <form action={formAction} className="space-y-4 surface-card p-4 sm:p-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-zinc-800">Batch</span>
@@ -54,16 +51,13 @@ export function IssueFabricForm({
             </option>
             {batches.map((b) => (
               <option key={b.id} value={b.id} disabled={b.stockMeters <= 0}>
-                {b.fabricCode} · {b.fabricType} / {b.colour} ({b.stockMeters}m
-                avail)
+                {b.fabricCode} · {b.fabricType} / {b.colour} ({b.stockMeters}m avail)
               </option>
             ))}
           </select>
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Manufacturer
-          </span>
+          <span className="mb-1 block font-medium text-zinc-800">Manufacturer</span>
           <select
             name="manufacturerId"
             required
@@ -81,9 +75,7 @@ export function IssueFabricForm({
           </select>
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Quantity (meters)
-          </span>
+          <span className="mb-1 block font-medium text-zinc-800">Quantity (meters)</span>
           <input
             type="number"
             name="quantityMeters"
@@ -129,8 +121,8 @@ export function IssueFabricForm({
             ))}
           </select>
           <span className="mt-1 block text-xs text-zinc-500">
-            Leave empty to keep this issue as standalone fabric on the
-            manufacturer ledger. Choose an LPO to attribute meters to that job.
+            Leave empty to keep this issue as standalone fabric on the manufacturer
+            ledger. Choose an LPO to attribute meters to that job.
           </span>
         </label>
       </div>

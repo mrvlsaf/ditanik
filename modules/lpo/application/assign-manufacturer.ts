@@ -1,7 +1,10 @@
 import { LpoStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
-import { storePdfUpload } from "@/modules/files/application/store-pdf";
+import {
+  storePdfUpload,
+  type UploadedFileRef,
+} from "@/modules/files/application/store-pdf";
 import { assertCanAssignManufacturer } from "@/modules/lpo/domain/lpo-status";
 import { assignManufacturerSchema } from "@/modules/lpo/schemas/assign-manufacturer";
 import { normalizeManufacturerName } from "@/modules/manufacturer/domain/normalize";
@@ -10,7 +13,7 @@ export type AssignManufacturerInput = {
   lpoId: string;
   manufacturerId?: string;
   newManufacturerName?: string;
-  productionFile: File;
+  productionFile: File | UploadedFileRef;
   actorUserId: string;
 };
 

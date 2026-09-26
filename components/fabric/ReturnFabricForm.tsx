@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   returnFabricAction,
   type ReturnFabricActionState,
@@ -28,17 +30,12 @@ export function ReturnFabricForm({
   manufacturers: Array<{ id: string; name: string }>;
   lpos: Array<{ id: string; lpoNumber: string; nickname: string }>;
 }>) {
-  const [state, formAction, isPending] = useActionState(
-    returnFabricAction,
-    initialState,
-  );
+  const [state, formAction, isPending] = useActionState(returnFabricAction, initialState);
+  useGlobalPending(isPending);
   const today = todayInputValue();
 
   return (
-    <form
-      action={formAction}
-      className="space-y-4 surface-card p-4 sm:p-6"
-    >
+    <form action={formAction} className="space-y-4 surface-card p-4 sm:p-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-zinc-800">Batch</span>
@@ -59,9 +56,7 @@ export function ReturnFabricForm({
           </select>
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            From manufacturer
-          </span>
+          <span className="mb-1 block font-medium text-zinc-800">From manufacturer</span>
           <select
             name="manufacturerId"
             required
@@ -118,8 +113,8 @@ export function ReturnFabricForm({
             ))}
           </select>
           <span className="mt-1 block text-xs text-zinc-500">
-            Pick the same LPO used when the fabric was issued, so that LPO’s
-            balance updates correctly.
+            Pick the same LPO used when the fabric was issued, so that LPO’s balance
+            updates correctly.
           </span>
         </label>
         <label className="block text-sm sm:col-span-2">
@@ -140,11 +135,7 @@ export function ReturnFabricForm({
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={isPending}
-        className="btn-primary min-h-11"
-      >
+      <button type="submit" disabled={isPending} className="btn-primary min-h-11">
         {isPending ? "Saving…" : "Record return"}
       </button>
     </form>

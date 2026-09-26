@@ -1,15 +1,22 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useActionState, useEffect, useRef, useState } from "react";
+
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { useDirectUploadOnSubmit } from "@/components/ui/useDirectUploadOnSubmit";
 
 import {
   createLpoAction,
   type CreateLpoActionState,
 } from "@/modules/lpo/application/create-lpo-action";
+import { assertPdfFile } from "@/modules/files/domain/pdf-rules";
 import {
-  extractLpoFromPdfAction,
-  type ExtractLpoFromPdfActionState,
-} from "@/modules/lpo/application/extract-lpo-from-pdf-action";
+  countFilledFields,
+  extractLpoData,
+  type ExtractedLpoData,
+} from "@/modules/lpo/domain/lpo-extraction";
+import { extractPdfLinesInBrowser } from "@/modules/lpo/infrastructure/pdf-text-extraction-browser";
 import {
   DEFAULT_VAT_PERCENT,
   calculateGrandTotal,
@@ -24,7 +31,13 @@ const initialState: CreateLpoActionState = {
   message: null,
 };
 
-const initialExtractState: ExtractLpoFromPdfActionState = {
+type ExtractState = {
+  ok: boolean;
+  message: string | null;
+  data: ExtractedLpoData | null;
+};
+
+const initialExtractState: ExtractState = {
   ok: false,
   message: null,
   data: null,
@@ -94,7 +107,9 @@ function tryLineTotal(row: LineItemRow): number | null {
   }
 }
 
-export function CreateLpoForm() {
+export function CreateLpoForm({
+  usesBlobStorage,
+}: Readonly<{ usesBlobStorage: boolean }>) {
   const today = todayInputValue();
   const emptyFields: FieldValues = {
     lpoNumber: "",
@@ -139,22 +154,72 @@ export function CreateLpoForm() {
 
   const [extractState, setExtractState] = useState(initialExtractState);
   const [isExtracting, setIsExtracting] = useState(false);
+  const {
+    onSubmit: onDirectUploadSubmit,
+    isUploadingFile,
+    uploadError,
+  } = useDirectUploadOnSubmit({
+    formAction,
+    formRef,
+    fileFieldName: "file",
+    fileRefFieldName: "fileRef",
+    folder: "lpo-originals",
+    usesBlobStorage,
+  });
+  useGlobalPending(isPending || isExtracting || isUploadingFile);
 
   function updateField(patch: Partial<FieldValues>) {
     setFields((prev) => ({ ...prev, ...patch }));
   }
 
+  // Runs entirely in the browser — this used to POST the file to a
+  // Server Action just to read text back out of it, which both cost an
+  // unnecessary round trip and, for a large PDF, hit the same Vercel
+  // Serverless Function payload cap the other uploads on this form now
+  // route around (see lib/direct-blob-upload.ts). Nothing here is ever
+  // stored, so there was nothing the server actually needed to do.
   async function handlePrefillFromPdf() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
-      setExtractState({ ok: false, message: "Choose the LPO PDF below first.", data: null });
+      setExtractState({
+        ok: false,
+        message: "Choose the LPO PDF below first.",
+        data: null,
+      });
       return;
     }
 
     setIsExtracting(true);
-    const formData = new FormData();
-    formData.set("file", file);
-    const result = await extractLpoFromPdfAction(initialExtractState, formData);
+    let result: ExtractState;
+    try {
+      assertPdfFile(file);
+      const lines = await extractPdfLinesInBrowser(file);
+      const data = extractLpoData(lines);
+      const filledCount = countFilledFields(data);
+
+      if (filledCount === 0) {
+        result = {
+          ok: false,
+          message:
+            "Couldn't find fields this parser recognizes in that PDF — no problem, just fill in the form by hand.",
+          data: null,
+        };
+      } else {
+        result = {
+          ok: true,
+          message: `Prefilled ${filledCount} field${filledCount === 1 ? "" : "s"} from the PDF — check every one before saving, especially the line items.`,
+          data,
+        };
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error &&
+        /pdf files are allowed|pdf must be|pdf file is empty/i.test(error.message)
+          ? error.message
+          : "Couldn't read that PDF — fill in the form manually.";
+      Sentry.captureException(error, { tags: { feature: "lpo_pdf_prefill" } });
+      result = { ok: false, message, data: null };
+    }
     setIsExtracting(false);
     setExtractState(result);
 
@@ -215,6 +280,7 @@ export function CreateLpoForm() {
     <form
       ref={formRef}
       action={formAction}
+      onSubmit={onDirectUploadSubmit}
       className="space-y-6 surface-card p-4 sm:p-6"
     >
       <input
@@ -227,7 +293,9 @@ export function CreateLpoForm() {
             articleNo: row.articleNo || undefined,
             quantity: Number(row.quantity),
             unitPrice: Number(row.unitPrice),
-            discountPercent: row.discountPercent ? Number(row.discountPercent) : undefined,
+            discountPercent: row.discountPercent
+              ? Number(row.discountPercent)
+              : undefined,
           })),
         )}
       />
@@ -309,8 +377,8 @@ export function CreateLpoForm() {
               </button>
             </div>
             <span className="mt-1 block text-xs text-zinc-500">
-              PDF only (max 25MB). Assignment +2 / production +12 / client delivery
-              +15 days are calculated from the received date.
+              PDF only (max 25MB). Assignment +2 / production +12 / client delivery +15
+              days are calculated from the received date.
             </span>
             {extractState.message ? (
               <p
@@ -329,15 +397,12 @@ export function CreateLpoForm() {
           Client &amp; commercial details
         </h3>
         <p className="text-xs text-zinc-500">
-          Feeds the Quotation, Quote, Invoice and Delivery Note generated for this
-          LPO — Deezano&apos;s own letterhead comes from the Company profile
-          settings.
+          Feeds the Quotation, Quote, Invoice and Delivery Note generated for this LPO —
+          Deezano&apos;s own letterhead comes from the Company profile settings.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Site code
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Site code</span>
             <input
               name="siteCode"
               required
@@ -347,9 +412,9 @@ export function CreateLpoForm() {
               placeholder="e.g. AHO"
             />
             <span className="mt-1 block text-xs text-zinc-500">
-              Short code identifying the delivery site — used in document numbers
-              (e.g. AHO-INV-23072026-09). Not extracted from the PDF — the source
-              LPO doesn&apos;t carry it.
+              Short code identifying the delivery site — used in document numbers (e.g.
+              AHO-INV-23072026-09). Not extracted from the PDF — the source LPO
+              doesn&apos;t carry it.
             </span>
           </label>
 
@@ -388,9 +453,7 @@ export function CreateLpoForm() {
           </label>
 
           <label className="block text-sm sm:col-span-2">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Invoice address
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Invoice address</span>
             <textarea
               name="invoiceAddress"
               required
@@ -403,9 +466,7 @@ export function CreateLpoForm() {
           </label>
 
           <label className="block text-sm sm:col-span-2">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Delivery address
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Delivery address</span>
             <textarea
               name="deliveryAddress"
               rows={3}
@@ -417,9 +478,7 @@ export function CreateLpoForm() {
           </label>
 
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Payment terms
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Payment terms</span>
             <input
               name="paymentTerms"
               value={fields.paymentTerms}
@@ -430,9 +489,7 @@ export function CreateLpoForm() {
           </label>
 
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Delivery terms
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Delivery terms</span>
             <input
               name="deliveryTerms"
               value={fields.deliveryTerms}
@@ -536,17 +593,15 @@ export function CreateLpoForm() {
               </div>
             </label>
             <div className="text-xs text-zinc-500 lg:col-span-6">
-              Line total:{" "}
-              {rowTotals[index] != null
-                ? rowTotals[index]!.toFixed(2)
-                : "—"}
+              Line total: {rowTotals[index] != null ? rowTotals[index]!.toFixed(2) : "—"}
             </div>
           </div>
         ))}
 
         <div className="flex flex-col items-end gap-1 border-t border-zinc-100 pt-3 text-sm">
           <span className="text-zinc-600">
-            Subtotal: <span className="font-medium text-zinc-900">{subtotal.toFixed(2)}</span>
+            Subtotal:{" "}
+            <span className="font-medium text-zinc-900">{subtotal.toFixed(2)}</span>
           </span>
           <span className="text-zinc-600">
             VAT ({DEFAULT_VAT_PERCENT}%):{" "}
@@ -560,12 +615,18 @@ export function CreateLpoForm() {
           </span>
           {!allRowsValid ? (
             <span className="text-xs text-amber-700">
-              Complete every line (description, qty, unit price) to see accurate
-              totals — invalid rows are excluded above.
+              Complete every line (description, qty, unit price) to see accurate totals —
+              invalid rows are excluded above.
             </span>
           ) : null}
         </div>
       </div>
+
+      {uploadError ? (
+        <p className="text-sm text-red-700" role="status">
+          {uploadError}
+        </p>
+      ) : null}
 
       {state.message ? (
         <p
@@ -578,10 +639,10 @@ export function CreateLpoForm() {
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || isUploadingFile}
         className="btn-primary min-h-11"
       >
-        {isPending ? "Creating…" : "Create LPO"}
+        {isUploadingFile ? "Uploading…" : isPending ? "Creating…" : "Create LPO"}
       </button>
     </form>
   );

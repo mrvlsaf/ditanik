@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
+
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
 import { useRouter } from "next/navigation";
 
 import {
@@ -102,6 +104,7 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
     },
     initialState,
   );
+  useGlobalPending(isPending);
 
   const rowTotals = lineItems.map(tryLineTotal);
   const subtotal = calculateLineItemsSubtotal(
@@ -132,7 +135,9 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
             articleNo: row.articleNo || undefined,
             quantity: Number(row.quantity),
             unitPrice: Number(row.unitPrice),
-            discountPercent: row.discountPercent ? Number(row.discountPercent) : undefined,
+            discountPercent: row.discountPercent
+              ? Number(row.discountPercent)
+              : undefined,
           })),
         )}
       />
@@ -140,10 +145,10 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-zinc-800">LPO details</h3>
         <p className="text-xs text-zinc-500">
-          LPO number, received date, and the original PDF aren&apos;t editable
-          here — the number is a fixed identifier and the received date drives
-          the assignment/production/delivery due dates (use the dates section
-          on the LPO page to extend those, with a reason).
+          LPO number, received date, and the original PDF aren&apos;t editable here — the
+          number is a fixed identifier and the received date drives the
+          assignment/production/delivery due dates (use the dates section on the LPO page
+          to extend those, with a reason).
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="block text-sm">
@@ -180,15 +185,13 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
           Client &amp; commercial details
         </h3>
         <p className="text-xs text-zinc-500">
-          Feeds the Quotation, Quote, Invoice and Delivery Note generated for
-          this LPO from now on — documents already generated keep the details
-          that were true when they were made.
+          Feeds the Quotation, Quote, Invoice and Delivery Note generated for this LPO
+          from now on — documents already generated keep the details that were true when
+          they were made.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Site code
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Site code</span>
             <input
               name="siteCode"
               required
@@ -230,9 +233,7 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
           </label>
 
           <label className="block text-sm sm:col-span-2">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Invoice address
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Invoice address</span>
             <textarea
               name="invoiceAddress"
               required
@@ -243,9 +244,7 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
           </label>
 
           <label className="block text-sm sm:col-span-2">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Delivery address
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Delivery address</span>
             <textarea
               name="deliveryAddress"
               rows={3}
@@ -256,9 +255,7 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
           </label>
 
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Payment terms
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Payment terms</span>
             <input
               name="paymentTerms"
               defaultValue={defaults.paymentTerms}
@@ -268,9 +265,7 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
           </label>
 
           <label className="block text-sm">
-            <span className="mb-1 block font-medium text-zinc-800">
-              Delivery terms
-            </span>
+            <span className="mb-1 block font-medium text-zinc-800">Delivery terms</span>
             <input
               name="deliveryTerms"
               defaultValue={defaults.deliveryTerms}
@@ -385,15 +380,15 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
               </div>
             </label>
             <div className="text-xs text-zinc-500 lg:col-span-6">
-              Line total:{" "}
-              {rowTotals[index] != null ? rowTotals[index]!.toFixed(2) : "—"}
+              Line total: {rowTotals[index] != null ? rowTotals[index]!.toFixed(2) : "—"}
             </div>
           </div>
         ))}
 
         <div className="flex flex-col items-end gap-1 border-t border-zinc-100 pt-3 text-sm">
           <span className="text-zinc-600">
-            Subtotal: <span className="font-medium text-zinc-900">{subtotal.toFixed(2)}</span>
+            Subtotal:{" "}
+            <span className="font-medium text-zinc-900">{subtotal.toFixed(2)}</span>
           </span>
           <span className="text-zinc-600">
             VAT ({DEFAULT_VAT_PERCENT}%):{" "}
@@ -407,8 +402,8 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
           </span>
           {!allRowsValid ? (
             <span className="text-xs text-amber-700">
-              Complete every line (description, qty, unit price) to see accurate
-              totals — invalid rows are excluded above.
+              Complete every line (description, qty, unit price) to see accurate totals —
+              invalid rows are excluded above.
             </span>
           ) : null}
         </div>

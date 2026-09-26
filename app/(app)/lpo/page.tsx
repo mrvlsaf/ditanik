@@ -6,11 +6,9 @@ import { SectionLoading } from "@/components/app-shell/SectionLoading";
 import { CreateLpoForm } from "@/components/lpo/CreateLpoForm";
 import { LpoActionsMenu } from "@/components/lpo/LpoActionsMenu";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
-import {
-  formatBusinessDateTime,
-  formatCalendarDate,
-} from "@/lib/dates/format";
+import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
 import { listRecentLpos } from "@/modules/lpo/application/get-lpo";
+import { isUsingBlobStorage } from "@/modules/files/infrastructure/get-file-storage";
 
 async function LpoDashboard() {
   const lpos = await listRecentLpos();
@@ -94,7 +92,7 @@ export default function LpoPage() {
           <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
             Create LPO
           </h2>
-          <CreateLpoForm />
+          <CreateLpoForm usesBlobStorage={isUsingBlobStorage()} />
         </section>
 
         <section>

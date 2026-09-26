@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   convertDocumentToPdfAction,
   type ConvertDocumentToPdfActionState,
@@ -33,6 +35,7 @@ export function GeneratedDocumentRow({
     convertDocumentToPdfAction,
     initialState,
   );
+  useGlobalPending(isPending);
 
   const pdfFileKey = state.ok ? (state.pdfFileKey ?? doc.pdfFileKey) : doc.pdfFileKey;
 

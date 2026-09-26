@@ -4,17 +4,21 @@ import type { PdfLine } from "@/modules/lpo/infrastructure/pdf-text-extraction";
  * Rule-based prefill parser for the client LPO PDF format Ishraq
  * Hospitality's procurement system emits. This is deliberately NOT a general
  * PDF-understanding engine: it matches fixed labels ("Order Number", "Order
- * date", "Invoice address", "Delivery address", ...) and a fixed table
- * column layout, calibrated against a real sample LPO
- * (tests/fixtures/JOHNLPO.pdf). Every field is best-effort and independently
- * optional — a miss on one field never blocks or corrupts another, and
- * nothing here writes to the database. The caller always lands the result in
- * the reviewable Create LPO form; the person filling it out is the last line
- * of defense against a parsing mistake, never this module.
+ * date", "Invoice address", "Delivery address", ...) and reads the line-item
+ * table's columns from each document's own content rather than a fixed
+ * layout, calibrated against two real sample LPOs
+ * (tests/fixtures/johnlpo-sample.pdf, plus a second real order with an extra
+ * "Order unit" conversion column that shifted every column to its right).
+ * Every field is best-effort and independently optional — a miss on one
+ * field never blocks or corrupts another, and nothing here writes to the
+ * database. The caller always lands the result in the reviewable Create LPO
+ * form; the person filling it out is the last line of defense against a
+ * parsing mistake, never this module.
  *
- * The line-item table's column x-positions are the part most likely to need
- * retuning against a different client's LPO layout — flagged in the doc
- * comments below the table parser.
+ * The line-item table is still the part most likely to need attention
+ * against a new client's LPO layout — see the block comment above
+ * `extractLineItems` for how its column detection works and what shifted it
+ * away from fixed pixel bands.
  */
 
 export type ExtractedLpoLineItem = {
@@ -45,7 +49,10 @@ export type ExtractedLpoData = {
 export type { PdfLine, PdfToken } from "@/modules/lpo/infrastructure/pdf-text-extraction";
 
 function lineText(line: PdfLine): string {
-  return line.tokens.map((t) => t.text).join(" ").trim();
+  return line.tokens
+    .map((t) => t.text)
+    .join(" ")
+    .trim();
 }
 
 function isPlaceholder(value: string): boolean {
@@ -130,10 +137,10 @@ function parseSourceDate(raw: string | null): string | null {
 
 const CURRENCY_NAME_MAP: Record<string, string> = {
   "uae dirhams": "AED",
-  "aed": "AED",
+  aed: "AED",
   "us dollar": "USD",
   "us dollars": "USD",
-  "usd": "USD",
+  usd: "USD",
 };
 
 function normalizeCurrency(raw: string | null): string | null {
@@ -180,7 +187,8 @@ function extractAddressColumns(
       /position/i.test(lineText(line)) &&
       /item name/i.test(lineText(line)),
   );
-  const endIndex = tableHeaderIndex === -1 ? Math.min(lines.length, headerIndex + 12) : tableHeaderIndex;
+  const endIndex =
+    tableHeaderIndex === -1 ? Math.min(lines.length, headerIndex + 12) : tableHeaderIndex;
 
   const invoiceLines: PdfLine[] = [];
   const deliveryLines: PdfLine[] = [];
@@ -203,7 +211,8 @@ function extractAddressColumns(
   };
 }
 
-const COMPANY_NAME_PATTERN = /^[A-Z0-9&.,'\s-]+(LLC|L\.L\.C\.?|CO\.?|COMPANY|EST\.?|LTD\.?)$/;
+const COMPANY_NAME_PATTERN =
+  /^[A-Z0-9&.,'\s-]+(LLC|L\.L\.C\.?|CO\.?|COMPANY|EST\.?|LTD\.?)$/;
 
 function parseInvoiceColumn(column: AddressColumn): {
   clientName: string | null;
@@ -213,7 +222,12 @@ function parseInvoiceColumn(column: AddressColumn): {
 } {
   const texts = column.lines.map(lineText).filter(Boolean);
   if (texts.length === 0) {
-    return { clientName: null, clientSubEntityName: null, clientTrn: null, invoiceAddress: null };
+    return {
+      clientName: null,
+      clientSubEntityName: null,
+      clientTrn: null,
+      invoiceAddress: null,
+    };
   }
 
   const clientName = texts[0] ?? null;
@@ -230,7 +244,8 @@ function parseInvoiceColumn(column: AddressColumn): {
     COMPANY_NAME_PATTERN.test(firstRestLine)
       ? 0
       : -1;
-  const clientSubEntityName = subEntityIndex === -1 ? null : (rest[subEntityIndex] ?? null);
+  const clientSubEntityName =
+    subEntityIndex === -1 ? null : (rest[subEntityIndex] ?? null);
 
   const addressLines = rest.filter((_, i) => i !== trnIndex && i !== subEntityIndex);
   const invoiceAddress = addressLines.length > 0 ? addressLines.join("\n") : null;
@@ -238,7 +253,10 @@ function parseInvoiceColumn(column: AddressColumn): {
   return { clientName, clientSubEntityName, clientTrn, invoiceAddress };
 }
 
-function parseDeliveryColumn(column: AddressColumn, clientName: string | null): string | null {
+function parseDeliveryColumn(
+  column: AddressColumn,
+  clientName: string | null,
+): string | null {
   const texts = column.lines.map(lineText).filter(Boolean);
   if (texts.length === 0) return null;
   // Drop the leading entity-name line when it repeats the invoice block's —
@@ -247,25 +265,36 @@ function parseDeliveryColumn(column: AddressColumn, clientName: string | null): 
   return addressLines.length > 0 ? addressLines.join("\n") : null;
 }
 
-// Line-item table column x-bands, calibrated against tests/fixtures/JOHNLPO.pdf
-// (an Ishraq Hospitality-issued PO). Re-tune these against a couple more real
-// client LPOs before trusting this table parser the way the label-based
-// header fields above can be trusted — the table is the harder,
-// more layout-sensitive half of this parser.
-const TABLE_COLUMNS = {
-  position: { min: 55, max: 96 },
-  itemName: { min: 96, max: 225 },
-  articleNo: { min: 225, max: 292 },
-  price: { min: 292, max: 335 },
-  quantity: { min: 335, max: 396 },
-};
-
-function tokensInBand(line: PdfLine, band: { min: number; max: number }) {
-  return line.tokens.filter((t) => t.x >= band.min && t.x < band.max);
-}
+// Line-item table column detection, calibrated against
+// tests/fixtures/johnlpo-sample.pdf (an Ishraq Hospitality-issued PO) and a
+// second real client LPO with an extra "Order unit" conversion column
+// between "Article no." and "Price" — different LPOs from the same source
+// system print a different number of columns there, which shifts the
+// price/quantity columns sideways, so fixed pixel bands for those drift and
+// silently drop every line item on a differently-laid-out LPO. Detection
+// here instead reads each row's own content:
+//   - a new item starts at a line whose leftmost token is a bare position
+//     number (tokens within a line are already sorted left-to-right);
+//   - the description column's left edge is read off the first item's row
+//     (the token right after its position number) rather than assumed, so it
+//     tracks whatever this document's actual layout is;
+//   - the article number is whichever token looks like "(NN-NNNNNN)" or
+//     "NN-NNNNNN", found anywhere in the item's row group, and its
+//     x-position is the description column's right edge for that item;
+//   - price and quantity are told apart by number format, not position:
+//     quantity is the one column consistently printed with exactly 3 decimal
+//     places (e.g. "33.000"), while price and the running total both use 2
+//     (e.g. "90.00", "2'970.00") — telling those two apart uses their order
+//     relative to quantity (price sits just left of it) rather than an
+//     absolute column position, since how many extra columns a template
+//     prints in between varies.
+const POSITION_PATTERN = /^\d{1,3}$/;
+const ARTICLE_NO_PATTERN = /^\(?\d{1,4}-\d{3,}\)?$/;
+const QUANTITY_PATTERN = /^\d[\d,']*\.\d{3}$/;
+const PRICE_LIKE_PATTERN = /^\d[\d,']*\.\d{2}$/;
 
 function firstNumber(text: string): number | null {
-  const match = /-?\d+(\.\d+)?/.exec(text.replace(/,/g, ""));
+  const match = /-?\d+(\.\d+)?/.exec(text.replace(/[,']/g, ""));
   return match ? Number(match[0]) : null;
 }
 
@@ -283,14 +312,22 @@ function extractLineItems(lines: PdfLine[]): ExtractedLpoLineItem[] {
     endIndex === -1 ? lines.length : endIndex,
   );
 
-  // A new item starts at a line carrying a bare integer in the Position band.
+  // A new item starts at a line whose leftmost token is a bare position number.
   const startIndices: number[] = [];
   tableLines.forEach((line, i) => {
-    const positionTokens = tokensInBand(line, TABLE_COLUMNS.position);
-    if (positionTokens.some((t) => /^\d+$/.test(t.text.trim()))) {
+    const first = line.tokens[0];
+    if (first && POSITION_PATTERN.test(first.text.trim())) {
       startIndices.push(i);
     }
   });
+
+  // The description column's left edge, read off the first item's row rather
+  // than hard-coded — see the block comment above.
+  const [firstStartIndex] = startIndices;
+  const referenceRow =
+    firstStartIndex !== undefined ? tableLines[firstStartIndex] : undefined;
+  const descriptionStartX = referenceRow?.tokens[1]?.x ?? 96;
+  const descriptionMinX = descriptionStartX - 2;
 
   const items: ExtractedLpoLineItem[] = [];
   startIndices.forEach((startIndex, i) => {
@@ -299,22 +336,37 @@ function extractLineItems(lines: PdfLine[]): ExtractedLpoLineItem[] {
     const firstLine = group[0];
     if (!firstLine) return;
 
+    const articleToken = group
+      .flatMap((line) => line.tokens)
+      .find((t) => ARTICLE_NO_PATTERN.test(t.text.trim()));
+    const articleNo = articleToken
+      ? articleToken.text.trim().replace(/^\(|\)$/g, "")
+      : null;
+    const descriptionMaxX = articleToken?.x ?? Infinity;
+
     const descriptionParts = group.flatMap((line) =>
-      tokensInBand(line, TABLE_COLUMNS.itemName).map((t) => t.text),
+      line.tokens
+        .filter((t) => t.x >= descriptionMinX && t.x < descriptionMaxX)
+        .map((t) => t.text),
     );
     const description = descriptionParts.join(" ").replace(/\s+/g, " ").trim();
 
-    const articleToken = group
-      .flatMap((line) => tokensInBand(line, TABLE_COLUMNS.articleNo))
-      .find((t) => /^\([^)]+\)$/.test(t.text.trim()));
-    const articleNo = articleToken ? articleToken.text.trim().replace(/^\(|\)$/g, "") : null;
-
-    const priceToken = tokensInBand(firstLine, TABLE_COLUMNS.price)[0];
-    const unitPrice = priceToken ? firstNumber(priceToken.text) : null;
-
-    const quantityToken = tokensInBand(firstLine, TABLE_COLUMNS.quantity)[0];
+    // Quantity is the one number column consistently printed with exactly 3
+    // decimal places; price and the running total both use 2, and are told
+    // apart by which side of the quantity column they land on.
+    const quantityToken = firstLine.tokens.find((t) =>
+      QUANTITY_PATTERN.test(t.text.trim()),
+    );
     const quantityRaw = quantityToken ? firstNumber(quantityToken.text) : null;
     const quantity = quantityRaw != null ? Math.round(quantityRaw) : null;
+
+    const priceCandidates = firstLine.tokens.filter((t) =>
+      PRICE_LIKE_PATTERN.test(t.text.trim()),
+    );
+    const priceToken = quantityToken
+      ? [...priceCandidates].reverse().find((t) => t.x < quantityToken.x)
+      : priceCandidates[0];
+    const unitPrice = priceToken ? firstNumber(priceToken.text) : null;
 
     const discountText = group.map(lineText).join(" ");
     const discountMatch = /\(([\d.]+)\s*%\)/.exec(discountText);
@@ -336,14 +388,20 @@ export function extractLpoData(lines: PdfLine[]): ExtractedLpoData {
 
   const paymentTermsRaw = extractLabelValue(lines, "Terms of payment");
   const deliveryTermsRaw = extractLabelValue(lines, "Terms of delivery");
-  const paymentTerms = paymentTermsRaw && !isPlaceholder(paymentTermsRaw) ? paymentTermsRaw : null;
+  const paymentTerms =
+    paymentTermsRaw && !isPlaceholder(paymentTermsRaw) ? paymentTermsRaw : null;
   const deliveryTerms =
     deliveryTermsRaw && !isPlaceholder(deliveryTermsRaw) ? deliveryTermsRaw : null;
 
   const columns = extractAddressColumns(lines);
   const invoiceParsed = columns
     ? parseInvoiceColumn(columns.invoice)
-    : { clientName: null, clientSubEntityName: null, clientTrn: null, invoiceAddress: null };
+    : {
+        clientName: null,
+        clientSubEntityName: null,
+        clientTrn: null,
+        invoiceAddress: null,
+      };
   const deliveryAddress = columns
     ? parseDeliveryColumn(columns.delivery, invoiceParsed.clientName)
     : null;
@@ -362,4 +420,31 @@ export function extractLpoData(lines: PdfLine[]): ExtractedLpoData {
     deliveryTerms,
     lineItems: extractLineItems(lines),
   };
+}
+/**
+ * How many of `data`'s fields the parser actually managed to fill in — used
+ * to decide whether a PDF was recognizable at all (see handlePrefillFromPdf
+ * in CreateLpoForm.tsx, which runs this parser entirely client-side: this
+ * used to live in a Server Action, but shipping the file to the server just
+ * to read it back apart served no purpose, since nothing here is ever
+ * stored during extraction).
+ */
+export function countFilledFields(data: ExtractedLpoData): number {
+  const headerFields = [
+    data.orderNumber,
+    data.orderDate,
+    data.deliveryDate,
+    data.currency,
+    data.clientName,
+    data.clientSubEntityName,
+    data.clientTrn,
+    data.invoiceAddress,
+    data.deliveryAddress,
+    data.paymentTerms,
+    data.deliveryTerms,
+  ];
+  const filledHeaders = headerFields.filter(
+    (value) => value != null && value !== "",
+  ).length;
+  return filledHeaders + data.lineItems.length;
 }

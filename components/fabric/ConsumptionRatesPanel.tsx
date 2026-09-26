@@ -2,6 +2,8 @@
 
 import { useActionState, useTransition } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   createConsumptionRateAction,
   deactivateConsumptionRateAction,
@@ -20,6 +22,7 @@ export function ConsumptionRatesPanel({
     initialState,
   );
   const [isDeactivating, startDeactivate] = useTransition();
+  useGlobalPending(isPending || isDeactivating);
 
   return (
     <div className="space-y-6">
@@ -37,9 +40,7 @@ export function ConsumptionRatesPanel({
           />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Meters / unit
-          </span>
+          <span className="mb-1 block font-medium text-zinc-800">Meters / unit</span>
           <input
             type="number"
             name="metersPerUnit"
@@ -50,11 +51,7 @@ export function ConsumptionRatesPanel({
             className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
           />
         </label>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="btn-primary min-h-11"
-        >
+        <button type="submit" disabled={isPending} className="btn-primary min-h-11">
           {isPending ? "Saving…" : "Add rate"}
         </button>
         {state.message ? (
@@ -80,9 +77,7 @@ export function ConsumptionRatesPanel({
             >
               <div>
                 <p className="font-medium text-zinc-900">{rate.garmentName}</p>
-                <p className="text-sm text-zinc-600">
-                  {rate.metersPerUnit} m per unit
-                </p>
+                <p className="text-sm text-zinc-600">{rate.metersPerUnit} m per unit</p>
               </div>
               <button
                 type="button"

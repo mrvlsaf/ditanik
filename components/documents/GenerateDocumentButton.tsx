@@ -2,6 +2,8 @@
 
 import { useActionState, type ReactNode } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 export type GenerateDocumentActionState = {
   ok: boolean;
   message: string | null;
@@ -38,6 +40,7 @@ export function GenerateDocumentButton({
   extraFields,
 }: GenerateDocumentButtonProps) {
   const [state, formAction, isPending] = useActionState(action, initialState);
+  useGlobalPending(isPending);
 
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-3">
