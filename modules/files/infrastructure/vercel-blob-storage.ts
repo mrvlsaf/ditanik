@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { get, put } from "@vercel/blob";
+import { get, head, put } from "@vercel/blob";
 
+import { BLOB_KEY_PREFIX } from "@/modules/files/domain/pdf-rules";
 import type {
   FileStorage,
   StoredFile,
@@ -23,8 +24,6 @@ import type {
  * goes through the app's own authenticated `/api/files` route, matching how
  * local storage already works, rather than handing out public Blob URLs.
  */
-
-const BLOB_KEY_PREFIX = "ditanik/";
 
 function toBlobPath(fileKey: string): string {
   return `${BLOB_KEY_PREFIX}${fileKey}`;
@@ -71,6 +70,28 @@ export const vercelBlobStorage: FileStorage = {
       fileKey: fromBlobPath(blob.pathname),
       fileName,
       mimeType,
+    };
+  },
+
+  /**
+   * The browser already PUT this file directly to Blob (see
+   * lib/direct-blob-upload.ts and app/api/blob-upload/route.ts) using the
+   * exact same fileKey convention `save()` above uses — that upload's own
+   * `onBeforeGenerateToken` check already confined it to an allowed folder
+   * prefix. This only has to confirm the blob genuinely exists at that path
+   * (never trust a client-supplied key without checking) before the caller
+   * commits it to the database; nothing is re-uploaded.
+   */
+  async adopt({ fileKey, fileName, mimeType }): Promise<StoredFile> {
+    if (!fileKey || fileKey.includes("..")) {
+      throw new Error("Invalid file key.");
+    }
+
+    const metadata = await head(toBlobPath(fileKey));
+    return {
+      fileKey,
+      fileName,
+      mimeType: metadata.contentType || mimeType,
     };
   },
 

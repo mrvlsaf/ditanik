@@ -1,17 +1,22 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { useDirectUploadOnSubmit } from "@/components/ui/useDirectUploadOnSubmit";
 
 import {
   createLpoAction,
   type CreateLpoActionState,
 } from "@/modules/lpo/application/create-lpo-action";
+import { assertPdfFile } from "@/modules/files/domain/pdf-rules";
 import {
-  extractLpoFromPdfAction,
-  type ExtractLpoFromPdfActionState,
-} from "@/modules/lpo/application/extract-lpo-from-pdf-action";
+  countFilledFields,
+  extractLpoData,
+  type ExtractedLpoData,
+} from "@/modules/lpo/domain/lpo-extraction";
+import { extractPdfLinesInBrowser } from "@/modules/lpo/infrastructure/pdf-text-extraction-browser";
 import {
   DEFAULT_VAT_PERCENT,
   calculateGrandTotal,
@@ -26,7 +31,13 @@ const initialState: CreateLpoActionState = {
   message: null,
 };
 
-const initialExtractState: ExtractLpoFromPdfActionState = {
+type ExtractState = {
+  ok: boolean;
+  message: string | null;
+  data: ExtractedLpoData | null;
+};
+
+const initialExtractState: ExtractState = {
   ok: false,
   message: null,
   data: null,
@@ -96,7 +107,9 @@ function tryLineTotal(row: LineItemRow): number | null {
   }
 }
 
-export function CreateLpoForm() {
+export function CreateLpoForm({
+  usesBlobStorage,
+}: Readonly<{ usesBlobStorage: boolean }>) {
   const today = todayInputValue();
   const emptyFields: FieldValues = {
     lpoNumber: "",
@@ -141,12 +154,30 @@ export function CreateLpoForm() {
 
   const [extractState, setExtractState] = useState(initialExtractState);
   const [isExtracting, setIsExtracting] = useState(false);
-  useGlobalPending(isPending || isExtracting);
+  const {
+    onSubmit: onDirectUploadSubmit,
+    isUploadingFile,
+    uploadError,
+  } = useDirectUploadOnSubmit({
+    formAction,
+    formRef,
+    fileFieldName: "file",
+    fileRefFieldName: "fileRef",
+    folder: "lpo-originals",
+    usesBlobStorage,
+  });
+  useGlobalPending(isPending || isExtracting || isUploadingFile);
 
   function updateField(patch: Partial<FieldValues>) {
     setFields((prev) => ({ ...prev, ...patch }));
   }
 
+  // Runs entirely in the browser — this used to POST the file to a
+  // Server Action just to read text back out of it, which both cost an
+  // unnecessary round trip and, for a large PDF, hit the same Vercel
+  // Serverless Function payload cap the other uploads on this form now
+  // route around (see lib/direct-blob-upload.ts). Nothing here is ever
+  // stored, so there was nothing the server actually needed to do.
   async function handlePrefillFromPdf() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
@@ -159,9 +190,36 @@ export function CreateLpoForm() {
     }
 
     setIsExtracting(true);
-    const formData = new FormData();
-    formData.set("file", file);
-    const result = await extractLpoFromPdfAction(initialExtractState, formData);
+    let result: ExtractState;
+    try {
+      assertPdfFile(file);
+      const lines = await extractPdfLinesInBrowser(file);
+      const data = extractLpoData(lines);
+      const filledCount = countFilledFields(data);
+
+      if (filledCount === 0) {
+        result = {
+          ok: false,
+          message:
+            "Couldn't find fields this parser recognizes in that PDF — no problem, just fill in the form by hand.",
+          data: null,
+        };
+      } else {
+        result = {
+          ok: true,
+          message: `Prefilled ${filledCount} field${filledCount === 1 ? "" : "s"} from the PDF — check every one before saving, especially the line items.`,
+          data,
+        };
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error &&
+        /pdf files are allowed|pdf must be|pdf file is empty/i.test(error.message)
+          ? error.message
+          : "Couldn't read that PDF — fill in the form manually.";
+      Sentry.captureException(error, { tags: { feature: "lpo_pdf_prefill" } });
+      result = { ok: false, message, data: null };
+    }
     setIsExtracting(false);
     setExtractState(result);
 
@@ -219,7 +277,12 @@ export function CreateLpoForm() {
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-6 surface-card p-4 sm:p-6">
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={onDirectUploadSubmit}
+      className="space-y-6 surface-card p-4 sm:p-6"
+    >
       <input
         type="hidden"
         name="lineItemsJson"
@@ -559,6 +622,12 @@ export function CreateLpoForm() {
         </div>
       </div>
 
+      {uploadError ? (
+        <p className="text-sm text-red-700" role="status">
+          {uploadError}
+        </p>
+      ) : null}
+
       {state.message ? (
         <p
           className={`text-sm ${state.ok ? "text-emerald-700" : "text-red-700"}`}
@@ -568,8 +637,12 @@ export function CreateLpoForm() {
         </p>
       ) : null}
 
-      <button type="submit" disabled={isPending} className="btn-primary min-h-11">
-        {isPending ? "Creating…" : "Create LPO"}
+      <button
+        type="submit"
+        disabled={isPending || isUploadingFile}
+        className="btn-primary min-h-11"
+      >
+        {isUploadingFile ? "Uploading…" : isPending ? "Creating…" : "Create LPO"}
       </button>
     </form>
   );

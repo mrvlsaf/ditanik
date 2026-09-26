@@ -1,9 +1,10 @@
 "use client";
 
 import { LpoStatus } from "@prisma/client";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { useDirectUploadOnSubmit } from "@/components/ui/useDirectUploadOnSubmit";
 
 import {
   assignManufacturerAction,
@@ -33,6 +34,7 @@ export function LpoAssignmentPanel({
   manufacturerName,
   productionFileKey,
   manufacturers,
+  usesBlobStorage,
 }: Readonly<{
   lpoId: string;
   status: LpoStatus;
@@ -40,6 +42,7 @@ export function LpoAssignmentPanel({
   manufacturerName: string | null;
   productionFileKey: string | null;
   manufacturers: ManufacturerOption[];
+  usesBlobStorage: boolean;
 }>) {
   const gate = { status, productionFileKey, manufacturerId };
   const showAssign = canAssignManufacturer(gate);
@@ -50,12 +53,25 @@ export function LpoAssignmentPanel({
     boundAssign,
     initialState,
   );
+  const assignFormRef = useRef<HTMLFormElement>(null);
+  const {
+    onSubmit: onAssignSubmit,
+    isUploadingFile,
+    uploadError,
+  } = useDirectUploadOnSubmit({
+    formAction: assignAction,
+    formRef: assignFormRef,
+    fileFieldName: "productionFile",
+    fileRefFieldName: "productionFileRef",
+    folder: "lpo-production",
+    usesBlobStorage,
+  });
   const [mode, setMode] = useState<"existing" | "new">(
     manufacturers.length > 0 ? "existing" : "new",
   );
   const [completeMessage, setCompleteMessage] = useState<string | null>(null);
   const [isCompleting, startComplete] = useTransition();
-  useGlobalPending(assignPending || isCompleting);
+  useGlobalPending(assignPending || isCompleting || isUploadingFile);
 
   return (
     <section id="lpo-assign" className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6">
@@ -76,7 +92,12 @@ export function LpoAssignmentPanel({
       </p>
 
       {showAssign ? (
-        <form action={assignAction} className="space-y-3">
+        <form
+          ref={assignFormRef}
+          action={assignAction}
+          onSubmit={onAssignSubmit}
+          className="space-y-3"
+        >
           <div className="flex flex-wrap gap-3 text-sm">
             <label className="inline-flex items-center gap-2">
               <input
@@ -145,6 +166,12 @@ export function LpoAssignmentPanel({
             />
           </label>
 
+          {uploadError ? (
+            <p className="text-sm text-red-700" role="status">
+              {uploadError}
+            </p>
+          ) : null}
+
           {assignState.message ? (
             <p
               className={`text-sm ${assignState.ok ? "text-emerald-700" : "text-red-700"}`}
@@ -154,8 +181,16 @@ export function LpoAssignmentPanel({
             </p>
           ) : null}
 
-          <button type="submit" disabled={assignPending} className="btn-primary">
-            {assignPending ? "Assigning…" : "Assign manufacturer"}
+          <button
+            type="submit"
+            disabled={assignPending || isUploadingFile}
+            className="btn-primary"
+          >
+            {isUploadingFile
+              ? "Uploading…"
+              : assignPending
+                ? "Assigning…"
+                : "Assign manufacturer"}
           </button>
         </form>
       ) : null}

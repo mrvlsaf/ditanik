@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { assignManufacturerToLpo } from "@/modules/lpo/application/assign-manufacturer";
+import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import { markClientDeliveryCompleted } from "@/modules/lpo/application/mark-client-delivery";
 
 export type LpoMutationActionState = {
@@ -26,8 +27,12 @@ export async function assignManufacturerAction(
     return { ok: false, message: "You must be signed in." };
   }
 
-  const fileValue = formData.get("productionFile");
-  if (!(fileValue instanceof File) || fileValue.size === 0) {
+  const fileValue = readPdfUploadFromForm(
+    formData,
+    "productionFile",
+    "productionFileRef",
+  );
+  if (!fileValue) {
     return { ok: false, message: "Production file PDF is required." };
   }
 
@@ -73,9 +78,7 @@ export async function markClientDeliveryCompletedAction(
     return { ok: true, message: "Client delivery marked completed." };
   } catch (error: unknown) {
     const message =
-      error instanceof Error
-        ? error.message
-        : "Could not complete client delivery.";
+      error instanceof Error ? error.message : "Could not complete client delivery.";
     return { ok: false, message };
   }
 }

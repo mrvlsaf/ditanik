@@ -13,6 +13,7 @@ import {
 } from "@/modules/fabric/application/get-fabric";
 import { listRecentLpos } from "@/modules/lpo/application/get-lpo";
 import { listManufacturers } from "@/modules/manufacturer/application/manufacturers";
+import { isUsingBlobStorage } from "@/modules/files/infrastructure/get-file-storage";
 
 async function FabricStockAndActions() {
   const [batches, movements, manufacturers, lpos] = await Promise.all([
@@ -77,17 +78,13 @@ async function FabricStockAndActions() {
                       {b.invoice.supplierName} ({b.invoice.invoiceRef})
                     </td>
                     <td className="px-3 py-3 text-zinc-700">
-                      {b.qtyReceived}m ·{" "}
-                      {formatCalendarDate(b.invoice.receivedDate)}
+                      {b.qtyReceived}m · {formatCalendarDate(b.invoice.receivedDate)}
                     </td>
                     <td className="px-3 py-3 font-medium text-zinc-900">
                       {b.stockMeters}m
                     </td>
                     <td className="px-3 py-3 text-right">
-                      <FabricBatchActionsMenu
-                        batchId={b.id}
-                        fabricCode={b.fabricCode}
-                      />
+                      <FabricBatchActionsMenu batchId={b.id} fabricCode={b.fabricCode} />
                     </td>
                   </tr>
                 ))}
@@ -148,9 +145,7 @@ async function FabricStockAndActions() {
                       {formatBusinessDateTime(m.occurredAt)}
                     </td>
                     <td className="px-3 py-3 text-zinc-900">{m.type}</td>
-                    <td className="px-3 py-3 text-zinc-700">
-                      {m.batch.fabricCode}
-                    </td>
+                    <td className="px-3 py-3 text-zinc-700">{m.batch.fabricCode}</td>
                     <td className="px-3 py-3 font-medium text-zinc-900">
                       {m.quantityMeters > 0 ? "+" : ""}
                       {m.quantityMeters}m
@@ -158,9 +153,7 @@ async function FabricStockAndActions() {
                     <td className="px-3 py-3 text-zinc-700">
                       {m.manufacturer?.name ?? "—"}
                     </td>
-                    <td className="px-3 py-3 text-zinc-700">
-                      {m.lpo?.lpoNumber ?? "—"}
-                    </td>
+                    <td className="px-3 py-3 text-zinc-700">{m.lpo?.lpoNumber ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -183,7 +176,7 @@ export default function FabricPage() {
           <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
             Receive fabric
           </h2>
-          <ReceiveFabricForm />
+          <ReceiveFabricForm usesBlobStorage={isUsingBlobStorage()} />
         </section>
 
         <Suspense fallback={<SectionLoading label="Loading stock and movements…" />}>

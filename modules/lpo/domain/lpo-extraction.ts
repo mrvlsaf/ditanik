@@ -421,3 +421,30 @@ export function extractLpoData(lines: PdfLine[]): ExtractedLpoData {
     lineItems: extractLineItems(lines),
   };
 }
+/**
+ * How many of `data`'s fields the parser actually managed to fill in — used
+ * to decide whether a PDF was recognizable at all (see handlePrefillFromPdf
+ * in CreateLpoForm.tsx, which runs this parser entirely client-side: this
+ * used to live in a Server Action, but shipping the file to the server just
+ * to read it back apart served no purpose, since nothing here is ever
+ * stored during extraction).
+ */
+export function countFilledFields(data: ExtractedLpoData): number {
+  const headerFields = [
+    data.orderNumber,
+    data.orderDate,
+    data.deliveryDate,
+    data.currency,
+    data.clientName,
+    data.clientSubEntityName,
+    data.clientTrn,
+    data.invoiceAddress,
+    data.deliveryAddress,
+    data.paymentTerms,
+    data.deliveryTerms,
+  ];
+  const filledHeaders = headerFields.filter(
+    (value) => value != null && value !== "",
+  ).length;
+  return filledHeaders + data.lineItems.length;
+}

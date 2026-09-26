@@ -52,7 +52,12 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
-              "connect-src 'self'",
+              // Direct-to-Blob uploads (lib/direct-blob-upload.ts) PUT the
+              // file straight from the browser to Vercel Blob storage, bypassing
+              // this app's own functions for the large binary — that request
+              // goes to Blob's own domain, not this origin, so it needs its own
+              // connect-src allowance.
+              "connect-src 'self' https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },
