@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { withRequestNonce } from "@/lib/with-request-nonce";
 
 import {
   markAllNotificationsReadAction,
@@ -83,13 +84,19 @@ export function NotificationsList({
                 <div className="flex shrink-0 flex-wrap gap-2">
                   <Link
                     href={item.actionPath}
-                    onClick={() => {
+                    onClick={(event) => {
+                      // Force navigation with a fresh nonce even when this
+                      // item's actionPath matches the URL already loaded —
+                      // otherwise Next.js no-ops the navigation and
+                      // LpoDeepLinkFocus never re-scrolls/re-highlights.
+                      event.preventDefault();
                       if (unread) {
                         startTransition(async () => {
                           await markNotificationReadAction(item.id);
                           router.refresh();
                         });
                       }
+                      router.push(withRequestNonce(item.actionPath), { scroll: false });
                     }}
                     className="btn-primary"
                   >

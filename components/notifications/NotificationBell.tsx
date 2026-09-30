@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { withRequestNonce } from "@/lib/with-request-nonce";
 
 import {
   markAllNotificationsReadAction,
@@ -128,7 +129,14 @@ export function NotificationBell({
                   <li key={item.id} className="border-b border-zinc-50 last:border-0">
                     <Link
                       href={item.actionPath}
-                      onClick={() => {
+                      onClick={(event) => {
+                        // Always navigate manually with a fresh nonce, even
+                        // when this notification's actionPath is identical
+                        // to the URL already loaded (e.g. re-clicking the
+                        // same "Client delivery overdue" item twice) —
+                        // otherwise Next.js treats it as a no-op and
+                        // LpoDeepLinkFocus never re-scrolls/re-highlights.
+                        event.preventDefault();
                         setOpen(false);
                         if (unread) {
                           startTransition(async () => {
@@ -136,6 +144,7 @@ export function NotificationBell({
                             refresh();
                           });
                         }
+                        router.push(withRequestNonce(item.actionPath), { scroll: false });
                       }}
                       className={`block px-3 py-3 hover:bg-[var(--surface-muted)] ${
                         unread ? "bg-[var(--brand-muted)]/40" : ""

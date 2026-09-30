@@ -12,8 +12,17 @@ const SECTION_IDS: Record<NotificationAction, string> = {
 
 export function LpoDeepLinkFocus({
   action,
+  requestId,
 }: Readonly<{
   action: NotificationAction | null;
+  /**
+   * A per-click nonce (see lib/with-request-nonce.ts) with no meaning of
+   * its own. It's in the dependency array purely so that clicking the same
+   * notification twice in a row — same action, already on this LPO's page
+   * — re-runs this effect and re-scrolls/re-highlights even though `action`
+   * itself didn't change between clicks.
+   */
+  requestId?: string | null;
 }>) {
   useEffect(() => {
     if (!action) {
@@ -38,7 +47,7 @@ export function LpoDeepLinkFocus({
       window.clearTimeout(timer);
       el.classList.remove("ring-2", "ring-amber-400", "ring-offset-2");
     };
-  }, [action]);
+  }, [action, requestId]);
 
   return null;
 }

@@ -41,16 +41,22 @@ function parseActionParam(
   return null;
 }
 
+function parseRequestIdParam(value: string | string[] | undefined): string | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw ?? null;
+}
+
 export default async function LpoDetailPage({
   params,
   searchParams,
 }: Readonly<{
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ action?: string | string[] }>;
+  searchParams: Promise<{ action?: string | string[]; r?: string | string[] }>;
 }>) {
   const { id } = await params;
   const query = await searchParams;
   const action = parseActionParam(query.action);
+  const requestId = parseRequestIdParam(query.r);
   const [lpo, manufacturers, rates, requirements, generatedDocuments] = await Promise.all(
     [
       getLpoById(id),
@@ -86,7 +92,7 @@ export default async function LpoDetailPage({
         />
       </div>
 
-      <LpoDeepLinkFocus action={action} />
+      <LpoDeepLinkFocus action={action} requestId={requestId} />
 
       <div className="space-y-8">
         <section className="surface-card p-4 sm:p-6">
