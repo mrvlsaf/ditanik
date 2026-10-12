@@ -48,7 +48,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Receive fabric",
         detail:
-          "On Fabric, record a supplier invoice (PDF required) with one or more batch lines (type, colour, meters).",
+          "On Fabric, record a supplier invoice (PDF optional) with one or more batch lines (type, colour, meters).",
         href: "/fabric",
       },
       {
@@ -116,7 +116,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Receive fabric",
         detail:
-          "Supplier name, invoice/reference, date, invoice PDF (required), and one or more lines (type, colour, qty meters, remarks). Each line becomes a batch with a system fabric code (FAB-…).",
+          "Supplier name, invoice/reference, date, invoice PDF (optional), and one or more lines (type, colour, qty meters, remarks). Each line becomes a batch with a system fabric code (FAB-…).",
         href: "/fabric",
       },
       {
@@ -145,7 +145,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       },
     ],
     tips: [
-      "Invoice PDF is required on every receive.",
+      "The supplier invoice PDF is optional — you can receive fabric without one.",
       "You cannot issue more meters than available on a batch.",
       "Delete a batch from Fabric stock, or a whole invoice from Invoices, to undo a mistaken receive.",
     ],

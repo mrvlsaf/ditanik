@@ -146,7 +146,7 @@ Prepare small PDFs on disk:
 |------|---------|
 | PDF A | LPO original document on create |
 | PDF B | Production file when assigning manufacturer |
-| PDF C | Fabric supplier invoice on receive |
+| PDF C (optional) | Fabric supplier invoice on receive |
 | PDF D (optional) | Extra LPO / second invoice |
 
 ### 9. Data you will create while testing
@@ -299,13 +299,13 @@ Keep LPO B under review for section 8.
 
 ## 6. Fabric inventory
 
-**Goal:** Receive (invoice required), issue, return, stock math.
+**Goal:** Receive (invoice PDF optional), issue, return, stock math.
 
 1. Go to `/fabric`.
 2. Receive fabric:
    - Supplier name
    - One or more batches with meters
-   - **Invoice PDF C required**
+   - Invoice PDF C (optional)
 3. Confirm stock table increases.
 4. Issue some meters to **Test Garments** (optionally link an LPO).
 5. Try issuing more than available stock — must fail.
@@ -315,7 +315,7 @@ Keep LPO B under review for section 8.
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
 | [ ] | 6.1 | Receive with invoice + batches | Stock up; invoice record exists |
-| [ ] | 6.2 | Receive without invoice PDF | Blocked |
+| [ ] | 6.2 | Receive without invoice PDF | Succeeds; Invoices row shows no View/Download |
 | [ ] | 6.3 | Issue to manufacturer | Stock down; ISSUED movement |
 | [ ] | 6.4 | Over-issue | Error / blocked |
 | [ ] | 6.5 | Return meters | Stock up; RETURNED movement |

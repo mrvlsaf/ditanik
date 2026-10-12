@@ -481,6 +481,23 @@ Deep links: `/lpo/{id}?action=assign|dates|complete` via `APP_BASE_URL` (fallbac
 
 ---
 
+## D-028 — Supplier invoice PDF optional on fabric receive (supersedes D-014's requirement)
+
+| | |
+|---|---|
+| **Date** | 2026-10-12 |
+| **Status** | accepted |
+
+**Context:** Fabric is sometimes received before the supplier invoice exists; requiring a PDF blocked recording the stock.
+
+**Decision:** The invoice PDF is optional on receive. The invoice record is still created (supplier, reference, date, batches); `invoiceFileKey/FileName/MimeType` are null when no PDF is given. `/invoices` shows such rows with Delete only (no View/Download). The rest of D-014 (filterable, newest-first list) stands.
+
+**Alternatives:** Allow attaching the PDF later on an existing invoice (not built — can be added if needed).
+
+**Consequences:** No migration (columns were already nullable). There is currently no way to attach a PDF to an invoice after the fact.
+
+---
+
 ## How to add a new decision
 
 When you change something that would confuse a future reader (library, pattern, product rule, intentional omission), append **D-0XX** with the same sections. Prefer honesty about tradeoffs over marketing the choice.

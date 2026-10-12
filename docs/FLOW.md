@@ -157,17 +157,17 @@ app/api/files/route.ts
 
 ---
 
-## 5. Receive fabric (multi-batch + required invoice)
+## 5. Receive fabric (multi-batch + optional invoice PDF)
 
 ```text
 app/(app)/fabric/page.tsx
   → ReceiveFabricForm
       → receiveFabricAction
           → parse batchesJson
-          → require invoice PDF File
+          → read optional invoice PDF (File or direct-upload ref; may be null)
           → receiveFabric
               → receiveFabricSchema
-              → storePdfUpload (fabric-invoices)
+              → storePdfUpload (fabric-invoices) — only if a PDF was provided
               → $transaction:
                     FabricSupplierInvoice
                     for each line: FabricBatch + Movement RECEIVED (+)
