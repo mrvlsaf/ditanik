@@ -240,8 +240,8 @@ Used by LPO fabric requirement dropdown.
 
 ```text
 app/(app)/lpo/[id]/page.tsx
-  → GenerateDocumentButtons (Quotation | Quote | Tax Invoice | Delivery Note)
-      → generate{Quotation,Quote,Invoice,DeliveryNote}Action
+  → GenerateDocumentButtons (Quotation | Tax Invoice | Delivery Note)
+      → generate{Quotation,Invoice,DeliveryNote}Action
           → generate{...}(lpoId, generatedByUserId, notes?)
               → getCompanyProfile()
               → allocateDocumentSequence (type, calendarDay) — atomic counter

@@ -397,7 +397,7 @@ export function CreateLpoForm({
           Client &amp; commercial details
         </h3>
         <p className="text-xs text-zinc-500">
-          Feeds the Quotation, Quote, Invoice and Delivery Note generated for this LPO —
+          Feeds the Quotation, Invoice and Delivery Note generated for this LPO —
           Deezano&apos;s own letterhead comes from the Company profile settings.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">

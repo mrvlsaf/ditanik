@@ -178,7 +178,7 @@ export const HELP_SECTIONS: HelpSection[] = [
     id: "document-generation",
     title: "Document generation & PDF conversion",
     summary:
-      "Generate the client-facing paperwork for an LPO — Quotation, Quote, Tax Invoice, Delivery Note — as branded Excel files, then optionally convert each to PDF.",
+      "Generate the client-facing paperwork for an LPO — Quotation, Tax Invoice, Delivery Note — as branded Excel files, then optionally convert each to PDF.",
     steps: [
       {
         title: "Generate a document",

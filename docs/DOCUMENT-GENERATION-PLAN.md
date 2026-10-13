@@ -1,4 +1,6 @@
-# Ditanik — Client Document Generation (Quotation / Invoice / Delivery Note / Quote)
+# Ditanik — Client Document Generation (Quotation / Invoice / Delivery Note)
+
+> **Update (2026-10):** "Quote" and "Quotation" turned out to be the same document. There is **no separate Quote type** any more — it was removed from the code and database (see `docs/DECISIONS.md` D-029). The Quotation now uses the client's approved format: new logo, Validity date, Category column, and the numbered Terms & Conditions box. Tax Invoice and Delivery Note share the same look. Where this historical planning document below still says "Quote", read it as "Quotation".
 
 Implementation plan, based on the 5 real files you shared: `JOHNLPO.pdf` (a client purchase order, from Ishraq Hospitality / The Plaza Bistro), `Quotation.pdf`, `Quote.pdf`, `Invoice.pdf`, `DeliveryNote.pdf`.
 
@@ -43,7 +45,7 @@ Ditanik's `Lpo` model today only has `lpoNumber`, `nickname`, `clientName`, date
 - **`CompanyProfile`** (single row) — Deezano's legal name, TRN, address, phone, website, email, logo (stored file key), bank details if you want them on invoices, and a default terms/footer text. Entered once in a new settings page; every generated document reads from here so the header is never retyped or drifted again.
 - **`LpoClientDetails`** (one-to-one with `Lpo`, or extra columns directly on `Lpo`) — client entity name, sub-entity name (e.g. "MOHAMED & OBAID ALMULLA LLC"), client TRN, invoice address, delivery address, payment terms, delivery terms, currency (default AED). These map straight to what's in the LPO's Invoice/Delivery address blocks.
 - **`LpoLineItem`** — per LPO: position, category (optional — used for the grouped Chef/Commis/Barista style order), description, article no. (optional), quantity, unit price, discount %, line total. Entered once per LPO; this is what all four documents draw their table rows from.
-- **`GeneratedDocument`** — an audit/history row per generated file: type (`QUOTATION` / `QUOTE` / `TAX_INVOICE` / `DELIVERY_NOTE`), documentNumber, lpoId, generatedAt, generatedBy, stored file key(s) for the Excel and/or PDF, and a **JSON snapshot** of the exact data used. The snapshot matters: if you edit the company profile or an LPO's line items next month, a document generated today must still show today's numbers when re-downloaded, not silently change.
+- **`GeneratedDocument`** — an audit/history row per generated file: type (`QUOTATION` / `TAX_INVOICE` / `DELIVERY_NOTE`), documentNumber, lpoId, generatedAt, generatedBy, stored file key(s) for the Excel and/or PDF, and a **JSON snapshot** of the exact data used. The snapshot matters: if you edit the company profile or an LPO's line items next month, a document generated today must still show today's numbers when re-downloaded, not silently change.
 - Each `GeneratedDocument` keeps **its own copy of the line items it includes** (with quantities), rather than pointing rigidly at the LPO's line items. Your own examples show why: the Invoice you shared only bills 1 of the 2 line items on that LPO, and Delivery Notes/Invoices commonly cover partial quantities (staged delivery, partial billing). So "Generate Invoice" should let you pick which lines and how much of each, defaulting to the full LPO but editable.
 - **`DocumentSequence`** — one row per (document type, site code, calendar day), holding a `lastSequence` counter, incremented atomically inside the generation transaction (same pattern already used elsewhere in the app for collision-safe codes, e.g. `resolveFabricCodes` in the fabric module). This is what makes "3rd quotation generated that day" a safe, race-condition-free counter instead of a `COUNT(*)` query.
 - **Site code** — based on your numbering explanation, "AHO"/"AHD" identify the *delivery site* (e.g. "American Hospital"), not the client entity — one client can have multiple delivery sites. I'd add this as a field captured per LPO (with a small reusable "Sites" picklist per client so you're not retyping the same code for repeat locations), rather than hard-coding it on `Manufacturer`/client name.
@@ -69,7 +71,7 @@ Per your answer, line items and client commercial details go **directly on the C
 - **Line items** — a repeatable row group (category, description, article no., qty, unit price, discount), with a running subtotal/VAT/total shown live. Ditanik already has a UI pattern for exactly this shape — `ReceiveFabricForm`'s multi-batch rows on the Fabric page — so this reuses an established client-side pattern rather than inventing a new one.
 
 On the **LPO detail page** (`/lpo/[id]`):
-- **Four "Generate…" buttons** (Quotation / Quote / Invoice / Delivery Note), each opening a review step: confirm/adjust which line items and quantities go on this specific document, confirm dates, confirm the auto-suggested document number (editable), and — for the Delivery Note — a free-text Notes field. Then "Generate Excel" produces the file, with Download and Convert-to-PDF actions next to it.
+- **Three "Generate…" buttons** (Quotation / Invoice / Delivery Note), each opening a review step: confirm/adjust which line items and quantities go on this specific document, confirm dates, confirm the auto-suggested document number (editable), and — for the Delivery Note — a free-text Notes field. Then "Generate Excel" produces the file, with Download and Convert-to-PDF actions next to it.
 - A **document history list** per LPO (and optionally a global `/documents` page), listing every generated file with re-download — same audit-trail spirit as the rest of the app.
 - An **edit affordance** for the line items/commercial details entered at create time, since real orders change (price renegotiated, quantity adjusted) between creation and when a document actually gets generated.
 
@@ -83,7 +85,7 @@ Based on your explanation, the underlying rule is consistent even though the his
 {SiteCode?}-{TYPE}-{DDMMYYYY}-{SequenceOfDay}
 ```
 
-- `TYPE` — `QTN` (Quotation), presumably a distinct code for Quote, `INV` (Invoice), `DN` (Delivery Note).
+- `TYPE` — `QTN` (Quotation), `INV` (Invoice), `DN` (Delivery Note).
 - `DDMMYYYY` — the generation date. Some of your real examples are missing a digit (`2707026` instead of `27072026`) — I'd have the app always emit the full 8 digits, so that stops happening.
 - `SequenceOfDay` — the Nth document *of that type* generated that calendar day (e.g. the 9th invoice today → `09`), reset to 1 at the start of each day, generated from the `DocumentSequence` counter above so two people generating at the same moment can't collide.
 - `SiteCode` — identifies the delivery site/client location, e.g. `AHO`/`AHD`. **Confirmed: every document type gets a site code, including Quotation** (your sample quotation number just happened to predate that convention, or was created before a site was assigned).
@@ -98,14 +100,14 @@ Matching how the rest of Ditanik was built (explain → approve → build → te
 1. **Data model** — `CompanyProfile`, client/commercial details, `LpoLineItem`, `DocumentSequence`, migration, company-profile settings page, and the expanded Create LPO form (client details + repeatable line-item rows). No document generation yet — just getting trustworthy structured data flowing, and giving you the expanded create form to test on real LPOs for a bit before documents depend on it.
 2. **One template end-to-end** — pick the simplest (Invoice or Delivery Note), build the Excel template + fill logic + numbering + download, prove the pipeline works on a real document.
 3. **PDF conversion** — stand up Gotenberg, wire "Convert to PDF" and the re-upload-and-convert flow.
-4. **Remaining three templates** — Quotation, Quote (with its Terms & Conditions block), and the remaining document type, reusing the pipeline from phase 2–3.
+4. **Remaining three templates** — Quotation (with its Terms & Conditions block), and the remaining document types, reusing the pipeline from phase 2–3.
 5. **History, polish** — `GeneratedDocument` history view, company profile refinements, edit affordance for line items after creation.
 6. **LPO extraction/prefill (added on top, once the manual form is proven)** — a rule-based parser reading the fixed LPO layout, prefilling header fields (order number, dates, addresses, TRN, terms) with high confidence and the line-item table with best-effort accuracy, always landing in the same reviewable form from Phase 1 rather than saving or generating anything automatically.
 
 ## 8. What's still open
 
 - **The four source Excel workbooks** — you'll share these later; you've confirmed they look exactly like the PDFs, just editable. Once I have them the templates can be pixel-identical (exact fonts, column widths, merges, print area) instead of a close visual reconstruction from PDFs — worth waiting for before building the actual templates in phase 2/4, even though the data-model phase (1) doesn't depend on them.
-- **Quote's exact shape** — confirmed it's a distinct document with its own heading and a Terms & Conditions section; I still need the actual heading text and whether it also needs the category-grouping / Validity-date behaviour seen in the one example, or whether that was incidental to that particular order. The Excel file should settle this.
+- ~~Quote's exact shape~~ — resolved 2026-10: Quote and Quotation are the same document; the approved format has a Validity date (document date + 30 days), a Category column and the Terms & Conditions box.
 - **Numbering** — resolved: every document type (including Quotation) carries a site code, and the daily sequence counter is global per type, reset every day regardless of site. The one remaining detail (one site code per LPO vs. possibly different codes per document type) should also fall out of the Excel files.
 
 ## 9. Cost impact

@@ -25,7 +25,7 @@ export default async function CompanyProfilePage() {
   return (
     <PageContainer
       title="Company profile"
-      description="Deezano's own letterhead and bank details, reused on every generated Quotation, Quote, Invoice and Delivery Note."
+      description="Deezano's own letterhead and bank details, reused on every generated Quotation, Invoice and Delivery Note."
     >
       <CompanyProfileForm defaults={defaults} />
     </PageContainer>

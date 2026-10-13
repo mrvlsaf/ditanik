@@ -251,9 +251,9 @@ flowchart LR
 ## Document generation module (shipped, 2026-09)
 
 Added after the Phase 0–5 rewrite above and not part of that phase table — a
-separate track, planned in `docs/DOCUMENT-GENERATION-PLAN.md`. Ships four
-generated document types (Quotation, Quote, Tax Invoice, Delivery Note) as
-ExcelJS-filled templates extracted from Deezano's own workbooks, an optional
+separate track, planned in `docs/DOCUMENT-GENERATION-PLAN.md`. Ships three
+generated document types (Quotation, Tax Invoice, Delivery Note) as
+ExcelJS-filled templates in Deezano's approved format (new logo, 2026-10), an optional
 Convert-to-PDF step via a self-hosted Gotenberg service (design finalized,
 deployment still pending — see `infra/gotenberg/README.md` and
 `docs/DECISIONS.md` D-027), and a best-effort PDF prefill step in front of

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * Deezano's own letterhead/bank details — a single settings row reused as the
- * constant "from" side of every generated Quotation, Quote, Invoice and
+ * constant "from" side of every generated Quotation, Invoice and
  * Delivery Note. Everything here is optional at the schema level except
  * legalName, since a partially-filled profile is still useful to save as a
  * draft while the rest of the details are gathered.

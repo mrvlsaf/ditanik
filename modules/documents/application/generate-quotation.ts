@@ -5,6 +5,11 @@ import { getCompanyProfile } from "@/modules/company/application/company-profile
 import { allocateDocumentSequence } from "@/modules/documents/application/document-sequence";
 import { formatDocumentNumber } from "@/modules/documents/domain/document-numbering";
 import {
+  calculateQuotationValidityDate,
+  DEFAULT_QUOTATION_TERMS,
+  parseTermsText,
+} from "@/modules/documents/domain/quotation-terms";
+import {
   buildQuotationWorkbook,
   type QuotationLineItemRow,
 } from "@/modules/documents/infrastructure/quotation-workbook";
@@ -14,6 +19,7 @@ import {
   calculateLineItemsSubtotal,
   calculateVatAmount,
   DEFAULT_VAT_PERCENT,
+  roundCurrency,
 } from "@/modules/lpo/domain/line-items";
 
 const XLSX_MIME =
@@ -58,12 +64,16 @@ export async function generateQuotationDocument(
     );
   }
 
+  // AMOUNT PER UNIT is the price after any line discount, so it always
+  // agrees with the (already discounted) line total.
   const lineItems: QuotationLineItemRow[] = lpo.lineItems.map((line) => ({
     position: line.position,
     category: line.category,
     description: line.description,
     quantity: line.quantity,
-    unitPrice: Number(line.unitPrice),
+    unitPrice: roundCurrency(
+      Number(line.unitPrice) * (1 - Number(line.discountPercent) / 100),
+    ),
     lineTotal: Number(line.lineTotal),
   }));
 
@@ -84,6 +94,10 @@ export async function generateQuotationDocument(
     sequence,
   });
 
+  const validityDate = calculateQuotationValidityDate(generatedAt);
+  const termsAndConditions =
+    parseTermsText(companyProfile.defaultTermsText) ?? [...DEFAULT_QUOTATION_TERMS];
+
   const workbook = await buildQuotationWorkbook({
     companyLegalName: companyProfile.legalName,
     companyTrn: companyProfile.trn,
@@ -94,6 +108,7 @@ export async function generateQuotationDocument(
     companyAddressLine2: companyProfile.addressLine2,
     documentNumber,
     documentDate: generatedAt,
+    validityDate,
     clientTrn: lpo.clientTrn,
     clientSubEntityName: lpo.clientSubEntityName,
     clientName: lpo.clientName,
@@ -103,6 +118,7 @@ export async function generateQuotationDocument(
     vatPercent: DEFAULT_VAT_PERCENT,
     vatAmount,
     grandTotal,
+    termsAndConditions,
   });
 
   const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
@@ -142,6 +158,8 @@ export async function generateQuotationDocument(
           siteCode: lpo.siteCode,
           currency: lpo.currency,
         },
+        validityDate: validityDate.toISOString(),
+        termsAndConditions,
         lineItems,
         subtotal,
         vatAmount,

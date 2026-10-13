@@ -365,7 +365,7 @@ Keep LPO B under review for section 8.
 ### 8a. Company Profile (one-time)
 
 1. Open Company Profile settings.
-2. Fill in legal name, TRN, address, phone, website, logo, default terms/footer text.
+2. Fill in legal name, TRN, address, phone, website, default terms/footer text (leave the terms blank to use the standard 16 Quotation clauses).
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
@@ -374,12 +374,12 @@ Keep LPO B under review for section 8.
 ### 8b. Generate documents (use LPO A from section 4)
 
 1. Open LPO A's detail page.
-2. Generate a Quotation, then a Quote, then a Tax Invoice, then a Delivery Note.
+2. Generate a Quotation, then a Tax Invoice, then a Delivery Note.
 3. For each: confirm line items/quantities, confirm the auto-suggested document number, generate.
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
-| [ ] | 8.2 | Generate each of the four document types | Each downloads as a correctly filled `.xlsx`; document number follows `{Site}-{TYPE}-{DDMMYYYY}-{Seq}` |
+| [ ] | 8.2 | Generate each of the three document types | Each downloads as a correctly filled `.xlsx` with the Deezano logo; document number follows `{Site}-{TYPE}-{DDMMYYYY}-{Seq}` |
 | [ ] | 8.3 | Edit LPO A's line items after generating a document | Already-generated document is unchanged on re-download (snapshot, not live data) |
 | [ ] | 8.4 | Check document history on the LPO | All four generated documents listed, re-downloadable |
 

@@ -57,7 +57,7 @@ function TextField({
 
 /**
  * Single settings form for Deezano's own letterhead + bank details — the
- * constant "from" side of every generated Quotation, Quote, Invoice and
+ * constant "from" side of every generated Quotation, Invoice and
  * Delivery Note. Saves onto the one CompanyProfile row (upsert).
  */
 export function CompanyProfileForm({
@@ -129,11 +129,12 @@ export function CompanyProfileForm({
         <h3 className="text-sm font-medium text-zinc-800">Default document text</h3>
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-zinc-800">
-            Default terms &amp; conditions (used on Quote documents)
+            Default terms &amp; conditions (used on Quotations)
           </span>
           <span className="mb-1 block text-xs text-zinc-500">
-            One point per line — each line becomes one numbered point on the Quote. Leave
-            blank to keep the built-in default text.
+            One clause per line — each line becomes one numbered clause on the Quotation.
+            Leave blank to use the standard 16-clause terms. Wrap text in **double
+            asterisks** to make it bold.
           </span>
           <textarea
             name="defaultTermsText"

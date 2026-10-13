@@ -58,7 +58,6 @@ enum NotificationEmailStatus {
 
 enum DocumentType {
   QUOTATION
-  QUOTE
   TAX_INVOICE
   DELIVERY_NOTE
 }
@@ -125,7 +124,7 @@ model Lpo {
   createdAt                  DateTime  @default(now()) @map("created_at")
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 
-  /// Client/commercial details captured for document generation (Quotation/Quote/Invoice/Delivery Note).
+  /// Client/commercial details captured for document generation (Quotation/Invoice/Delivery Note).
   clientSubEntityName        String?   @map("client_sub_entity_name")
   clientTrn                  String?   @map("client_trn")
   invoiceAddress             String?   @map("invoice_address") @db.Text
@@ -369,7 +368,7 @@ model DocumentSequence {
   @@map("document_sequences")
 }
 
-/// One row per generated Quotation/Quote/Tax Invoice/Delivery Note file — the audit
+/// One row per generated Quotation/Tax Invoice/Delivery Note file — the audit
 /// trail and re-download source. Keeps its own snapshot of the data used so a document
 /// generated today still reads the same on re-download even if the LPO or company
 /// profile changes afterwards.

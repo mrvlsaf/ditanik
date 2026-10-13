@@ -498,6 +498,23 @@ Deep links: `/lpo/{id}?action=assign|dates|complete` via `APP_BASE_URL` (fallbac
 
 ---
 
+## D-029 — "Quote" removed; Quotation in the client's approved format
+
+| | |
+|---|---|
+| **Date** | 2026-10-12 |
+| **Status** | accepted |
+
+**Context:** The app shipped four document types, treating Quote and Quotation as different documents. The client confirmed they are the same document, and supplied the approved Quotation format (new logo, VALIDITY date, CATEGORY column, 16-clause Terms & Conditions box).
+
+**Decision:** There is one Quotation, no Quote. The `QUOTE` value is removed from the `DocumentType` enum (migration `20261012190000_remove_quote_document_type`, which deletes any existing QUOTE rows and their daily counters), along with the generator, workbook builder, `quote.xlsx` template, button, `QUO` numbering code and tests. The Quotation template/builder now carries the Terms & Conditions box (clauses from Company Settings → default terms, one per line; blank = the standard 16 clauses in `quotation-terms.ts`), a VALIDITY# date (always document date + 30 days), and AMOUNT PER UNIT = price after line discount. Tax Invoice and Delivery Note keep their own fields and wording but use the same look and the new logo. Numbering stays `{SITE}-{TYPE}-{DDMMYYYY}-{NN}`.
+
+**Alternatives:** Keep a hidden QUOTE enum value for old rows (rejected: dead value forever); convert old QUOTE rows to QUOTATION (offered; the client chose to delete them).
+
+**Consequences:** Files already generated as Quotes stay in storage but are no longer referenced by any row. A terms text saved in Company Settings before this change overrides the new standard clauses — clear it to get the new text. Validity days are not configurable.
+
+---
+
 ## How to add a new decision
 
 When you change something that would confuse a future reader (library, pattern, product rule, intentional omission), append **D-0XX** with the same sections. Prefer honesty about tradeoffs over marketing the choice.

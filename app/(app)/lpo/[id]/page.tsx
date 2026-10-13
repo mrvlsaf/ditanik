@@ -14,7 +14,6 @@ import { GeneratedDocumentRow } from "@/components/documents/GeneratedDocumentRo
 import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
 import { listActiveRates } from "@/modules/fabric/application/consumption";
 import { generateQuotationAction } from "@/modules/documents/application/generate-quotation-action";
-import { generateQuoteAction } from "@/modules/documents/application/generate-quote-action";
 import { generateInvoiceAction } from "@/modules/documents/application/generate-invoice-action";
 import { generateDeliveryNoteAction } from "@/modules/documents/application/generate-delivery-note-action";
 import { listGeneratedDocumentsForLpo } from "@/modules/documents/application/list-generated-documents";
@@ -323,12 +322,6 @@ export default async function LpoDetailPage({
               label="Generate Quotation"
               pendingLabel="Generating…"
               action={generateQuotationAction}
-            />
-            <GenerateDocumentButton
-              lpoId={lpo.id}
-              label="Generate Quote"
-              pendingLabel="Generating…"
-              action={generateQuoteAction}
             />
             <GenerateDocumentButton
               lpoId={lpo.id}

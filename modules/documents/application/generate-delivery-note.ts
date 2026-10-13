@@ -90,6 +90,7 @@ export async function generateDeliveryNoteDocument(
   const notes = input.notes?.trim() || null;
 
   const workbook = await buildDeliveryNoteWorkbook({
+    companyLegalName: companyProfile.legalName,
     companyTrn: companyProfile.trn,
     companyPhone: companyProfile.phone,
     companyEmail: companyProfile.email,

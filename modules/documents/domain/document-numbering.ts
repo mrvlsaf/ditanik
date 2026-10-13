@@ -3,14 +3,9 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import { BUSINESS_TIMEZONE } from "@/lib/dates/timezone";
 
-/**
- * Type code embedded in generated document numbers. QUO for Quote has not
- * been confirmed against a real generated Quote number — verify it is
- * correct before relying on it operationally.
- */
+/** Type code embedded in generated document numbers. */
 export const DOCUMENT_TYPE_CODE: Record<DocumentType, string> = {
   [DocumentType.QUOTATION]: "QTN",
-  [DocumentType.QUOTE]: "QUO",
   [DocumentType.TAX_INVOICE]: "INV",
   [DocumentType.DELIVERY_NOTE]: "DN",
 };
