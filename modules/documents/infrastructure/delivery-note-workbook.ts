@@ -6,15 +6,14 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the Delivery Note template — extracted from the client's own
- * workbook (DELIVERY NOTE AMERICAN.xlsx, "khin" tab; the embedded Deezano
- * logo was missing from every per-order tab in that source file, so it was
- * copied in from the same byte-identical logo used on the other three
- * templates).
+ * Fills the Delivery Note template. It shares the approved Quotation look (new
+ * logo, company block, boxed header fields, CUSTOMER bar, yellow totals,
+ * footer) but keeps the delivery note's own fields: Delivery Note #, dispatch
+ * date, note date/type, LPO reference and a free-text Notes box.
  */
 
-const TEMPLATE_ROW = 30; // the template's two sample line-item rows (30-31).
-const TEMPLATE_ROW_COUNT = 2;
+const TEMPLATE_ROW = 18; // the template's single sample line-item row.
+const TEMPLATE_ROW_COUNT = 1;
 
 export type DeliveryNoteLineItemRow = {
   position: number;
@@ -25,6 +24,7 @@ export type DeliveryNoteLineItemRow = {
 };
 
 export type DeliveryNoteWorkbookData = {
+  companyLegalName: string;
   companyTrn: string | null;
   companyPhone: string | null;
   companyEmail: string | null;
@@ -54,51 +54,52 @@ export async function buildDeliveryNoteWorkbook(
 ): Promise<ExcelJS.Workbook> {
   const { workbook, sheet } = await loadTemplateWorkbook("delivery-note.xlsx");
 
-  sheet.getCell("C11").value = data.companyAddressLine1 ?? "";
-  sheet.getCell("C12").value = data.companyAddressLine2 ?? "";
-  sheet.getCell("C13").value = data.companyTrn ? `TRN: ${data.companyTrn}` : "";
-  sheet.getCell("C14").value = data.companyWebsite ?? "";
-  sheet.getCell("C15").value = data.companyPhone ?? "";
+  sheet.getCell("B3").value = data.companyLegalName;
+  sheet.getCell("B4").value = data.companyTrn ? `TRN:${data.companyTrn}` : "";
+  sheet.getCell("B5").value = data.companyPhone ?? "";
+  sheet.getCell("B6").value = data.companyWebsite ?? "";
+  sheet.getCell("B7").value = data.companyAddressLine1 ?? "";
+  sheet.getCell("B8").value = data.companyAddressLine2 ?? "";
 
-  // The top-right highlighted box embeds label + value as one string, unlike
-  // every other field on this template — matches the real file exactly.
-  sheet.getCell("I8").value = `Delivery Note# -${data.documentNumber}`;
-  sheet.getCell("I9").value = `LPO REFERENCE -${data.lpoReference}`;
+  sheet.getCell("F8").value = data.noteDate;
+  sheet.getCell("F9").value = data.documentNumber;
+  sheet.getCell("F10").value = data.dispatchDate;
+  sheet.getCell("F11").value = data.noteType;
+  sheet.getCell("F12").value = data.lpoReference;
 
-  sheet.getCell("C18").value = data.documentNumber;
-  sheet.getCell("L18").value = data.dispatchDate;
-  sheet.getCell("K20").value = data.noteDate;
-  sheet.getCell("K22").value = data.noteType;
-
-  const customerBlock = [
-    data.clientName,
-    data.clientSubEntityName,
-    data.clientTrn ? `TRN: ${data.clientTrn}` : null,
-    data.invoiceAddress,
-  ]
-    .filter(Boolean)
-    .join("\n");
-  sheet.getCell("C21").value = customerBlock;
+  sheet.getCell("B11").value = data.clientTrn ? `TRN: ${data.clientTrn}` : "";
+  sheet.getCell("B12").value = data.clientName;
+  sheet.getCell("B13").value = data.clientSubEntityName ?? "";
+  const [addressLine1 = "", ...addressRest] = data.invoiceAddress.split(/\r?\n/);
+  sheet.getCell("B14").value = addressLine1;
+  sheet.getCell("B15").value = addressRest.join(", ");
 
   const itemCount = Math.max(data.lineItems.length, 1);
   setLineItemRowCount(sheet, TEMPLATE_ROW, TEMPLATE_ROW_COUNT, itemCount);
 
   data.lineItems.forEach((line, index) => {
     const row = TEMPLATE_ROW + index;
-    sheet.getCell(`C${row}`).value = line.position;
-    sheet.getCell(`D${row}`).value = line.description;
-    sheet.getCell(`E${row}`).value = line.quantity;
-    sheet.getCell(`F${row}`).value = line.unitPrice;
-    sheet.getCell(`G${row}`).value = line.lineTotal;
+    sheet.getCell(`B${row}`).value = line.position;
+    sheet.getCell(`C${row}`).value = line.description;
+    sheet.getCell(`D${row}`).value = line.quantity;
+    sheet.getCell(`E${row}`).value = line.unitPrice;
+    sheet.getCell(`F${row}`).value = line.lineTotal;
   });
 
   const subtotalRow = TEMPLATE_ROW + itemCount;
-  sheet.getCell(`G${subtotalRow}`).value = data.subtotal;
-  sheet.getCell(`G${subtotalRow + 1}`).value = data.vatAmount;
-  sheet.getCell(`G${subtotalRow + 2}`).value = data.grandTotal;
+  sheet.getCell(`F${subtotalRow}`).value = data.subtotal;
+  sheet.getCell(`F${subtotalRow + 1}`).value = data.vatAmount;
+  sheet.getCell(`F${subtotalRow + 2}`).value = data.grandTotal;
 
   const notesRow = subtotalRow + 4; // matches the template's fixed gap after totals
-  sheet.getCell(`C${notesRow}`).value = data.notes ? `Notes: ${data.notes}` : "";
+  sheet.getCell(`B${notesRow}`).value = data.notes ? `Notes: ${data.notes}` : "";
+
+  const footerRow1 = subtotalRow + 7; // below the Notes box
+  const footerLine1 = [data.companyLegalName, data.companyPhone, data.companyEmail]
+    .filter(Boolean)
+    .join(" , ");
+  sheet.getCell(`B${footerRow1}`).value = footerLine1;
+  sheet.getCell(`B${footerRow1 + 1}`).value = data.companyAddressLine2 ?? "";
 
   return workbook;
 }

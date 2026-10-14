@@ -6,9 +6,10 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the Tax Invoice template — extracted from the client's own workbook
- * (INVOICES COPY AMERICAN N CANVAS.xlsx, "baser" tab) via ExcelJS's
- * removeWorksheet API, instead of building the layout from scratch in code.
+ * Fills the Tax Invoice template. It shares the approved Quotation look (new
+ * logo, company block, boxed DATE / TAX INVOICE / LPO REFERENCE fields,
+ * CUSTOMER bar, yellow totals, footer) but keeps the invoice's own columns
+ * and wording.
  */
 
 const TEMPLATE_ROW = 18; // the template's single sample line-item row.
@@ -49,6 +50,7 @@ export async function buildInvoiceWorkbook(
 ): Promise<ExcelJS.Workbook> {
   const { workbook, sheet } = await loadTemplateWorkbook("tax-invoice.xlsx");
 
+  sheet.getCell("B3").value = data.companyLegalName;
   sheet.getCell("B4").value = data.companyTrn ? `TRN:${data.companyTrn}` : "";
   sheet.getCell("B5").value = data.companyPhone ?? "";
   sheet.getCell("B6").value = data.companyWebsite ?? "";
@@ -59,10 +61,12 @@ export async function buildInvoiceWorkbook(
   sheet.getCell("F9").value = data.documentNumber;
   sheet.getCell("F10").value = data.lpoReference;
 
-  sheet.getCell("C11").value = data.clientTrn ? `TRN: ${data.clientTrn}` : "";
-  sheet.getCell("C12").value = data.clientName;
-  sheet.getCell("C13").value = data.clientSubEntityName ?? "";
-  sheet.getCell("C14").value = data.invoiceAddress;
+  sheet.getCell("B11").value = data.clientTrn ? `TRN: ${data.clientTrn}` : "";
+  sheet.getCell("B12").value = data.clientName;
+  sheet.getCell("B13").value = data.clientSubEntityName ?? "";
+  const [addressLine1 = "", ...addressRest] = data.invoiceAddress.split(/\r?\n/);
+  sheet.getCell("B14").value = addressLine1;
+  sheet.getCell("B15").value = addressRest.join(", ");
 
   const itemCount = Math.max(data.lineItems.length, 1);
   setLineItemRowCount(sheet, TEMPLATE_ROW, TEMPLATE_ROW_COUNT, itemCount);
@@ -81,12 +85,12 @@ export async function buildInvoiceWorkbook(
   sheet.getCell(`F${subtotalRow + 1}`).value = data.vatAmount;
   sheet.getCell(`F${subtotalRow + 2}`).value = data.grandTotal;
 
-  const footerRow1 = subtotalRow + 5; // matches the template's fixed gap after totals
+  const footerRow1 = subtotalRow + 5; // matches the template's fixed gap after totals (footer is merged B:F)
   const footerLine1 = [data.companyLegalName, data.companyPhone, data.companyEmail]
     .filter(Boolean)
     .join(" , ");
-  sheet.getCell(`C${footerRow1}`).value = footerLine1;
-  sheet.getCell(`C${footerRow1 + 1}`).value = data.companyAddressLine2 ?? "";
+  sheet.getCell(`B${footerRow1}`).value = footerLine1;
+  sheet.getCell(`B${footerRow1 + 1}`).value = data.companyAddressLine2 ?? "";
 
   return workbook;
 }

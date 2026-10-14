@@ -49,6 +49,7 @@ export async function generateDeliveryNoteAction(
     });
 
     revalidatePath(`/lpo/${lpoId}`);
+    revalidatePath("/documents");
     return {
       ok: true,
       message: `Delivery note ${generated.documentNumber} generated.`,

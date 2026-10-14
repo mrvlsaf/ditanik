@@ -73,10 +73,8 @@ export async function receiveFabricAction(
     return { ok: false, message: "You must be signed in." };
   }
 
+  // Supplier invoice PDF is optional: null simply means none was provided.
   const fileValue = readPdfUploadFromForm(formData, "invoiceFile", "invoiceFileRef");
-  if (!fileValue) {
-    return { ok: false, message: "Supplier invoice PDF is required." };
-  }
 
   try {
     const batches = parseBatchesFromForm(formData);

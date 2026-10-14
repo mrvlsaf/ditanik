@@ -17,7 +17,8 @@ export type ReceiveFabricInput = {
   invoiceRef: string;
   receivedDate: string;
   batches: ReadonlyArray<ReceiveFabricBatchValues>;
-  invoiceFile: File | UploadedFileRef;
+  /** Optional: a receive can be recorded without a supplier invoice PDF. */
+  invoiceFile?: File | UploadedFileRef | null;
   createdByUserId: string;
 };
 
@@ -54,17 +55,20 @@ export async function receiveFabric(input: ReceiveFabricInput) {
     batches: input.batches,
   });
 
-  // `input.invoiceFile` is either a raw upload (validated the normal way)
-  // or an UploadedFileRef the browser already PUT to Blob directly (see
-  // lib/direct-blob-upload.ts) — `storePdfUpload` below validates/adopts
-  // whichever it is, so this only needs to reject the raw-upload case being
-  // empty; an UploadedFileRef always has real content by construction.
-  if (input.invoiceFile instanceof File && input.invoiceFile.size === 0) {
-    throw new Error("Supplier invoice PDF is required.");
-  }
+  // The supplier invoice PDF is optional. When present it is either a raw
+  // upload (validated the normal way) or an UploadedFileRef the browser
+  // already PUT to Blob directly (see lib/direct-blob-upload.ts) —
+  // `storePdfUpload` validates/adopts whichever it is. An empty file input
+  // (size 0) is treated the same as "no file given".
+  const invoiceFile =
+    input.invoiceFile instanceof File && input.invoiceFile.size === 0
+      ? null
+      : (input.invoiceFile ?? null);
 
   const receivedDate = parseCalendarDateInput(values.receivedDate);
-  const storedFile = await storePdfUpload(input.invoiceFile, "fabric-invoices");
+  const storedFile = invoiceFile
+    ? await storePdfUpload(invoiceFile, "fabric-invoices")
+    : null;
   const fabricCodes = await resolveFabricCodes(values.batches.length);
 
   try {
@@ -74,9 +78,9 @@ export async function receiveFabric(input: ReceiveFabricInput) {
           supplierName: values.supplierName,
           invoiceRef: values.invoiceRef,
           receivedDate,
-          invoiceFileKey: storedFile.fileKey,
-          invoiceFileName: storedFile.fileName,
-          invoiceMimeType: storedFile.mimeType,
+          invoiceFileKey: storedFile?.fileKey ?? null,
+          invoiceFileName: storedFile?.fileName ?? null,
+          invoiceMimeType: storedFile?.mimeType ?? null,
           createdById: input.createdByUserId,
         },
       });

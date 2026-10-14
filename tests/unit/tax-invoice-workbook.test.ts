@@ -55,6 +55,7 @@ describe("buildInvoiceWorkbook", () => {
 
   it("fills the company header block", async () => {
     const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("B3").value).toBe(sampleData.companyLegalName);
     expect(sheet.getCell("B4").value).toBe(`TRN:${sampleData.companyTrn}`);
     expect(sheet.getCell("B7").value).toBe(sampleData.companyAddressLine1);
     expect(sheet.getCell("B8").value).toBe(sampleData.companyAddressLine2);
@@ -68,10 +69,14 @@ describe("buildInvoiceWorkbook", () => {
 
   it("fills the customer block from the LPO's client details", async () => {
     const sheet = await readBackWorkbook(sampleData);
-    expect(sheet.getCell("C11").value).toBe(`TRN: ${sampleData.clientTrn}`);
-    expect(sheet.getCell("C12").value).toBe(sampleData.clientName);
-    expect(sheet.getCell("C13").value).toBe(sampleData.clientSubEntityName);
-    expect(sheet.getCell("C14").value).toBe(sampleData.invoiceAddress);
+    expect(sheet.getCell("B11").value).toBe(`TRN: ${sampleData.clientTrn}`);
+    expect(sheet.getCell("B12").value).toBe(sampleData.clientName);
+    expect(sheet.getCell("B13").value).toBe(sampleData.clientSubEntityName);
+    // first address line on row 14, remaining lines on row 15
+    expect(sheet.getCell("B14").value).toBe(
+      "UNIT#REST2, AMERICAN HOSPITAL, BUR DUBAI, OUD METHA",
+    );
+    expect(sheet.getCell("B15").value).toBe("AE - 8668 Dubai");
   });
 
   it("writes one row per line item starting at row 18", async () => {
@@ -92,12 +97,19 @@ describe("buildInvoiceWorkbook", () => {
     expect(sheet.getCell("F21").value).toBe(157.5);
   });
 
+  it("labels the totals rows", async () => {
+    const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("C19").value).toBe("SUB TOTAL");
+    expect(sheet.getCell("C20").value).toBe("VAT 5%");
+    expect(sheet.getCell("C21").value).toBe("GRAND TOTAL");
+  });
+
   it("prints the footer below the totals", async () => {
     const sheet = await readBackWorkbook(sampleData);
-    expect(sheet.getCell("C24").value).toBe(
+    expect(sheet.getCell("B24").value).toBe(
       "DEEZANO CLOTHING LINE LLC , 971502641611 , info@deezanoae.com",
     );
-    expect(sheet.getCell("C25").value).toBe(sampleData.companyAddressLine2);
+    expect(sheet.getCell("B25").value).toBe(sampleData.companyAddressLine2);
   });
 
   it("handles multiple line items by shifting totals and footer down, merges included", async () => {
@@ -118,7 +130,7 @@ describe("buildInvoiceWorkbook", () => {
     expect(sheet.getCell("F21").value).toBe(240);
     expect(sheet.getCell("F22").value).toBe(12);
     expect(sheet.getCell("F23").value).toBe(252);
-    expect(sheet.getCell("C26").value).toContain("DEEZANO");
-    expect(sheet.getCell("C27").value).toBe(sampleData.companyAddressLine2);
+    expect(sheet.getCell("B26").value).toContain("DEEZANO");
+    expect(sheet.getCell("B27").value).toBe(sampleData.companyAddressLine2);
   });
 });

@@ -7,6 +7,7 @@ import {
 } from "@/modules/documents/infrastructure/delivery-note-workbook";
 
 const sampleData: DeliveryNoteWorkbookData = {
+  companyLegalName: "DEEZANO CLOTHING LINE LLC",
   companyTrn: "104067685800003",
   companyPhone: "971502641611",
   companyEmail: "info@deezanoae.com",
@@ -48,47 +49,65 @@ async function readBackWorkbook(data: DeliveryNoteWorkbookData) {
 }
 
 describe("buildDeliveryNoteWorkbook", () => {
-  it("keeps the real logo (copied in from the invoice template) and sheet name", async () => {
+  it("keeps the real logo and sheet name", async () => {
     const sheet = await readBackWorkbook(sampleData);
     expect(sheet.name).toBe("Delivery Note");
     expect(sheet.getImages()).toHaveLength(1);
   });
 
-  it("fills company header and the combined label+value header boxes", async () => {
+  it("fills the company header block", async () => {
     const sheet = await readBackWorkbook(sampleData);
-    expect(sheet.getCell("C11").value).toBe(sampleData.companyAddressLine1);
-    expect(sheet.getCell("C13").value).toBe(`TRN: ${sampleData.companyTrn}`);
-    expect(sheet.getCell("I8").value).toBe(
-      `Delivery Note# -${sampleData.documentNumber}`,
+    expect(sheet.getCell("B3").value).toBe(sampleData.companyLegalName);
+    expect(sheet.getCell("B4").value).toBe(`TRN:${sampleData.companyTrn}`);
+    expect(sheet.getCell("B5").value).toBe(sampleData.companyPhone);
+    expect(sheet.getCell("B6").value).toBe(sampleData.companyWebsite);
+    expect(sheet.getCell("B7").value).toBe(sampleData.companyAddressLine1);
+    expect(sheet.getCell("B8").value).toBe(sampleData.companyAddressLine2);
+  });
+
+  it("fills the boxed header fields", async () => {
+    const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("E6").value).toBe("DELIVERY NOTE");
+    expect(sheet.getCell("F8").value).toEqual(sampleData.noteDate);
+    expect(sheet.getCell("F9").value).toBe(sampleData.documentNumber);
+    expect(sheet.getCell("F10").value).toEqual(sampleData.dispatchDate);
+    expect(sheet.getCell("F11").value).toBe("Job work");
+    expect(sheet.getCell("F12").value).toBe(sampleData.lpoReference);
+  });
+
+  it("fills the customer block", async () => {
+    const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("B11").value).toBe(`TRN: ${sampleData.clientTrn}`);
+    expect(sheet.getCell("B12").value).toBe(sampleData.clientName);
+    expect(sheet.getCell("B13").value).toBe(sampleData.clientSubEntityName);
+    expect(sheet.getCell("B14").value).toBe(
+      "UNIT#REST2, AMERICAN HOSPITAL, BUR DUBAI, OUD METHA",
     );
-    expect(sheet.getCell("I9").value).toBe(
-      `LPO REFERENCE -${sampleData.lpoReference}`,
+    expect(sheet.getCell("B15").value).toBe("AE - 8668 Dubai");
+  });
+
+  it("writes a single line item at row 18 with totals directly below", async () => {
+    const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("B18").value).toBe(1);
+    expect(sheet.getCell("C18").value).toBe(sampleData.lineItems[0]!.description);
+    expect(sheet.getCell("D18").value).toBe(2);
+    expect(sheet.getCell("E18").value).toBe(75);
+    expect(sheet.getCell("F18").value).toBe(150);
+    expect(sheet.getCell("F19").value).toBe(150);
+    expect(sheet.getCell("F20").value).toBe(7.5);
+    expect(sheet.getCell("F21").value).toBe(157.5);
+    expect(sheet.getCell("B23").value).toBe(`Notes: ${sampleData.notes}`);
+  });
+
+  it("prints the footer below the notes box", async () => {
+    const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("B26").value).toBe(
+      "DEEZANO CLOTHING LINE LLC , 971502641611 , info@deezanoae.com",
     );
-    expect(sheet.getCell("C18").value).toBe(sampleData.documentNumber);
+    expect(sheet.getCell("B27").value).toBe(sampleData.companyAddressLine2);
   });
 
-  it("fills the merged customer block and note type/date fields", async () => {
-    const sheet = await readBackWorkbook(sampleData);
-    const block = String(sheet.getCell("C21").value);
-    expect(block).toContain(sampleData.clientName);
-    expect(block).toContain(sampleData.clientSubEntityName);
-    expect(block).toContain(sampleData.clientTrn!);
-    expect(block).toContain("UNIT#REST2");
-    expect(sheet.getCell("K22").value).toBe("Job work");
-  });
-
-  it("shrinks the template's two sample rows down to one when there's a single line item", async () => {
-    const sheet = await readBackWorkbook(sampleData);
-    expect(sheet.getCell("C30").value).toBe(1);
-    expect(sheet.getCell("D30").value).toBe(sampleData.lineItems[0]!.description);
-    // totals shift from 32/33/34 up to 31/32/33
-    expect(sheet.getCell("G31").value).toBe(150);
-    expect(sheet.getCell("G32").value).toBe(7.5);
-    expect(sheet.getCell("G33").value).toBe(157.5);
-    expect(sheet.getCell("C35").value).toBe(`Notes: ${sampleData.notes}`);
-  });
-
-  it("grows beyond the template's two sample rows for more line items", async () => {
+  it("grows for more line items, shifting totals, notes and footer down", async () => {
     const threeLineData: DeliveryNoteWorkbookData = {
       ...sampleData,
       lineItems: [
@@ -101,11 +120,18 @@ describe("buildDeliveryNoteWorkbook", () => {
       grandTotal: 252,
     };
     const sheet = await readBackWorkbook(threeLineData);
-    expect(sheet.getCell("D30").value).toBe(threeLineData.lineItems[0]!.description);
-    expect(sheet.getCell("D31").value).toBe("SHIRT");
-    expect(sheet.getCell("D32").value).toBe("PANT");
-    expect(sheet.getCell("G33").value).toBe(240);
-    expect(sheet.getCell("G34").value).toBe(12);
-    expect(sheet.getCell("G35").value).toBe(252);
+    expect(sheet.getCell("C18").value).toBe(threeLineData.lineItems[0]!.description);
+    expect(sheet.getCell("C19").value).toBe("SHIRT");
+    expect(sheet.getCell("C20").value).toBe("PANT");
+    expect(sheet.getCell("F21").value).toBe(240);
+    expect(sheet.getCell("F22").value).toBe(12);
+    expect(sheet.getCell("F23").value).toBe(252);
+    expect(sheet.getCell("B25").value).toBe(`Notes: ${sampleData.notes}`);
+    expect(sheet.getCell("B28").value).toContain("DEEZANO");
+  });
+
+  it("leaves the Notes box empty when there are no notes", async () => {
+    const sheet = await readBackWorkbook({ ...sampleData, notes: null });
+    expect(String(sheet.getCell("B23").value ?? "")).toBe("");
   });
 });

@@ -185,9 +185,9 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
           Client &amp; commercial details
         </h3>
         <p className="text-xs text-zinc-500">
-          Feeds the Quotation, Quote, Invoice and Delivery Note generated for this LPO
-          from now on — documents already generated keep the details that were true when
-          they were made.
+          Feeds the Quotation, Invoice and Delivery Note generated for this LPO from now
+          on — documents already generated keep the details that were true when they were
+          made.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm">

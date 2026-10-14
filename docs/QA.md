@@ -146,7 +146,7 @@ Prepare small PDFs on disk:
 |------|---------|
 | PDF A | LPO original document on create |
 | PDF B | Production file when assigning manufacturer |
-| PDF C | Fabric supplier invoice on receive |
+| PDF C (optional) | Fabric supplier invoice on receive |
 | PDF D (optional) | Extra LPO / second invoice |
 
 ### 9. Data you will create while testing
@@ -299,13 +299,13 @@ Keep LPO B under review for section 8.
 
 ## 6. Fabric inventory
 
-**Goal:** Receive (invoice required), issue, return, stock math.
+**Goal:** Receive (invoice PDF optional), issue, return, stock math.
 
 1. Go to `/fabric`.
 2. Receive fabric:
    - Supplier name
    - One or more batches with meters
-   - **Invoice PDF C required**
+   - Invoice PDF C (optional)
 3. Confirm stock table increases.
 4. Issue some meters to **Test Garments** (optionally link an LPO).
 5. Try issuing more than available stock — must fail.
@@ -315,7 +315,7 @@ Keep LPO B under review for section 8.
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
 | [ ] | 6.1 | Receive with invoice + batches | Stock up; invoice record exists |
-| [ ] | 6.2 | Receive without invoice PDF | Blocked |
+| [ ] | 6.2 | Receive without invoice PDF | Succeeds; Invoices row shows no View/Download |
 | [ ] | 6.3 | Issue to manufacturer | Stock down; ISSUED movement |
 | [ ] | 6.4 | Over-issue | Error / blocked |
 | [ ] | 6.5 | Return meters | Stock up; RETURNED movement |
@@ -365,7 +365,7 @@ Keep LPO B under review for section 8.
 ### 8a. Company Profile (one-time)
 
 1. Open Company Profile settings.
-2. Fill in legal name, TRN, address, phone, website, logo, default terms/footer text.
+2. Fill in legal name, TRN, address, phone, website, default terms/footer text (leave the terms blank to use the standard 16 Quotation clauses).
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
@@ -374,23 +374,35 @@ Keep LPO B under review for section 8.
 ### 8b. Generate documents (use LPO A from section 4)
 
 1. Open LPO A's detail page.
-2. Generate a Quotation, then a Quote, then a Tax Invoice, then a Delivery Note.
+2. Generate a Quotation, then a Tax Invoice, then a Delivery Note.
 3. For each: confirm line items/quantities, confirm the auto-suggested document number, generate.
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
-| [ ] | 8.2 | Generate each of the four document types | Each downloads as a correctly filled `.xlsx`; document number follows `{Site}-{TYPE}-{DDMMYYYY}-{Seq}` |
+| [ ] | 8.2 | Generate each of the three document types | Each downloads as a correctly filled `.xlsx` with the Deezano logo; document number follows `{Site}-{TYPE}-{DDMMYYYY}-{Seq}` |
 | [ ] | 8.3 | Edit LPO A's line items after generating a document | Already-generated document is unchanged on re-download (snapshot, not live data) |
 | [ ] | 8.4 | Check document history on the LPO | All four generated documents listed, re-downloadable |
 
-### 8c. Convert to PDF
+### 8c. Independent documents (no LPO)
+
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 8.7 | Sidebar → **Documents** | Lists the documents generated from LPOs (client + LPO number link) plus any independent ones; "Convert to PDF" in the sidebar is highlighted only on its own page |
+| [ ] | 8.8 | Documents → **New document** → Quotation. Type a site code (suggestions from earlier codes appear), client details, 2 lines (one with a discount), generate | Downloads a correctly filled Quotation; number is `{SITE}-QTN-{today}-{NN}`; the form shows Download / View in Documents / Create another |
+| [ ] | 8.9 | Repeat for a Tax Invoice (leave "Client reference" blank, then once filled) and a Delivery Note (note type, dispatch date, notes) | Each downloads correctly; blank reference prints an empty box, not "undefined" |
+| [ ] | 8.10 | Generate a Quotation from an LPO, then an independent Quotation the same day | Sequence numbers continue (…-01, …-02) — one shared counter per type per day |
+| [ ] | 8.11 | In Documents, search by client name and by document number; filter by type; set Source to "Linked to an LPO" and then "Not linked to an LPO" | Only matching rows appear; "Linked" shows only rows with an LPO number, "Not linked" only rows with "—" in the LPO column |
+| [ ] | 8.12 | Convert an independent document to PDF from the Documents list | PDF link appears on that row (needs Gotenberg) |
+| [ ] | 8.13 | Try to submit with no line items / a site code like `A/B` | Clear error message; nothing generated |
+
+### 8d. Convert to PDF
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
 | [ ] | 8.5 | Convert to PDF with Gotenberg **not** configured | Clear "PDF conversion isn't set up yet" message; the `.xlsx` download still works |
 | [ ] | 8.6 | Convert to PDF once Gotenberg is deployed (`infra/gotenberg/README.md`), including the standalone `/documents/convert` upload-and-convert page | Real PDF downloads in both cases |
 
-### 8d. LPO PDF prefill
+### 8e. LPO PDF prefill
 
 1. On Create LPO, upload a real client LPO PDF and click "Prefill from this PDF" before filling anything manually.
 

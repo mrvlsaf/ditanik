@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
@@ -24,13 +25,23 @@ export type GeneratedDocumentRowData = {
   generatedByLabel: string;
   fileKey: string;
   pdfFileKey: string | null;
+  /** Only shown in the Documents list (`columns="all"`). */
+  clientName?: string | null;
+  lpoNumber?: string | null;
 };
 
 /** One row of the generated-documents history table, with its own Convert to PDF action. */
 export function GeneratedDocumentRow({
   lpoId,
   doc,
-}: Readonly<{ lpoId: string; doc: GeneratedDocumentRowData }>) {
+  columns = "lpo",
+}: Readonly<{
+  /** Null for independent documents (generated without an LPO). */
+  lpoId: string | null;
+  doc: GeneratedDocumentRowData;
+  /** "lpo": the LPO page history table. "all": the Documents list (adds Client and LPO columns). */
+  columns?: "lpo" | "all";
+}>) {
   const [state, formAction, isPending] = useActionState(
     convertDocumentToPdfAction,
     initialState,
@@ -43,6 +54,23 @@ export function GeneratedDocumentRow({
     <tr className="border-t border-zinc-100 align-top">
       <td className="py-2 pr-3 font-medium text-zinc-900">{doc.documentNumber}</td>
       <td className="py-2 pr-3 text-zinc-700">{doc.type}</td>
+      {columns === "all" ? (
+        <>
+          <td className="py-2 pr-3 text-zinc-700">{doc.clientName ?? "—"}</td>
+          <td className="py-2 pr-3 text-zinc-700">
+            {lpoId && doc.lpoNumber ? (
+              <Link
+                href={`/lpo/${lpoId}`}
+                className="font-medium text-zinc-700 underline-offset-2 hover:text-zinc-900 hover:underline"
+              >
+                {doc.lpoNumber}
+              </Link>
+            ) : (
+              "—"
+            )}
+          </td>
+        </>
+      ) : null}
       <td className="py-2 pr-3 text-zinc-700">{doc.generatedAtLabel}</td>
       <td className="py-2 pr-3 text-zinc-700">{doc.generatedByLabel}</td>
       <td className="py-2 pr-3">
@@ -63,7 +91,7 @@ export function GeneratedDocumentRow({
           ) : (
             <form action={formAction}>
               <input type="hidden" name="generatedDocumentId" value={doc.id} />
-              <input type="hidden" name="lpoId" value={lpoId} />
+              {lpoId ? <input type="hidden" name="lpoId" value={lpoId} /> : null}
               <button
                 type="submit"
                 disabled={isPending}

@@ -24,8 +24,16 @@ function NavLinks({
   return (
     <nav className="flex flex-col gap-1 p-3">
       {APP_NAV_ITEMS.map((item) => {
+        // "/documents" must not also light up on "/documents/convert", which
+        // is its own nav item — the longest matching href wins.
+        const matches = (href: string) =>
+          pathname === href || pathname.startsWith(`${href}/`);
         const isActive =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
+          matches(item.href) &&
+          !APP_NAV_ITEMS.some(
+            (other) =>
+              other.href.length > item.href.length && matches(other.href),
+          );
         const isPending = pendingHref === item.href && !isActive;
 
         let linkClass = "nav-link";

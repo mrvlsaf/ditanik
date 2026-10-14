@@ -100,7 +100,7 @@ async function InvoicesContent({
         <p className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-8 text-center text-sm text-zinc-500">
           {hasFilters
             ? "No invoices match these filters."
-            : "No supplier invoices yet. Receive fabric with an invoice PDF on the Fabric page."}
+            : "No supplier invoices yet. Receive fabric on the Fabric page."}
         </p>
       ) : (
         <div className="overflow-x-auto surface-card">

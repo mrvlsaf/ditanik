@@ -118,13 +118,12 @@ export function ReceiveFabricForm({
         </label>
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-zinc-800">
-            Invoice PDF (required)
+            Invoice PDF (optional)
           </span>
           <input
             type="file"
             name="invoiceFile"
             accept="application/pdf,.pdf"
-            required
             className="file-btn"
           />
         </label>

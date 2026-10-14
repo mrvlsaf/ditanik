@@ -48,7 +48,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Receive fabric",
         detail:
-          "On Fabric, record a supplier invoice (PDF required) with one or more batch lines (type, colour, meters).",
+          "On Fabric, record a supplier invoice (PDF optional) with one or more batch lines (type, colour, meters).",
         href: "/fabric",
       },
       {
@@ -116,7 +116,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Receive fabric",
         detail:
-          "Supplier name, invoice/reference, date, invoice PDF (required), and one or more lines (type, colour, qty meters, remarks). Each line becomes a batch with a system fabric code (FAB-…).",
+          "Supplier name, invoice/reference, date, invoice PDF (optional), and one or more lines (type, colour, qty meters, remarks). Each line becomes a batch with a system fabric code (FAB-…).",
         href: "/fabric",
       },
       {
@@ -145,7 +145,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       },
     ],
     tips: [
-      "Invoice PDF is required on every receive.",
+      "The supplier invoice PDF is optional — you can receive fabric without one.",
       "You cannot issue more meters than available on a batch.",
       "Delete a batch from Fabric stock, or a whole invoice from Invoices, to undo a mistaken receive.",
     ],
@@ -178,13 +178,19 @@ export const HELP_SECTIONS: HelpSection[] = [
     id: "document-generation",
     title: "Document generation & PDF conversion",
     summary:
-      "Generate the client-facing paperwork for an LPO — Quotation, Quote, Tax Invoice, Delivery Note — as branded Excel files, then optionally convert each to PDF.",
+      "Generate the client-facing paperwork — Quotation, Tax Invoice, Delivery Note — as branded Excel files, either from an LPO or on their own, then optionally convert each to PDF.",
     steps: [
       {
         title: "Generate a document",
         detail:
           "From an LPO detail page, choose the document type and generate it. Each one is numbered automatically and snapshotted from the LPO and company profile at that moment — later LPO edits don't change a document already generated.",
         href: "/lpo",
+      },
+      {
+        title: "Generate a document without an LPO",
+        detail:
+          "Open Documents → New document, choose Quotation, Tax Invoice or Delivery Note, type the site code, client details and line items, and generate. It is numbered like any other document and is never linked to an LPO. The Documents page lists every document, with search and a type filter.",
+        href: "/documents/new",
       },
       {
         title: "Download the Excel file",
@@ -199,7 +205,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       },
     ],
     tips: [
-      "Generated documents are the permanent audit trail — deleting an LPO is blocked once any document exists against it.",
+      "Generated documents are the permanent audit trail — deleting an LPO is blocked once any document exists against it. Documents can't be edited after they're generated; to correct one, generate a new document.",
       "If Convert to PDF isn't available yet, the .xlsx download is the reliable option in the meantime.",
     ],
   },

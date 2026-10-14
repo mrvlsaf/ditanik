@@ -157,17 +157,17 @@ app/api/files/route.ts
 
 ---
 
-## 5. Receive fabric (multi-batch + required invoice)
+## 5. Receive fabric (multi-batch + optional invoice PDF)
 
 ```text
 app/(app)/fabric/page.tsx
   → ReceiveFabricForm
       → receiveFabricAction
           → parse batchesJson
-          → require invoice PDF File
+          → read optional invoice PDF (File or direct-upload ref; may be null)
           → receiveFabric
               → receiveFabricSchema
-              → storePdfUpload (fabric-invoices)
+              → storePdfUpload (fabric-invoices) — only if a PDF was provided
               → $transaction:
                     FabricSupplierInvoice
                     for each line: FabricBatch + Movement RECEIVED (+)
@@ -240,17 +240,35 @@ Used by LPO fabric requirement dropdown.
 
 ```text
 app/(app)/lpo/[id]/page.tsx
-  → GenerateDocumentButtons (Quotation | Quote | Tax Invoice | Delivery Note)
-      → generate{Quotation,Quote,Invoice,DeliveryNote}Action
+  → GenerateDocumentButtons (Quotation | Tax Invoice | Delivery Note)
+      → generate{Quotation,Invoice,DeliveryNote}Action
           → generate{...}(lpoId, generatedByUserId, notes?)
-              → getCompanyProfile()
-              → allocateDocumentSequence (type, calendarDay) — atomic counter
-              → formatDocumentNumber (site code + type + date + sequence)
-              → build{...}Workbook (ExcelJS fills the checked-in .xlsx template)
-              → storeGeneratedFile → getFileStorage().save
-              → GeneratedDocument row (type, documentNumber, file key, JSON snapshot)
-          → revalidatePath("/lpo/[id]")
+              → loadLpoForDocument (site code, invoice address, ≥1 line)
+              → createGeneratedDocument   ← shared back end (create-generated-document.ts)
+                  → getCompanyProfile()
+                  → allocateDocumentSequence (type, calendarDay) — atomic counter
+                  → formatDocumentNumber (site code + type + date + sequence)
+                  → build{...}Workbook (ExcelJS fills the checked-in .xlsx template)
+                  → storeGeneratedFile → getFileStorage().save
+                  → GeneratedDocument row (type, documentNumber, clientName, file key, JSON snapshot)
+          → revalidatePath("/lpo/[id]") + "/documents"
 ```
+
+### Independent documents (no LPO)
+
+```text
+app/(app)/documents/new/page.tsx → NewDocumentForm (client)
+  → generateIndependentDocumentAction (auth + user lookup, parses form + lineItemsJson)
+      → generateIndependentDocument
+          → independentDocumentSchema (zod; site code letters/digits/hyphens)
+          → toIndependentLineRows (1-based positions, discounted unit price)
+          → createGeneratedDocument(lpo: null)   ← same back end as above
+  → revalidatePath("/documents")
+
+app/(app)/documents/page.tsx → listAllGeneratedDocuments (LPO-linked + independent, filter by type / search)
+```
+
+Independent documents have `GeneratedDocument.lpoId = null`, share the per-type daily counter with LPO documents, and are never linked to an LPO afterwards. `snapshot.lpo` is `null` and the typed client details are frozen under `snapshot.client` (also copied to the `clientName` column for list/search).
 
 **Snapshot matters:** each `GeneratedDocument` keeps its own copy of the line items and totals it was generated with — editing the LPO afterward never changes an already-generated document.
 
