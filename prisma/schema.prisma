@@ -376,7 +376,10 @@ model GeneratedDocument {
   id             String       @id @default(cuid())
   type           DocumentType
   documentNumber String       @unique @map("document_number")
-  lpoId          String       @map("lpo_id")
+  /// Null for independent documents generated without an LPO (D-030).
+  lpoId          String?      @map("lpo_id")
+  /// Denormalised client name for list/search (also present inside `snapshot`).
+  clientName     String?      @map("client_name")
   fileKey        String       @map("file_key")
   fileName       String       @map("file_name")
   mimeType       String       @map("mime_type")
@@ -390,8 +393,8 @@ model GeneratedDocument {
   generatedById  String       @map("generated_by_id")
   generatedAt    DateTime     @default(now()) @map("generated_at")
 
-  lpo         Lpo  @relation(fields: [lpoId], references: [id], onDelete: Restrict)
-  generatedBy User @relation(fields: [generatedById], references: [id])
+  lpo         Lpo?  @relation(fields: [lpoId], references: [id], onDelete: Restrict)
+  generatedBy User  @relation(fields: [generatedById], references: [id])
 
   @@index([lpoId])
   @@index([type, generatedAt])

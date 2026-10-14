@@ -45,6 +45,7 @@ export async function generateQuotationAction(
     });
 
     revalidatePath(`/lpo/${lpoId}`);
+    revalidatePath("/documents");
     return {
       ok: true,
       message: `Quotation ${generated.documentNumber} generated.`,

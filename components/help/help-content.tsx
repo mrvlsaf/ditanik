@@ -178,13 +178,19 @@ export const HELP_SECTIONS: HelpSection[] = [
     id: "document-generation",
     title: "Document generation & PDF conversion",
     summary:
-      "Generate the client-facing paperwork for an LPO — Quotation, Tax Invoice, Delivery Note — as branded Excel files, then optionally convert each to PDF.",
+      "Generate the client-facing paperwork — Quotation, Tax Invoice, Delivery Note — as branded Excel files, either from an LPO or on their own, then optionally convert each to PDF.",
     steps: [
       {
         title: "Generate a document",
         detail:
           "From an LPO detail page, choose the document type and generate it. Each one is numbered automatically and snapshotted from the LPO and company profile at that moment — later LPO edits don't change a document already generated.",
         href: "/lpo",
+      },
+      {
+        title: "Generate a document without an LPO",
+        detail:
+          "Open Documents → New document, choose Quotation, Tax Invoice or Delivery Note, type the site code, client details and line items, and generate. It is numbered like any other document and is never linked to an LPO. The Documents page lists every document, with search and a type filter.",
+        href: "/documents/new",
       },
       {
         title: "Download the Excel file",
@@ -199,7 +205,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       },
     ],
     tips: [
-      "Generated documents are the permanent audit trail — deleting an LPO is blocked once any document exists against it.",
+      "Generated documents are the permanent audit trail — deleting an LPO is blocked once any document exists against it. Documents can't be edited after they're generated; to correct one, generate a new document.",
       "If Convert to PDF isn't available yet, the .xlsx download is the reliable option in the meantime.",
     ],
   },

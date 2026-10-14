@@ -515,6 +515,23 @@ Deep links: `/lpo/{id}?action=assign|dates|complete` via `APP_BASE_URL` (fallbac
 
 ---
 
+## D-030 — Independent documents (Quotation / Tax Invoice / Delivery Note without an LPO)
+
+| | |
+|---|---|
+| **Date** | 2026-10-13 |
+| **Status** | accepted |
+
+**Context:** Documents could only be generated from an LPO, but the client sometimes needs a Quotation, Tax Invoice or Delivery Note with no LPO behind it (a quotation sent before an order exists, a one-off job).
+
+**Decision:** `generated_documents.lpo_id` becomes nullable (migration `20261013090000_independent_documents`; FK and `ON DELETE RESTRICT` unchanged) and a `client_name` column is added and backfilled from existing snapshots. A new **Documents** page lists every document (LPO-linked and independent) with type and source (linked to an LPO / not linked) filters and search by number / client / LPO number, and **Documents → New document** generates the three types from a typed form: site code (free text with suggestions from earlier codes, no fixed prefix), free-text client details (no client records, no autofill from LPOs), line items with optional discount %. Document date is always today. Numbering is the existing `{SITE}-{TYPE}-{DDMMYYYY}-{NN}` with the same per-type daily counter. All generators now go through one shared `createGeneratedDocument`, so LPO and independent documents cannot diverge. Independent documents store `snapshot.lpo = null` and the typed details under `snapshot.client`.
+
+**Alternatives:** A fixed `GEN` site-code prefix (rejected by the client); autofilling client details from LPOs and a "link to LPO" action (deferred — independent documents stay permanently separate); editing or deleting generated documents (not offered — to correct one, generate a new one).
+
+**Consequences:** The only guard on site codes is letters/digits/hyphens (≤20 chars), so a typo creates a differently-prefixed number; suggestions mitigate it. Independent documents don't appear on any LPO page. Because a document's number is consumed on generation, a corrected re-issue gets a new number.
+
+---
+
 ## How to add a new decision
 
 When you change something that would confuse a future reader (library, pattern, product rule, intentional omission), append **D-0XX** with the same sections. Prefer honesty about tradeoffs over marketing the choice.
