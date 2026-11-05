@@ -20,12 +20,26 @@ export type NotificationAction = "assign" | "dates" | "complete";
 export function actionPathFor(
   type: NotificationType,
   lpoId: string,
+  status: LpoStatus,
 ): string {
-  const action = actionForType(type);
+  const action = actionForType(type, status);
   return `/lpo/${lpoId}?action=${action}`;
 }
 
-export function actionForType(type: NotificationType): NotificationAction {
+/**
+ * A client-delivery date can lapse before the LPO has even been assigned to
+ * a manufacturer (e.g. it's been stuck Under Review). "Mark client delivery
+ * completed" only exists once assigned — see canMarkClientDeliveryCompleted
+ * in lpo-status.ts — so CLIENT_DELIVERY_OVERDUE must route to "assign"
+ * (the real blocking step) in that case. Routing it to "complete"
+ * regardless of status used to send people to a deep link with no matching
+ * section on the page; LpoDeepLinkFocus's fallback then silently landed
+ * them on the assignment panel with no explanation of why.
+ */
+export function actionForType(
+  type: NotificationType,
+  status: LpoStatus,
+): NotificationAction {
   switch (type) {
     case NotificationType.REVIEW_PENDING:
     case NotificationType.ASSIGNMENT_OVERDUE:
@@ -33,7 +47,7 @@ export function actionForType(type: NotificationType): NotificationAction {
     case NotificationType.PRODUCTION_OVERDUE:
       return "dates";
     case NotificationType.CLIENT_DELIVERY_OVERDUE:
-      return "complete";
+      return status === LpoStatus.ASSIGNED_TO_MANUFACTURER ? "complete" : "assign";
   }
 }
 
@@ -108,6 +122,8 @@ export function bodyForType(type: NotificationType, lpo: LpoDueSnapshot): string
     case NotificationType.PRODUCTION_OVERDUE:
       return `LPO ${lpo.lpoNumber} (${lpo.nickname}) assigned to ${lpo.manufacturerName ?? "a manufacturer"} passed its production deadline. Review dates or follow up.`;
     case NotificationType.CLIENT_DELIVERY_OVERDUE:
-      return `LPO ${lpo.lpoNumber} (${lpo.nickname}) passed its client delivery date and is not marked completed.`;
+      return lpo.status === LpoStatus.ASSIGNED_TO_MANUFACTURER
+        ? `LPO ${lpo.lpoNumber} (${lpo.nickname}) passed its client delivery date and is not marked completed.`
+        : `LPO ${lpo.lpoNumber} (${lpo.nickname}) passed its client delivery date but hasn't been assigned to a manufacturer yet. Assign one to get it moving.`;
   }
 }

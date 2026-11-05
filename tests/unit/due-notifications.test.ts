@@ -26,13 +26,40 @@ const baseLpo = {
 
 describe("due notification rules", () => {
   it("maps types to action deep links", () => {
-    expect(actionPathFor(NotificationType.REVIEW_PENDING, "abc")).toBe(
-      "/lpo/abc?action=assign",
-    );
-    expect(actionForType(NotificationType.PRODUCTION_OVERDUE)).toBe("dates");
-    expect(actionForType(NotificationType.CLIENT_DELIVERY_OVERDUE)).toBe(
-      "complete",
-    );
+    expect(
+      actionPathFor(NotificationType.REVIEW_PENDING, "abc", LpoStatus.UNDER_REVIEW),
+    ).toBe("/lpo/abc?action=assign");
+    expect(
+      actionForType(
+        NotificationType.PRODUCTION_OVERDUE,
+        LpoStatus.ASSIGNED_TO_MANUFACTURER,
+      ),
+    ).toBe("dates");
+    expect(
+      actionForType(
+        NotificationType.CLIENT_DELIVERY_OVERDUE,
+        LpoStatus.ASSIGNED_TO_MANUFACTURER,
+      ),
+    ).toBe("complete");
+  });
+
+  it("routes an overdue client delivery back to assignment when the LPO was never assigned", () => {
+    // Regression test: a client-delivery date can lapse while an LPO is
+    // still Under Review. "Mark client delivery completed" doesn't exist
+    // as a control until a manufacturer is assigned (see
+    // canMarkClientDeliveryCompleted), so the deep link must send the user
+    // to "assign" instead of "complete" in that case — otherwise it lands
+    // on a URL with no matching section on the page.
+    expect(
+      actionForType(NotificationType.CLIENT_DELIVERY_OVERDUE, LpoStatus.UNDER_REVIEW),
+    ).toBe("assign");
+    expect(
+      actionPathFor(
+        NotificationType.CLIENT_DELIVERY_OVERDUE,
+        "abc",
+        LpoStatus.UNDER_REVIEW,
+      ),
+    ).toBe("/lpo/abc?action=assign");
   });
 
   it("detects review pending and overdues", () => {
@@ -82,17 +109,15 @@ describe("due notification rules", () => {
     expect(overdueDedupeKey("l1", NotificationType.PRODUCTION_OVERDUE, due)).toBe(
       `l1:PRODUCTION_OVERDUE:${due.toISOString()}`,
     );
-    expect(
-      pendingDedupeKey("l1", NotificationType.REVIEW_PENDING, "2026-08-11"),
-    ).toBe("l1:REVIEW_PENDING:2026-08-11");
+    expect(pendingDedupeKey("l1", NotificationType.REVIEW_PENDING, "2026-08-11")).toBe(
+      "l1:REVIEW_PENDING:2026-08-11",
+    );
   });
 });
 
 describe("app url", () => {
   it("joins base and path", () => {
     const base = getAppBaseUrl();
-    expect(absoluteAppUrl("/lpo/x?action=assign")).toBe(
-      `${base}/lpo/x?action=assign`,
-    );
+    expect(absoluteAppUrl("/lpo/x?action=assign")).toBe(`${base}/lpo/x?action=assign`);
   });
 });

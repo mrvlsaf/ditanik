@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   saveCompanyProfileAction,
   type CompanyProfileActionState,
@@ -65,18 +67,37 @@ export function CompanyProfileForm({
     saveCompanyProfileAction,
     initialState,
   );
+  useGlobalPending(isPending);
 
   return (
     <form action={formAction} className="space-y-6 surface-card p-4 sm:p-6">
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-zinc-800">Company details</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField name="legalName" label="Legal name" defaultValue={defaults.legalName} required />
+          <TextField
+            name="legalName"
+            label="Legal name"
+            defaultValue={defaults.legalName}
+            required
+          />
           <TextField name="trn" label="TRN" defaultValue={defaults.trn} />
-          <TextField name="addressLine1" label="Address line 1" defaultValue={defaults.addressLine1} />
-          <TextField name="addressLine2" label="Address line 2" defaultValue={defaults.addressLine2} />
+          <TextField
+            name="addressLine1"
+            label="Address line 1"
+            defaultValue={defaults.addressLine1}
+          />
+          <TextField
+            name="addressLine2"
+            label="Address line 2"
+            defaultValue={defaults.addressLine2}
+          />
           <TextField name="phone" label="Phone" defaultValue={defaults.phone} />
-          <TextField name="email" label="Email" type="email" defaultValue={defaults.email} />
+          <TextField
+            name="email"
+            label="Email"
+            type="email"
+            defaultValue={defaults.email}
+          />
           <TextField name="website" label="Website" defaultValue={defaults.website} />
         </div>
       </div>
@@ -96,21 +117,23 @@ export function CompanyProfileForm({
             defaultValue={defaults.bankAccountNumber}
           />
           <TextField name="bankIban" label="IBAN" defaultValue={defaults.bankIban} />
-          <TextField name="bankSwiftCode" label="SWIFT / BIC" defaultValue={defaults.bankSwiftCode} />
+          <TextField
+            name="bankSwiftCode"
+            label="SWIFT / BIC"
+            defaultValue={defaults.bankSwiftCode}
+          />
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-zinc-800">
-          Default document text
-        </h3>
+        <h3 className="text-sm font-medium text-zinc-800">Default document text</h3>
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-zinc-800">
             Default terms &amp; conditions (used on Quote documents)
           </span>
           <span className="mb-1 block text-xs text-zinc-500">
-            One point per line — each line becomes one numbered point on the
-            Quote. Leave blank to keep the built-in default text.
+            One point per line — each line becomes one numbered point on the Quote. Leave
+            blank to keep the built-in default text.
           </span>
           <textarea
             name="defaultTermsText"

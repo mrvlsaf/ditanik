@@ -2,6 +2,8 @@
 
 import { useActionState, useTransition } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   addLpoFabricRequirementAction,
   deleteLpoFabricRequirementAction,
@@ -28,11 +30,9 @@ export function LpoFabricRequirementsSection({
   const bound = addLpoFabricRequirementAction.bind(null, lpoId);
   const [state, formAction, isPending] = useActionState(bound, initialState);
   const [isDeleting, startDelete] = useTransition();
+  useGlobalPending(isPending || isDeleting);
 
-  const totalExpected = requirements.reduce(
-    (sum, row) => sum + row.expectedMeters,
-    0,
-  );
+  const totalExpected = requirements.reduce((sum, row) => sum + row.expectedMeters, 0);
 
   return (
     <section className="space-y-4 surface-card p-4 sm:p-6">
@@ -41,8 +41,7 @@ export function LpoFabricRequirementsSection({
           Expected fabric requirement
         </h2>
         <p className="text-sm text-zinc-600">
-          Total:{" "}
-          <span className="font-medium text-zinc-900">{totalExpected} m</span>
+          Total: <span className="font-medium text-zinc-900">{totalExpected} m</span>
         </p>
       </div>
 
@@ -76,7 +75,10 @@ export function LpoFabricRequirementsSection({
         <p className="text-sm text-zinc-500">No fabric lines yet.</p>
       )}
 
-      <form action={formAction} className="grid gap-3 border-t border-zinc-100 pt-4 sm:grid-cols-3">
+      <form
+        action={formAction}
+        className="grid gap-3 border-t border-zinc-100 pt-4 sm:grid-cols-3"
+      >
         <input type="hidden" name="lpoId" value={lpoId} />
         <label className="block text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-zinc-800">

@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { withRequestNonce } from "@/lib/with-request-nonce";
+
 import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
@@ -30,6 +33,7 @@ export function NotificationBell({
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  useGlobalPending(isPending);
 
   useEffect(() => {
     if (!open) {
@@ -65,9 +69,7 @@ export function NotificationBell({
       <button
         type="button"
         aria-label={
-          unreadCount > 0
-            ? `Notifications, ${unreadCount} unread`
-            : "Notifications"
+          unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
         }
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
@@ -95,7 +97,9 @@ export function NotificationBell({
       {open ? (
         <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2">
-            <p className="text-sm font-semibold text-[var(--foreground)]">Notifications</p>
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              Notifications
+            </p>
             {unreadCount > 0 ? (
               <button
                 type="button"
@@ -125,7 +129,14 @@ export function NotificationBell({
                   <li key={item.id} className="border-b border-zinc-50 last:border-0">
                     <Link
                       href={item.actionPath}
-                      onClick={() => {
+                      onClick={(event) => {
+                        // Always navigate manually with a fresh nonce, even
+                        // when this notification's actionPath is identical
+                        // to the URL already loaded (e.g. re-clicking the
+                        // same "Client delivery overdue" item twice) —
+                        // otherwise Next.js treats it as a no-op and
+                        // LpoDeepLinkFocus never re-scrolls/re-highlights.
+                        event.preventDefault();
                         setOpen(false);
                         if (unread) {
                           startTransition(async () => {
@@ -133,6 +144,7 @@ export function NotificationBell({
                             refresh();
                           });
                         }
+                        router.push(withRequestNonce(item.actionPath), { scroll: false });
                       }}
                       className={`block px-3 py-3 hover:bg-[var(--surface-muted)] ${
                         unread ? "bg-[var(--brand-muted)]/40" : ""

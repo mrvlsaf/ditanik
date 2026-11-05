@@ -6,9 +6,8 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the real Quotation template — extracted from the client's own
- * workbook (INVOICES COPY AMERICAN N CANVAS.xlsx, "QTN" tab), see
- * docs/DOCUMENT-GENERATION-PLAN.md §8.
+ * Fills the Quotation template — extracted from the client's own workbook
+ * (INVOICES COPY AMERICAN N CANVAS.xlsx, "QTN" tab).
  */
 
 const TEMPLATE_ROW = 18; // the template's two sample line-item rows (18-19).

@@ -4,9 +4,9 @@ import { formatInTimeZone } from "date-fns-tz";
 import { BUSINESS_TIMEZONE } from "@/lib/dates/timezone";
 
 /**
- * Type code embedded in generated document numbers. QUO for Quote is a
- * placeholder pending the real Excel workbooks — confirm against those
- * before Phase 4 builds the Quote template.
+ * Type code embedded in generated document numbers. QUO for Quote has not
+ * been confirmed against a real generated Quote number — verify it is
+ * correct before relying on it operationally.
  */
 export const DOCUMENT_TYPE_CODE: Record<DocumentType, string> = {
   [DocumentType.QUOTATION]: "QTN",

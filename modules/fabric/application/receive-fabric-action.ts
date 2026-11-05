@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { receiveFabric } from "@/modules/fabric/application/receive-fabric";
+import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import type { ReceiveFabricBatchValues } from "@/modules/fabric/schemas/receive-fabric";
 
 export type ReceiveFabricActionState = {
@@ -35,9 +36,7 @@ function parseBatchesFromForm(formData: FormData): ReceiveFabricBatchValues[] {
         fabricType: String(item.fabricType ?? ""),
         colour: String(item.colour ?? ""),
         remarks:
-          item.remarks == null || item.remarks === ""
-            ? undefined
-            : String(item.remarks),
+          item.remarks == null || item.remarks === "" ? undefined : String(item.remarks),
         qtyReceived,
       };
     });
@@ -74,8 +73,8 @@ export async function receiveFabricAction(
     return { ok: false, message: "You must be signed in." };
   }
 
-  const fileValue = formData.get("invoiceFile");
-  if (!(fileValue instanceof File) || fileValue.size === 0) {
+  const fileValue = readPdfUploadFromForm(formData, "invoiceFile", "invoiceFileRef");
+  if (!fileValue) {
     return { ok: false, message: "Supplier invoice PDF is required." };
   }
 
@@ -94,8 +93,7 @@ export async function receiveFabricAction(
     revalidatePath("/invoices");
     return { ok: true, message: "Fabric received." };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Could not receive fabric.";
+    const message = error instanceof Error ? error.message : "Could not receive fabric.";
     return { ok: false, message };
   }
 }

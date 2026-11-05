@@ -62,6 +62,17 @@ export const localFileStorage: FileStorage = {
     };
   },
 
+  // Local disk storage has no direct-browser-upload endpoint (there's
+  // nothing on local disk for the browser to PUT straight to, unlike
+  // Blob) — get-file-storage.ts's `isUsingBlobStorage()` flag is what the
+  // client checks to avoid ever calling this in the first place. Vercel's
+  // 4.5MB Serverless Function payload cap that direct uploads exist to
+  // work around doesn't apply to `pnpm dev` either, so nothing is lost in
+  // practice by not supporting this path locally.
+  async adopt(): Promise<StoredFile> {
+    throw new Error("Direct file uploads are not supported by local disk storage.");
+  },
+
   async read(fileKey: string): Promise<StoredFileBytes> {
     assertSafeFileKey(fileKey);
     const absolutePath = path.join(UPLOAD_ROOT, fileKey);

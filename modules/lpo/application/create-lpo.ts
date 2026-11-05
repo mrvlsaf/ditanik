@@ -1,7 +1,10 @@
 import { LpoStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
-import { storePdfUpload } from "@/modules/files/application/store-pdf";
+import {
+  storePdfUpload,
+  type UploadedFileRef,
+} from "@/modules/files/application/store-pdf";
 import {
   defaultLpoDatesFromReceived,
   isReceivedDateAllowed,
@@ -26,7 +29,7 @@ export type CreateLpoInput = {
   deliveryTerms?: string;
   currency?: string;
   lineItems: LpoLineItemValues[];
-  file: File;
+  file: File | UploadedFileRef;
   createdByUserId: string;
 };
 

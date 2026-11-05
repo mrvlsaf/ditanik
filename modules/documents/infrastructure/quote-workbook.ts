@@ -6,9 +6,8 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the real Quote template — extracted from the client's own workbook
- * (REVISED QUOTE.01.xlsx, "Quote 1" tab), see
- * docs/DOCUMENT-GENERATION-PLAN.md §8. Distinct from Quotation: adds an
+ * Fills the Quote template — extracted from the client's own workbook
+ * (REVISED QUOTE.01.xlsx, "Quote 1" tab). Distinct from Quotation: adds an
  * Original/Discount/Revised pricing table and a Terms & Conditions block.
  * The T&Cs block ships in the template with its own real 16-point text; when
  * `termsAndConditions` is supplied (from CompanyProfile.defaultTermsText —

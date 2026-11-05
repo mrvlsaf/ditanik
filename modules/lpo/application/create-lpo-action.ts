@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createLpo } from "@/modules/lpo/application/create-lpo";
+import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import type { LpoLineItemValues } from "@/modules/lpo/schemas/line-items";
 
 export type CreateLpoActionState = {
@@ -45,7 +46,9 @@ function parseLineItemsFromForm(formData: FormData): LpoLineItemValues[] {
 
     const unitPriceRaw = item.unitPrice;
     const unitPrice =
-      typeof unitPriceRaw === "number" ? unitPriceRaw : Number(String(unitPriceRaw ?? ""));
+      typeof unitPriceRaw === "number"
+        ? unitPriceRaw
+        : Number(String(unitPriceRaw ?? ""));
 
     const discountRaw = item.discountPercent;
     const discountPercent =
@@ -60,7 +63,9 @@ function parseLineItemsFromForm(formData: FormData): LpoLineItemValues[] {
         item.category == null || item.category === "" ? undefined : String(item.category),
       description: String(item.description ?? ""),
       articleNo:
-        item.articleNo == null || item.articleNo === "" ? undefined : String(item.articleNo),
+        item.articleNo == null || item.articleNo === ""
+          ? undefined
+          : String(item.articleNo),
       quantity,
       unitPrice,
       discountPercent,
@@ -87,8 +92,8 @@ export async function createLpoAction(
     };
   }
 
-  const fileValue = formData.get("file");
-  if (!(fileValue instanceof File) || fileValue.size === 0) {
+  const fileValue = readPdfUploadFromForm(formData, "file", "fileRef");
+  if (!fileValue) {
     return { ok: false, message: "LPO document PDF is required." };
   }
 
@@ -116,8 +121,7 @@ export async function createLpoAction(
     revalidatePath("/lpo");
     return { ok: true, message: "LPO created." };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Could not create LPO.";
+    const message = error instanceof Error ? error.message : "Could not create LPO.";
     return { ok: false, message };
   }
 }

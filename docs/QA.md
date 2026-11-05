@@ -3,7 +3,7 @@
 A detailed manual walkthrough to test the whole product.  
 Edit this file as flows change. Use the [Change requests](#change-requests-edit-freely) section for tweaks you want.
 
-**Last updated:** 2026-08-11  
+**Last updated:** 2026-09-20  
 **Primary environment:** local app on [http://localhost:3001](http://localhost:3001) + Neon Postgres  
 **Related docs:** [FLOW.md](./FLOW.md), [DECISIONS.md](./DECISIONS.md), [ROADMAP.md](./ROADMAP.md)
 
@@ -26,7 +26,7 @@ Edit this file as flows change. Use the [Change requests](#change-requests-edit-
 
 | Limit | What you’ll see | Why |
 |-------|-----------------|-----|
-| Local file storage | PDFs work on your machine under `uploads/` | `getFileStorage()` is still local FS — not durable on Vercel |
+| Local file storage (dev only) | PDFs work on your machine under `uploads/` when `BLOB_READ_WRITE_TOKEN` is unset | Production uses Vercel Blob (durable); local dev falls back to disk automatically |
 | No Resend key | Cron returns `dryRun: true`; no real inbox email | Without `RESEND_API_KEY`, notifications are recorded as dry-run |
 | Neon sleep | First request after idle may error / “waking up” | Free Neon suspends; retry after wake |
 | Cron schedule | Locally nothing runs until you `curl` | Vercel Cron only hits Production on a schedule |
@@ -358,11 +358,59 @@ Keep LPO B under review for section 8.
 
 ---
 
-## 8. Notifications (cron + bell + deep links)
+## 8. Company Profile, document generation, Convert to PDF & PDF prefill
+
+**Goal:** One-time company setup, then generate all four client-facing documents from an LPO, optionally convert to PDF, and confirm PDF auto-fill on Create LPO behaves correctly on both a matching and a non-matching PDF.
+
+### 8a. Company Profile (one-time)
+
+1. Open Company Profile settings.
+2. Fill in legal name, TRN, address, phone, website, logo, default terms/footer text.
+
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 8.1 | Fill and save Company Profile | Saved; appears automatically on every generated document's header |
+
+### 8b. Generate documents (use LPO A from section 4)
+
+1. Open LPO A's detail page.
+2. Generate a Quotation, then a Quote, then a Tax Invoice, then a Delivery Note.
+3. For each: confirm line items/quantities, confirm the auto-suggested document number, generate.
+
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 8.2 | Generate each of the four document types | Each downloads as a correctly filled `.xlsx`; document number follows `{Site}-{TYPE}-{DDMMYYYY}-{Seq}` |
+| [ ] | 8.3 | Edit LPO A's line items after generating a document | Already-generated document is unchanged on re-download (snapshot, not live data) |
+| [ ] | 8.4 | Check document history on the LPO | All four generated documents listed, re-downloadable |
+
+### 8c. Convert to PDF
+
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 8.5 | Convert to PDF with Gotenberg **not** configured | Clear "PDF conversion isn't set up yet" message; the `.xlsx` download still works |
+| [ ] | 8.6 | Convert to PDF once Gotenberg is deployed (`infra/gotenberg/README.md`), including the standalone `/documents/convert` upload-and-convert page | Real PDF downloads in both cases |
+
+### 8d. LPO PDF prefill
+
+1. On Create LPO, upload a real client LPO PDF and click "Prefill from this PDF" before filling anything manually.
+
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 8.7 | Prefill from a text-based LPO PDF matching the calibrated layout (e.g. `tests/fixtures/JOHNLPO.pdf`) | Header fields (order number, dates, addresses, TRN) fill in; message states how many fields were filled |
+| [ ] | 8.8 | Review every prefilled field, including line items, before submitting | Nothing generates or saves until you submit — prefill is review-then-submit, never automatic |
+| [ ] | 8.9 | Prefill from a scanned/image-only PDF, or a differently-formatted client PDF | Fails back cleanly ("Couldn't find fields this parser recognizes..." or similar) — form stays usable manually; LPO creation is never blocked |
+
+**Notes / tweaks**
+
+- …
+
+---
+
+## 9. Notifications (cron + bell + deep links)
 
 **Goal:** Daily review reminders + overdue alerts create `Notification` rows, power the bell, and deep-link into LPO actions.
 
-### 8a. Trigger the cron locally
+### 9a. Trigger the cron locally
 
 In a **second terminal** (leave `pnpm dev` running):
 
@@ -382,28 +430,28 @@ Calls the same route Vercel Cron would hit. The route checks `Authorization: Bea
 - Sends email or marks dry-run  
 - Returns JSON like `{ ok: true, dryRun, reviewPendingCreated, … }`
 
-### 8b. Auth on cron
+### 9b. Auth on cron
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
-| [ ] | 8.1 | `curl` **without** header or with wrong secret | HTTP `401` |
-| [ ] | 8.2 | `curl` with correct `CRON_SECRET` | HTTP 200; `ok: true`; review rows for LPO B |
+| [ ] | 9.1 | `curl` **without** header or with wrong secret | HTTP `401` |
+| [ ] | 9.2 | `curl` with correct `CRON_SECRET` | HTTP 200; `ok: true`; review rows for LPO B |
 
-### 8c. Idempotency
-
-| Done | Step | Action | Pass if |
-|------|------|--------|---------|
-| [ ] | 8.3 | Run the same `curl` again the same Dubai day | No duplicate `REVIEW_PENDING` for same LPO/day; response `skipped` increases |
-
-### 8d. In-app inbox
+### 9c. Idempotency
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
-| [ ] | 8.4 | Click the header bell | Unread badge and recent items (or link to all) |
-| [ ] | 8.5 | Click a notification | Navigates to `/lpo/{id}?action=assign\|dates\|complete` and scrolls/highlights the target section |
-| [ ] | 8.6 | Open `/notifications`; use Open / Mark read / Mark all read | Unread state clears; bell count updates after refresh |
+| [ ] | 9.3 | Run the same `curl` again the same Dubai day | No duplicate `REVIEW_PENDING` for same LPO/day; response `skipped` increases |
 
-### 8e. Deep links without the bell
+### 9d. In-app inbox
+
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 9.4 | Click the header bell | Unread badge and recent items (or link to all) |
+| [ ] | 9.5 | Click a notification | Navigates to `/lpo/{id}?action=assign\|dates\|complete` and scrolls/highlights the target section |
+| [ ] | 9.6 | Open `/notifications`; use Open / Mark read / Mark all read | Unread state clears; bell count updates after refresh |
+
+### 9e. Deep links without the bell
 
 Manually open (replace `{id}`):
 
@@ -413,9 +461,9 @@ Manually open (replace `{id}`):
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
-| [ ] | 8.7 | All three query actions | Correct section focused |
+| [ ] | 9.7 | All three query actions | Correct section focused |
 
-### 8f. Optional — force overdue types
+### 9f. Optional — force overdue types
 
 On an **assigned** LPO (not completed):
 
@@ -427,7 +475,7 @@ On an **assigned** LPO (not completed):
 
 | Done | Step | Action | Pass if |
 |------|------|--------|---------|
-| [ ] | 8.o1–8.o4 | Force dates past + cron twice | One-shot overdues; second run skips duplicates |
+| [ ] | 9.o1–9.o4 | Force dates past + cron twice | One-shot overdues; second run skips duplicates |
 
 **Notes / tweaks**
 
@@ -435,7 +483,7 @@ On an **assigned** LPO (not completed):
 
 ---
 
-## 9. Automated gates (run again after manual QA)
+## 10. Automated gates (run again after manual QA)
 
 Re-run after your session so regressions from env/data aren’t confused with code breaks:
 
@@ -453,16 +501,16 @@ pnpm lint
 
 ---
 
-## 10. Deployed smoke (optional)
+## 11. Deployed smoke (optional)
 
 Only after Vercel env vars + `prisma migrate deploy` on that database.
 
 | Done | Step | Action | Pass if / notes |
 |------|------|--------|-----------------|
-| [ ] | 10.1 | Google OAuth on prod domain | Login works; redirect URIs include prod URL |
-| [ ] | 10.2 | Create LPO + upload PDF | May work until instance recycle — **Blob still missing** |
-| [ ] | 10.3 | Confirm Vercel Cron + `CRON_SECRET` | `/api/cron/overdue` runs on schedule |
-| [ ] | 10.4 | `APP_BASE_URL` = prod URL | Notification links point at production |
+| [ ] | 11.1 | Google OAuth on prod domain | Login works; redirect URIs include prod URL |
+| [ ] | 11.2 | Create LPO + upload PDF | Persists via Vercel Blob — confirm the file is still downloadable after a few minutes (no instance-recycle loss) |
+| [ ] | 11.3 | Confirm Vercel Cron + `CRON_SECRET` | `/api/cron/overdue` runs on schedule |
+| [ ] | 11.4 | `APP_BASE_URL` = prod URL | Notification links point at production |
 
 ---
 
@@ -474,11 +522,12 @@ If you cannot do the full matrix, do this:
 2. **Auth + header** — login; confirm title + bell placement
 3. **Consumption** — one rate
 4. **LPO A** — create → check dates → assign existing manufacturer → complete
-5. **Fabric** — receive with invoice → issue → check stock
-6. **Invoices** — find the invoice; open PDF
-7. **LPO B** — create and leave under review
-8. **Cron** — `curl` overdue route → bell → open deep link → mark read
-9. **Gates** — `pnpm test` + `tsc` again
+5. **Documents** — generate one document from LPO A; confirm it downloads (Convert to PDF only if Gotenberg is deployed)
+6. **Fabric** — receive with invoice → issue → check stock
+7. **Invoices** — find the invoice; open PDF
+8. **LPO B** — create and leave under review
+9. **Cron** — `curl` overdue route → bell → open deep link → mark read
+10. **Gates** — `pnpm test` + `tsc` again
 
 ---
 
@@ -487,6 +536,9 @@ If you cannot do the full matrix, do this:
 A test pass is complete when all of these are true:
 
 - [ ] LPO happy path works (create → assign → complete)
+- [ ] Company Profile set; all four document types generate and download correctly
+- [ ] Convert to PDF degrades cleanly without Gotenberg, and works once Gotenberg is deployed
+- [ ] LPO PDF prefill fills expected fields on a matching-layout PDF and fails back cleanly on a scan/mismatched layout, without ever blocking manual entry
 - [ ] Fabric receive / issue / return works
 - [ ] Invoices filters + PDF open
 - [ ] Manufacturer ledger / variance works

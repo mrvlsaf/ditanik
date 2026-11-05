@@ -11,10 +11,7 @@ import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
 import { DocumentActions } from "@/components/documents/DocumentActions";
 import { GenerateDocumentButton } from "@/components/documents/GenerateDocumentButton";
 import { GeneratedDocumentRow } from "@/components/documents/GeneratedDocumentRow";
-import {
-  formatBusinessDateTime,
-  formatCalendarDate,
-} from "@/lib/dates/format";
+import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
 import { listActiveRates } from "@/modules/fabric/application/consumption";
 import { generateQuotationAction } from "@/modules/documents/application/generate-quotation-action";
 import { generateQuoteAction } from "@/modules/documents/application/generate-quote-action";
@@ -32,6 +29,7 @@ import {
 import { lpoStatusDetailLabel } from "@/modules/lpo/domain/lpo-status";
 import type { NotificationAction } from "@/modules/notification/domain/due-notification-rules";
 import { listManufacturers } from "@/modules/manufacturer/application/manufacturers";
+import { isUsingBlobStorage } from "@/modules/files/infrastructure/get-file-storage";
 
 function parseActionParam(
   value: string | string[] | undefined,
@@ -43,24 +41,31 @@ function parseActionParam(
   return null;
 }
 
+function parseRequestIdParam(value: string | string[] | undefined): string | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw ?? null;
+}
+
 export default async function LpoDetailPage({
   params,
   searchParams,
 }: Readonly<{
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ action?: string | string[] }>;
+  searchParams: Promise<{ action?: string | string[]; r?: string | string[] }>;
 }>) {
   const { id } = await params;
   const query = await searchParams;
   const action = parseActionParam(query.action);
-  const [lpo, manufacturers, rates, requirements, generatedDocuments] =
-    await Promise.all([
+  const requestId = parseRequestIdParam(query.r);
+  const [lpo, manufacturers, rates, requirements, generatedDocuments] = await Promise.all(
+    [
       getLpoById(id),
       listManufacturers(),
       listActiveRates(),
       listForLpo(id),
       listGeneratedDocumentsForLpo(id),
-    ]);
+    ],
+  );
 
   if (!lpo) {
     notFound();
@@ -69,10 +74,7 @@ export default async function LpoDetailPage({
   const createdByLabel = lpo.createdBy.name ?? lpo.createdBy.email;
 
   return (
-    <PageContainer
-      title={`LPO ${lpo.lpoNumber}`}
-      description={lpo.nickname}
-    >
+    <PageContainer title={`LPO ${lpo.lpoNumber}`} description={lpo.nickname}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/lpo"
@@ -90,7 +92,7 @@ export default async function LpoDetailPage({
         />
       </div>
 
-      <LpoDeepLinkFocus action={action} />
+      <LpoDeepLinkFocus action={action} requestId={requestId} />
 
       <div className="space-y-8">
         <section className="surface-card p-4 sm:p-6">
@@ -145,9 +147,7 @@ export default async function LpoDetailPage({
                 <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
                   Client sub-entity
                 </dt>
-                <dd className="mt-1 text-sm text-zinc-900">
-                  {lpo.clientSubEntityName}
-                </dd>
+                <dd className="mt-1 text-sm text-zinc-900">{lpo.clientSubEntityName}</dd>
               </div>
             ) : null}
             {lpo.clientTrn ? (
@@ -256,9 +256,7 @@ export default async function LpoDetailPage({
                           </span>
                         ) : null}
                       </td>
-                      <td className="py-2 pr-3 text-zinc-700">
-                        {line.articleNo ?? "—"}
-                      </td>
+                      <td className="py-2 pr-3 text-zinc-700">{line.articleNo ?? "—"}</td>
                       <td className="py-2 pr-3 text-right text-zinc-900">
                         {line.quantity}
                       </td>
@@ -310,14 +308,12 @@ export default async function LpoDetailPage({
 
         <section className="surface-card space-y-4 p-4 sm:p-6">
           <div>
-            <h2 className="text-sm font-medium text-zinc-800">
-              Generated documents
-            </h2>
+            <h2 className="text-sm font-medium text-zinc-800">Generated documents</h2>
             <p className="mt-1 text-xs text-zinc-500">
-              Fills the real Deezano workbooks — pixel-accurate templates
-              taken straight from Deezano&apos;s own Excel files — from this
-              LPO&apos;s stored details. Download the result as Excel to edit
-              by hand, or convert it to PDF to send as-is.
+              Fills the real Deezano workbooks — pixel-accurate templates taken straight
+              from Deezano&apos;s own Excel files — from this LPO&apos;s stored details.
+              Download the result as Excel to edit by hand, or convert it to PDF to send
+              as-is.
             </p>
           </div>
 
@@ -408,6 +404,7 @@ export default async function LpoDetailPage({
             id: m.id,
             name: m.name,
           }))}
+          usesBlobStorage={isUsingBlobStorage()}
         />
 
         <LpoFabricRequirementsSection

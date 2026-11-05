@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useRef } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+
 import {
   createManufacturerAction,
   type CreateManufacturerActionState,
@@ -17,6 +19,7 @@ export function CreateManufacturerForm() {
     createManufacturerAction,
     initialState,
   );
+  useGlobalPending(isPending);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

@@ -177,7 +177,7 @@ Format per entry:
 | | |
 |---|---|
 | **Date** | 2026-07 / still current 2026-08-11 |
-| **Status** | accepted for local; **pending supersession for Vercel prod** |
+| **Status** | superseded by D-022 (2026-09-18) |
 
 **Context:** Need PDF upload/view without locking to one cloud vendor.
 
@@ -376,6 +376,108 @@ Deep links: `/lpo/{id}?action=assign|dates|complete` via `APP_BASE_URL` (fallbac
 **Alternatives:** Keep email-only table; per-user notification targeting; push/webhooks.
 
 **Consequences:** Single source of truth for inbox and email idempotency. Shared-admin inbox (not per-user). Cron still dry-runs without Resend.
+
+---
+
+## D-022 — Vercel Blob as production file storage (supersedes D-010)
+
+| | |
+|---|---|
+| **Date** | 2026-09-18 |
+| **Status** | accepted |
+
+**Context:** D-010 shipped local disk storage for v1, explicitly flagged as broken on Vercel's ephemeral filesystem. The first production deploy needed a real fix before file uploads/generated documents could persist.
+
+**Decision:** `getFileStorage()` returns `vercelBlobStorage` whenever `BLOB_READ_WRITE_TOKEN` is set (auto-injected once a Blob store is connected to the Vercel project), falling back to `localFileStorage` only when unset — so local dev is unaffected. Same `FileStorage` interface from D-010; only the backend behind `getFileStorage()` changed.
+
+**Alternatives:** S3/R2 behind the same interface; UploadThing.
+
+**Consequences:** Production file uploads and generated documents now persist correctly. The Blob token must be present in every Vercel environment (Production/Preview/Development) that needs file storage — confirmed via the project's Environment Variables settings.
+
+---
+
+## D-023 — Sentry for error tracking
+
+| | |
+|---|---|
+| **Date** | 2026-09-18 |
+| **Status** | accepted |
+
+**Context:** No error-tracking SDK existed; the only way to learn about a production failure was a user report or reading raw Vercel function logs.
+
+**Decision:** `@sentry/nextjs` wired into server, edge, and client runtimes. `beforeSend` suppresses the expected Neon cold-start `DatabaseUnavailableError` so it doesn't create alert noise. Previously-silent failure paths (notification email sends, LPO PDF-prefill parsing) now call `Sentry.captureException` with feature tags instead of swallowing the error.
+
+**Alternatives:** Vercel's own error monitoring only; no tracking (status quo).
+
+**Consequences:** Real production errors are now visible without waiting for a user report. Any future silently-caught exception should get the same treatment — a bare `catch {}` with no capture is a regression, not a style choice.
+
+---
+
+## D-024 — Vercel Firewall for rate limiting
+
+| | |
+|---|---|
+| **Date** | 2026-09-18 |
+| **Status** | accepted |
+
+**Context:** Login, `/api/cron/overdue`, and `/api/files` had no request throttling — a leaked `CRON_SECRET` or a compromised allowlisted account could be hammered without limit.
+
+**Decision:** Vercel Firewall custom rate-limit rule (Fixed Window algorithm), published in Log mode first to observe real traffic, then switched to Deny.
+
+**Alternatives:** Upstash Ratelimit (adds an external dependency + cost); no limiting.
+
+**Consequences:** Free on the Hobby plan (1 rate-limit rule allowed). If traffic patterns change, the rule's thresholds may need retuning — check Vercel Firewall logs if legitimate use is ever blocked.
+
+---
+
+## D-025 — Fabric invoice/batch soft-delete when history exists
+
+| | |
+|---|---|
+| **Date** | 2026-09-18 |
+| **Status** | accepted |
+
+**Context:** `delete-fabric.ts` hard-deleted `FabricSupplierInvoice`/`FabricBatch` rows (after deleting their movements/variances) even when real inventory ledger history existed against them — unlike the Manufacturer module, which already soft-deletes.
+
+**Decision:** Mirror the Manufacturer pattern: add `isActive` to both models. Delete checks for movement history excluding the initial `RECEIVED` movement (every batch starts with one) plus any variance rows — if any exist, soft-delete (`isActive: false`); otherwise hard-delete as before. Active-only filtering added to batch/invoice list queries; file downloads and fabric-code uniqueness checks deliberately stay unfiltered.
+
+**Alternatives:** Always soft-delete; always hard-delete with a confirmation warning only.
+
+**Consequences:** Ledger history can no longer be silently destroyed by deleting its parent invoice/batch. No restore UI exists yet for a soft-deleted record — would need one if "undo" becomes a real request.
+
+---
+
+## D-026 — Preview and Production on separate Neon branches
+
+| | |
+|---|---|
+| **Date** | 2026-09-18 |
+| **Status** | accepted |
+
+**Context:** Nothing in code stopped a Preview deployment from talking to the Production database — purely a Vercel project-settings gap.
+
+**Decision:** Dedicated Neon branch (`preview`, auto-delete set to Never) with its own pooled/direct connection strings, scoped to the Preview environment only in Vercel's Environment Variables; the original `DATABASE_URL`/`DIRECT_URL` rescoped to Production only. Verified by creating a test record on a Preview deployment and confirming it does not appear in Production.
+
+**Alternatives:** Single shared database with a schema-level tenant flag; no isolation (status quo).
+
+**Consequences:** Preview data is now fully isolated. Any new environment variable added later must be checked for the same Production-vs-Preview scoping mistake.
+
+---
+
+## D-027 — Gotenberg: design finalized, deployment deferred
+
+| | |
+|---|---|
+| **Date** | 2026-09-18 (design) |
+| **Status** | pending (infrastructure not yet stood up) |
+
+**Context:** Excel→PDF conversion needs a real spreadsheet engine (LibreOffice), which Vercel's serverless functions can't run.
+
+**Decision:** Self-hosted Gotenberg behind Caddy (automatic HTTPS + Basic Auth) on a small always-on VM — fully documented and ready to deploy in `infra/gotenberg/README.md`. Not yet stood up. `convertOfficeFileToPdf` checks for `GOTENBERG_URL` and fails cleanly with a "PDF conversion isn't set up yet" message rather than crashing when it's absent — confirmed by direct testing that no other feature depends on or is affected by Gotenberg's absence.
+
+**Alternatives:** A paid conversion API instead of self-hosting (swappable later behind the same function without touching callers).
+
+**Consequences:** "Convert to PDF" and the standalone `/documents/convert` page are unusable until this VM exists; every other feature, including document generation itself (the `.xlsx` download), is unaffected.
 
 ---
 

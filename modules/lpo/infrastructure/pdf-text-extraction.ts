@@ -13,7 +13,17 @@ export type PdfLine = { page: number; y: number; tokens: PdfToken[] };
  * parseable at all.
  *
  * Uses pdfjs-dist's legacy (non-worker) Node build — no `GlobalWorkerOptions`
- * setup needed, unlike `DocumentViewer`'s browser-side CDN worker.
+ * setup needed, unlike `DocumentViewer`'s browser-side worker (see that
+ * file's own comment on why its worker script has to be same-origin).
+ *
+ * `@napi-rs/canvas` is a real dependency (not just pdfjs-dist's optional
+ * peer) so this works in a serverless deployment, not only local dev:
+ * pdfjs-dist's Node build uses it to polyfill browser-only APIs
+ * (DOMMatrix, Path2D, ImageData) that some PDFs exercise even for plain
+ * text extraction — e.g. one with embedded images or vector-drawn form
+ * fields. Without it, those specific PDFs throw here instead of just
+ * degrading, while a simpler text-only PDF can extract fine either way,
+ * which is what made this gap easy to miss in testing.
  */
 export async function extractPdfLines(bytes: Buffer): Promise<PdfLine[]> {
   const document = await getDocument({

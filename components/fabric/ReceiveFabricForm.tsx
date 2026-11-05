@@ -2,6 +2,9 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
+import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { useDirectUploadOnSubmit } from "@/components/ui/useDirectUploadOnSubmit";
+
 import {
   receiveFabricAction,
   type ReceiveFabricActionState,
@@ -21,7 +24,9 @@ function todayInputValue(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-export function ReceiveFabricForm() {
+export function ReceiveFabricForm({
+  usesBlobStorage,
+}: Readonly<{ usesBlobStorage: boolean }>) {
   const [batches, setBatches] = useState<BatchRow[]>([
     { fabricType: "", colour: "", remarks: "", qtyReceived: "" },
   ]);
@@ -39,6 +44,19 @@ export function ReceiveFabricForm() {
     initialState,
   );
   const formRef = useRef<HTMLFormElement>(null);
+  const {
+    onSubmit: onDirectUploadSubmit,
+    isUploadingFile,
+    uploadError,
+  } = useDirectUploadOnSubmit({
+    formAction,
+    formRef,
+    fileFieldName: "invoiceFile",
+    fileRefFieldName: "invoiceFileRef",
+    folder: "fabric-invoices",
+    usesBlobStorage,
+  });
+  useGlobalPending(isPending || isUploadingFile);
 
   useEffect(() => {
     if (state.ok) {
@@ -49,7 +67,12 @@ export function ReceiveFabricForm() {
   const today = todayInputValue();
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-4 surface-card p-4 sm:p-6">
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={onDirectUploadSubmit}
+      className="space-y-4 surface-card p-4 sm:p-6"
+    >
       <input
         type="hidden"
         name="batchesJson"
@@ -205,6 +228,12 @@ export function ReceiveFabricForm() {
         ))}
       </div>
 
+      {uploadError ? (
+        <p className="text-sm text-red-700" role="status">
+          {uploadError}
+        </p>
+      ) : null}
+
       {state.message ? (
         <p
           className={`text-sm ${state.ok ? "text-emerald-700" : "text-red-700"}`}
@@ -214,8 +243,12 @@ export function ReceiveFabricForm() {
         </p>
       ) : null}
 
-      <button type="submit" disabled={isPending} className="btn-primary min-h-11">
-        {isPending ? "Saving…" : "Receive fabric"}
+      <button
+        type="submit"
+        disabled={isPending || isUploadingFile}
+        className="btn-primary min-h-11"
+      >
+        {isUploadingFile ? "Uploading…" : isPending ? "Saving…" : "Receive fabric"}
       </button>
     </form>
   );

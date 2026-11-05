@@ -1,8 +1,4 @@
-import {
-  NotificationEmailStatus,
-  NotificationType,
-  Prisma,
-} from "@prisma/client";
+import { NotificationEmailStatus, NotificationType, Prisma } from "@prisma/client";
 import { Resend } from "resend";
 import * as Sentry from "@sentry/nextjs";
 
@@ -43,18 +39,16 @@ function notifyRecipient(): string | null {
   return allowlist || null;
 }
 
-function toSnapshot(
-  row: {
-    id: string;
-    lpoNumber: string;
-    nickname: string;
-    status: LpoDueSnapshot["status"];
-    manufacturerAssignmentAt: Date;
-    productionDeadlineAt: Date;
-    clientDeliveryAt: Date;
-    manufacturer: { name: string } | null;
-  },
-): LpoDueSnapshot {
+function toSnapshot(row: {
+  id: string;
+  lpoNumber: string;
+  nickname: string;
+  status: LpoDueSnapshot["status"];
+  manufacturerAssignmentAt: Date;
+  productionDeadlineAt: Date;
+  clientDeliveryAt: Date;
+  manufacturer: { name: string } | null;
+}): LpoDueSnapshot {
   return {
     id: row.id,
     lpoNumber: row.lpoNumber,
@@ -95,10 +89,7 @@ async function createIfNew(input: {
     });
     return "created";
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return "skipped";
     }
     throw error;
@@ -169,8 +160,7 @@ export async function processDueNotifications(
   const apiKey = process.env.RESEND_API_KEY;
   const dryRun = !apiKey;
   const resend = apiKey ? new Resend(apiKey) : null;
-  const from =
-    process.env.RESEND_FROM_EMAIL?.trim() || "Ditanik <onboarding@resend.dev>";
+  const from = process.env.RESEND_FROM_EMAIL?.trim() || "Ditanik <onboarding@resend.dev>";
 
   const dayLabel = dubaiBusinessDayLabel(now);
   const businessDay = parseBusinessDayLabel(dayLabel);
@@ -203,7 +193,7 @@ export async function processDueNotifications(
     if (isReviewPending(lpo)) {
       reviewPendingLpos.push(lpo);
       const type = NotificationType.REVIEW_PENDING;
-      const actionPath = actionPathFor(type, lpo.id);
+      const actionPath = actionPathFor(type, lpo.id, lpo.status);
       const result = await createIfNew({
         type,
         lpoId: lpo.id,
@@ -225,7 +215,7 @@ export async function processDueNotifications(
     if (isAssignmentOverdue(lpo, now)) {
       const type = NotificationType.ASSIGNMENT_OVERDUE;
       const dueAt = lpo.manufacturerAssignmentAt;
-      const actionPath = actionPathFor(type, lpo.id);
+      const actionPath = actionPathFor(type, lpo.id, lpo.status);
       const result = await createIfNew({
         type,
         lpoId: lpo.id,
@@ -265,7 +255,7 @@ export async function processDueNotifications(
     if (isProductionOverdue(lpo, now)) {
       const type = NotificationType.PRODUCTION_OVERDUE;
       const dueAt = lpo.productionDeadlineAt;
-      const actionPath = actionPathFor(type, lpo.id);
+      const actionPath = actionPathFor(type, lpo.id, lpo.status);
       const result = await createIfNew({
         type,
         lpoId: lpo.id,
@@ -305,7 +295,7 @@ export async function processDueNotifications(
     if (isClientDeliveryOverdue(lpo, now)) {
       const type = NotificationType.CLIENT_DELIVERY_OVERDUE;
       const dueAt = lpo.clientDeliveryAt;
-      const actionPath = actionPathFor(type, lpo.id);
+      const actionPath = actionPathFor(type, lpo.id, lpo.status);
       const result = await createIfNew({
         type,
         lpoId: lpo.id,

@@ -1,10 +1,10 @@
 /**
  * Converts an Office file (xlsx) to PDF via a self-hosted Gotenberg instance
  * (LibreOffice under the hood — Vercel serverless can't run LibreOffice
- * itself, see docs/DOCUMENT-GENERATION-PLAN.md §4). Swappable behind this one
- * function the same way modules/files/infrastructure/get-file-storage.ts
- * swaps storage backends — replace the body to call a paid conversion API
- * instead, without touching any caller.
+ * itself). Swappable behind this one function the same way
+ * modules/files/infrastructure/get-file-storage.ts swaps storage backends —
+ * replace the body to call a paid conversion API instead, without touching
+ * any caller.
  */
 
 export class PdfConversionNotConfiguredError extends Error {
