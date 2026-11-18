@@ -115,26 +115,19 @@ body {
 
   .app-canvas {
     background-color: var(--background);
-    background-image:
-      /* Soft “ear patch” charcoal blooms + bamboo wash */
-      radial-gradient(520px 320px at -4% -8%, rgba(20, 20, 20, 0.07), transparent 60%),
-      radial-gradient(480px 300px at 104% -4%, rgba(20, 20, 20, 0.06), transparent 58%),
-      radial-gradient(700px 380px at 50% 120%, rgba(63, 107, 74, 0.08), transparent 55%),
-      linear-gradient(to right, rgba(63, 107, 74, 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(63, 107, 74, 0.045) 1px, transparent 1px);
-    background-size:
-      auto,
-      auto,
-      auto,
-      56px 56px,
-      56px 56px;
   }
 
   .app-header {
     border-bottom: 1px solid var(--border);
-    background: var(--header-bg);
-    backdrop-filter: blur(10px);
-    box-shadow: inset 0 -2px 0 0 color-mix(in srgb, var(--brand) 55%, transparent);
+    background: var(--surface);
+  }
+
+  .topbar-link {
+    @apply inline-flex min-h-11 cursor-pointer items-center rounded-md px-3 text-sm font-semibold transition-colors;
+    color: var(--foreground);
+  }
+  .topbar-link:hover {
+    background: var(--surface-muted);
   }
 
   .app-sidebar {
@@ -142,22 +135,135 @@ body {
     color: var(--sidebar-fg);
   }
 
+  .nav-group-title {
+    @apply px-3 pb-1 text-[11px] font-semibold tracking-[0.08em] uppercase;
+    color: var(--sidebar-muted);
+  }
+
   .nav-link {
-    @apply rounded-md px-3 py-2.5 text-sm font-medium transition-colors;
+    @apply flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-sm font-medium transition-colors;
+    color: var(--sidebar-fg);
+  }
+  .nav-link .nav-icon {
     color: var(--sidebar-muted);
   }
   .nav-link:hover {
     background: var(--sidebar-hover);
-    color: var(--sidebar-fg);
+    color: #fff;
   }
   .nav-link-active {
     background: color-mix(in srgb, var(--sidebar-active) 22%, transparent);
     color: #fff;
-    box-shadow: inset 3px 0 0 0 var(--sidebar-active);
+    font-weight: 600;
+  }
+  .nav-link-active .nav-icon {
+    color: var(--sidebar-active);
   }
   .nav-link-pending {
     background: var(--sidebar-hover);
     color: var(--sidebar-fg);
+  }
+  .app-sidebar a:focus-visible {
+    outline: 3px solid var(--sidebar-active);
+    outline-offset: 1px;
+  }
+
+  /* Keyboard focus is always clearly visible. */
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 3px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* Small labels for statuses and kinds. Always paired with text. */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs leading-normal font-semibold whitespace-nowrap;
+  }
+  .chip-gray {
+    background: #eceee9;
+    color: #3a413a;
+  }
+  .chip-amber {
+    background: #fdf0d5;
+    color: #6e4300;
+  }
+  .chip-blue {
+    background: #e3edf9;
+    color: #17457a;
+  }
+  .chip-green {
+    background: #e4efe6;
+    color: #2a4d33;
+  }
+  .chip-purple {
+    background: #eee6f9;
+    color: #45257a;
+  }
+  .chip-red {
+    background: #ffe4e6;
+    color: #a80f33;
+  }
+
+  /* The (i) icon that explains a term where you meet it. */
+  .info-tip-button {
+    @apply relative inline-flex h-5 w-5 items-center justify-center rounded-full border p-0 text-xs leading-none font-bold select-none;
+    border-color: #6b736b;
+    background: var(--surface);
+    color: #3a413a;
+  }
+  .info-tip-box {
+    @apply absolute top-[30px] z-30 w-[264px] max-w-[80vw] rounded-lg px-3 py-2.5 text-left text-[13px] leading-normal font-normal tracking-normal normal-case;
+    background: #1a1a1a;
+    color: #fff;
+    white-space: normal;
+  }
+
+  /* Filter links such as All / Under review / Overdue. */
+  .filter-chip {
+    @apply inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors;
+    border-color: #b9beb6;
+    background: var(--surface);
+    color: var(--foreground);
+  }
+  .filter-chip:hover {
+    background: var(--background);
+  }
+  .filter-chip-on,
+  .filter-chip-on:hover {
+    border-color: #1a1a1a;
+    background: #1a1a1a;
+    color: #fff;
+  }
+  .filter-chip-count {
+    @apply rounded-full px-2 text-xs font-bold;
+    background: rgba(0, 0, 0, 0.08);
+  }
+  .filter-chip-on .filter-chip-count {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  /* Tabs. */
+  .tab-list {
+    @apply flex gap-1 overflow-x-auto border-b;
+    border-color: var(--border);
+  }
+  .tab {
+    @apply -mb-px inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 border-b-[3px] border-transparent px-4 text-sm font-semibold whitespace-nowrap transition-colors;
+    color: var(--text-muted);
+  }
+  .tab:hover {
+    color: var(--foreground);
+  }
+  .tab-on,
+  .tab-on:hover {
+    border-bottom-color: var(--brand);
+    color: var(--foreground);
+  }
+  .tab-count {
+    @apply rounded-full px-2 text-xs font-bold;
+    background: #eceee9;
+    color: #3a413a;
   }
 
   /* Soft focus for form controls */

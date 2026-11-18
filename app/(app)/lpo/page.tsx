@@ -6,6 +6,7 @@ import { SectionLoading } from "@/components/app-shell/SectionLoading";
 import { CreateLpoForm } from "@/components/lpo/CreateLpoForm";
 import { LpoActionsMenu } from "@/components/lpo/LpoActionsMenu";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
 import { listRecentLpos } from "@/modules/lpo/application/get-lpo";
 import { isUsingBlobStorage } from "@/modules/files/infrastructure/get-file-storage";
@@ -15,9 +16,9 @@ async function LpoDashboard() {
 
   if (lpos.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-8 text-center text-sm text-zinc-500">
-        No LPOs yet. Create the first one above.
-      </p>
+      <EmptyState title="No LPOs yet">
+        Create the first one with the form above. It starts as Under review.
+      </EmptyState>
     );
   }
 
@@ -86,6 +87,7 @@ export default function LpoPage() {
     <PageContainer
       title="LPO"
       description="Receive LPOs, track internal review and manufacturer production deadlines, then complete client delivery."
+      info="Every LPO follows the same path: Under review, then Assigned to manufacturer, then Client delivery completed. Dates are worked out from the date received."
     >
       <div className="space-y-8">
         <section>
