@@ -3,6 +3,13 @@
 import { useActionState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import {
+  Field,
+  FORM_CARD_CLASS,
+  FormHeader,
+  FormMessage,
+  INPUT_CLASS,
+} from "@/components/ui/Field";
 
 import {
   returnFabricAction,
@@ -20,6 +27,7 @@ export function ReturnFabricForm({
   batches,
   manufacturers,
   lpos,
+  defaultBatchId,
 }: Readonly<{
   batches: Array<{
     id: string;
@@ -29,21 +37,30 @@ export function ReturnFabricForm({
   }>;
   manufacturers: Array<{ id: string; name: string }>;
   lpos: Array<{ id: string; lpoNumber: string; nickname: string }>;
+  /** Batch to pre-select, when the page was opened from a batch's menu. */
+  defaultBatchId?: string;
 }>) {
   const [state, formAction, isPending] = useActionState(returnFabricAction, initialState);
   useGlobalPending(isPending);
   const today = todayInputValue();
+  const startBatch = batches.some((b) => b.id === defaultBatchId)
+    ? (defaultBatchId ?? "")
+    : "";
 
   return (
-    <form action={formAction} className="space-y-4 surface-card p-4 sm:p-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm sm:col-span-2">
-          <span className="mb-1 block font-medium text-zinc-800">Batch</span>
+    <form action={formAction} className={FORM_CARD_CLASS}>
+      <FormHeader
+        title="Record a return from a manufacturer"
+        help="Use this when a manufacturer gives unused metres back. They go back into your stock and a return movement is recorded."
+      />
+
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+        <Field label="Batch" className="col-span-full">
           <select
             name="batchId"
             required
-            defaultValue=""
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            defaultValue={startBatch}
+            className={INPUT_CLASS}
           >
             <option value="" disabled>
               Select…
@@ -54,15 +71,9 @@ export function ReturnFabricForm({
               </option>
             ))}
           </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">From manufacturer</span>
-          <select
-            name="manufacturerId"
-            required
-            defaultValue=""
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
-          >
+        </Field>
+        <Field label="From manufacturer">
+          <select name="manufacturerId" required defaultValue="" className={INPUT_CLASS}>
             <option value="" disabled>
               Select…
             </option>
@@ -72,72 +83,53 @@ export function ReturnFabricForm({
               </option>
             ))}
           </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Quantity returned (m)
-          </span>
+        </Field>
+        <Field label="Quantity returned (metres)">
           <input
             type="number"
             name="quantityMeters"
             min="0.001"
             step="0.001"
             required
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            placeholder="e.g. 12"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">Date</span>
+        </Field>
+        <Field label="Date">
           <input
             type="date"
             name="occurredAt"
             required
             defaultValue={today}
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Related LPO (optional)
-          </span>
-          <select
-            name="lpoId"
-            defaultValue=""
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
-          >
-            <option value="">None — return from additional (no LPO) fabric</option>
+        </Field>
+        <Field
+          label="LPO"
+          optional
+          tip="Pick the same LPO used when the fabric was issued, so that LPO's balance updates correctly."
+        >
+          <select name="lpoId" defaultValue="" className={INPUT_CLASS}>
+            <option value="">None: return from additional fabric</option>
             {lpos.map((l) => (
               <option key={l.id} value={l.id}>
-                {l.lpoNumber} · {l.nickname}
+                LPO {l.lpoNumber} · {l.nickname}
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs text-zinc-500">
-            Pick the same LPO used when the fabric was issued, so that LPO’s balance
-            updates correctly.
-          </span>
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          <span className="mb-1 block font-medium text-zinc-800">Note</span>
-          <input
-            name="note"
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
-          />
-        </label>
+        </Field>
+        <Field label="Note" optional className="col-span-full">
+          <input name="note" className={INPUT_CLASS} />
+        </Field>
       </div>
 
-      {state.message ? (
-        <p
-          className={`text-sm ${state.ok ? "text-emerald-700" : "text-red-700"}`}
-          role="status"
-        >
-          {state.message}
-        </p>
-      ) : null}
+      <FormMessage ok={state.ok} message={state.message} />
 
-      <button type="submit" disabled={isPending} className="btn-primary min-h-11">
-        {isPending ? "Saving…" : "Record return"}
-      </button>
+      <div>
+        <button type="submit" disabled={isPending} className="btn-primary">
+          {isPending ? "Saving…" : "Record return"}
+        </button>
+      </div>
     </form>
   );
 }

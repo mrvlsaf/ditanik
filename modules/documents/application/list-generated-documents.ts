@@ -63,7 +63,7 @@ export async function listAllGeneratedDocuments(
     take: ALL_DOCUMENTS_LIMIT,
     include: {
       generatedBy: { select: { name: true, email: true } },
-      lpo: { select: { id: true, lpoNumber: true } },
+      lpo: { select: { id: true, lpoNumber: true, clientName: true } },
     },
   });
 }

@@ -1,15 +1,6 @@
-"use client";
+import { TabLink } from "@/components/ui/TabLink";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-import { withRequestNonce } from "@/lib/with-request-nonce";
-
-/**
- * A button-styled link that opens a tab on this LPO's page. The nonce makes
- * every click a new address, so the page re-opens the tab even when the same
- * link was clicked before (or the tab was changed by hand in between).
- */
+/** A button-styled link that opens a tab on this LPO's page. */
 export function OpenTabLink({
   lpoId,
   tab,
@@ -21,22 +12,9 @@ export function OpenTabLink({
   className?: string;
   children: React.ReactNode;
 }>) {
-  const router = useRouter();
-  const href = `/lpo/${lpoId}?tab=${tab}`;
-
   return (
-    <Link
-      href={href}
-      className={className}
-      onClick={(event) => {
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
-          return;
-        }
-        event.preventDefault();
-        router.push(withRequestNonce(href), { scroll: true });
-      }}
-    >
+    <TabLink href={`/lpo/${lpoId}?tab=${tab}`} className={className}>
       {children}
-    </Link>
+    </TabLink>
   );
 }

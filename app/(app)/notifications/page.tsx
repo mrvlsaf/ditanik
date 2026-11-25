@@ -27,7 +27,8 @@ export default function NotificationsPage() {
   return (
     <PageContainer
       title="Notifications"
-      description="Due reminders and overdue alerts for LPO actions."
+      description="Reminders and overdue alerts for your LPOs. Each one links straight to the action that fixes it. The same reminders are also sent by email."
+      breadcrumb={[{ label: "Home", href: "/" }, { label: "Notifications" }]}
     >
       <Suspense fallback={<SectionLoading label="Loading notifications…" />}>
         <NotificationsContent />

@@ -3,6 +3,9 @@
 import { useActionState, useTransition } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Field, FormMessage, INPUT_CLASS } from "@/components/ui/Field";
+import { formatMeters } from "@/modules/fabric/domain/fabric-glance";
 
 import {
   createConsumptionRateAction,
@@ -25,22 +28,95 @@ export function ConsumptionRatesPanel({
   useGlobalPending(isPending || isDeactivating);
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-wrap items-start gap-6">
+      <section
+        className="surface-card min-w-0 flex-[2_1_480px] overflow-hidden"
+        aria-labelledby="active-rates"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+          <h2 id="active-rates" className="text-[17px] font-bold">
+            Active rates
+          </h2>
+          <span className="text-sm text-[var(--text-muted)]">{rates.length} in use</span>
+        </div>
+        {rates.length === 0 ? (
+          <div className="p-5">
+            <EmptyState title="No consumption rates yet">
+              Add a garment and its metres on the right, for example Chef Jacket, Pant or
+              Shirt.
+            </EmptyState>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[360px] text-left text-sm">
+              <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    Garment
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    Metres per garment
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {rates.map((rate) => (
+                  <tr key={rate.id}>
+                    <td className="px-4 py-3 font-semibold">{rate.garmentName}</td>
+                    <td className="px-4 py-3 text-right">
+                      {formatMeters(rate.metersPerUnit)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        disabled={isDeactivating}
+                        onClick={() => {
+                          startDeactivate(async () => {
+                            await deactivateConsumptionRateAction(rate.id);
+                          });
+                        }}
+                        className="btn-secondary min-h-9"
+                      >
+                        Deactivate
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="border-t border-[var(--border)] px-5 py-3.5 text-sm text-[var(--text-muted)]">
+          Deactivating a rate hides it from new LPOs. LPOs that already used it keep their
+          numbers.
+        </p>
+      </section>
+
       <form
         action={formAction}
-        className="grid gap-3 surface-card p-4 sm:grid-cols-3 sm:items-end sm:p-6"
+        aria-labelledby="add-rate"
+        className="surface-card flex min-w-0 flex-[1_1_300px] flex-col gap-4 p-5"
       >
-        <label className="block text-sm sm:col-span-1">
-          <span className="mb-1 block font-medium text-zinc-800">Garment</span>
+        <div>
+          <h2 id="add-rate" className="text-[17px] font-bold">
+            Add a rate
+          </h2>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            For example a chef jacket that needs 1.8 metres.
+          </p>
+        </div>
+        <Field label="Garment">
           <input
             name="garmentName"
             required
             placeholder="e.g. Chef Jacket"
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">Meters / unit</span>
+        </Field>
+        <Field label="Metres per garment">
           <input
             type="number"
             name="metersPerUnit"
@@ -48,53 +124,16 @@ export function ConsumptionRatesPanel({
             step="0.001"
             required
             placeholder="1.8"
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            className={INPUT_CLASS}
           />
-        </label>
-        <button type="submit" disabled={isPending} className="btn-primary min-h-11">
-          {isPending ? "Saving…" : "Add rate"}
-        </button>
-        {state.message ? (
-          <p
-            className={`text-sm sm:col-span-3 ${state.ok ? "text-emerald-700" : "text-red-700"}`}
-            role="status"
-          >
-            {state.message}
-          </p>
-        ) : null}
+        </Field>
+        <FormMessage ok={state.ok} message={state.message} />
+        <div>
+          <button type="submit" disabled={isPending} className="btn-primary">
+            {isPending ? "Saving…" : "Add rate"}
+          </button>
+        </div>
       </form>
-
-      {rates.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-8 text-center text-sm text-zinc-500">
-          No consumption rates yet. Add Chef Jacket, Pant, Shirt, etc.
-        </p>
-      ) : (
-        <ul className="divide-y divide-zinc-200 overflow-hidden surface-card">
-          {rates.map((rate) => (
-            <li
-              key={rate.id}
-              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="font-medium text-zinc-900">{rate.garmentName}</p>
-                <p className="text-sm text-zinc-600">{rate.metersPerUnit} m per unit</p>
-              </div>
-              <button
-                type="button"
-                disabled={isDeactivating}
-                onClick={() => {
-                  startDeactivate(async () => {
-                    await deactivateConsumptionRateAction(rate.id);
-                  });
-                }}
-                className="btn-danger-outline text-xs"
-              >
-                Deactivate
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

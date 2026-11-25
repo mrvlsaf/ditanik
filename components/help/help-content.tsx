@@ -42,8 +42,8 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Create an LPO",
         detail:
-          "Enter number, nickname, client, received date, and upload the LPO PDF — uploading a PDF also tries to auto-fill the form fields and line items (best-effort; always review before saving). Status becomes Under Review automatically.",
-        href: "/lpo",
+          "Open New LPO. Enter number, nickname, client, received date, and upload the LPO PDF. The Prefill from this PDF button tries to fill the form fields and line items from the PDF (best-effort; always review before saving). Status becomes Under Review automatically.",
+        href: "/lpo/new",
       },
       {
         title: "Receive fabric",
@@ -74,8 +74,8 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Create LPO (Under Review)",
         detail:
-          "Required: LPO number, nickname, client, received date, original PDF. Defaults: assignment +2 days, production +12, client delivery +15.",
-        href: "/lpo",
+          "Required: LPO number, nickname, client, received date, original PDF. Defaults: assignment +2 days, production +12, client delivery +15. The New LPO page shows the dates before you save.",
+        href: "/lpo/new",
       },
       {
         title: "Review & extend dates if needed",
@@ -102,7 +102,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       "You can delete an LPO from the dashboard or detail page (confirmation required).",
       "You cannot assign until the LPO is Under Review with a production PDF ready.",
       "Dashboard columns show production due and client delivery for operational tracking.",
-      "Deep links from notifications open ?action=assign, dates, or complete on the LPO page.",
+      "Each LPO page has tabs (Summary, Lines, Dates, Fabric needed, Production and delivery, Documents). A green Next step banner at the top says what to do next, and links from notifications open the right tab.",
       "PDF auto-fill is calibrated to a specific client's LPO layout — always review auto-filled fields and line items before saving, especially for a new client's PO format.",
       "Use Edit on the LPO detail page to correct client, dates, or line items. Once any document has been generated for an LPO, the LPO itself can no longer be deleted.",
     ],
@@ -116,26 +116,26 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Receive fabric",
         detail:
-          "Supplier name, invoice/reference, date, invoice PDF (optional), and one or more lines (type, colour, qty meters, remarks). Each line becomes a batch with a system fabric code (FAB-…).",
-        href: "/fabric",
+          "On the Receive fabric tab: supplier name, invoice/reference, date, invoice PDF (optional), and one or more lines (type, colour, qty meters, remarks). Each line becomes a batch with a system fabric code (FAB-…).",
+        href: "/fabric?tab=receive",
       },
       {
         title: "Check available stock",
         detail:
-          "The stock table shows remaining meters per batch (received − issued + returned, etc.).",
+          "The Stock tab shows remaining meters per batch (received − issued + returned, etc.), with three totals above it.",
         href: "/fabric",
       },
       {
         title: "Issue to manufacturer",
         detail:
-          "Pick batch, manufacturer, quantity, optional LPO link. Stock decreases; a movement is recorded.",
-        href: "/fabric",
+          "Press Issue on a batch, or open the Issue to manufacturer tab. Pick batch, manufacturer, quantity, optional LPO link. Stock decreases; a movement is recorded.",
+        href: "/fabric?tab=issue",
       },
       {
         title: "Return from manufacturer",
         detail:
-          "Return unused meters to stock. Creates a RETURNED movement.",
-        href: "/fabric",
+          "Return unused meters to stock from the Record a return tab. Creates a RETURNED movement. The Movements tab lists every movement.",
+        href: "/fabric?tab=return",
       },
       {
         title: "Find invoices later",
@@ -183,13 +183,13 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Generate a document",
         detail:
-          "From an LPO detail page, choose the document type and generate it. Each one is numbered automatically and snapshotted from the LPO and company profile at that moment — later LPO edits don't change a document already generated.",
+          "From an LPO page, open the Documents tab, choose the document type and generate it. Each one is numbered automatically and snapshotted from the LPO and company profile at that moment — later LPO edits don't change a document already generated.",
         href: "/lpo",
       },
       {
         title: "Generate a document without an LPO",
         detail:
-          "Open Documents → New document, choose Quotation, Tax Invoice or Delivery Note, type the site code, client details and line items, and generate. It is numbered like any other document and is never linked to an LPO. The Documents page lists every document, with search and a type filter.",
+          "Open Documents → New document, choose Quotation, Tax Invoice or Delivery Note, type the site code, client details and line items, and generate. It is numbered like any other document and is never linked to an LPO. The Documents page lists every document, with type and source filters and a search box.",
         href: "/documents/new",
       },
       {
@@ -200,8 +200,8 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Convert to PDF (optional)",
         detail:
-          "Turns a generated document into a PDF via the Gotenberg service. This needs Gotenberg configured first — if it isn't set up, you'll see a clear \"PDF conversion isn't set up\" message, and the Excel file remains available as a fallback.",
-        href: "/documents/convert",
+          "Press Convert to PDF on a row in Documents. It uses the Gotenberg service, which needs configuring first — if it isn't set up, you'll see a clear \"PDF conversion isn't set up\" message, and the Excel file remains available as a fallback. For an Excel file you edited yourself, use the Convert a file to PDF tab on the Documents page.",
+        href: "/documents?tab=convert",
       },
     ],
     tips: [
@@ -222,8 +222,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       },
       {
         title: "Deactivate unused rates",
-        detail:
-          "Deactivated rates no longer appear when adding LPO fabric requirements.",
+        detail: "Deactivated rates no longer appear when adding LPO fabric requirements.",
         href: "/consumption",
       },
     ],
@@ -293,7 +292,7 @@ export function HelpTocLink({
   return (
     <a
       href={`#${section.id}`}
-      className="block rounded-md px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+      className="block rounded-lg px-3 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
     >
       {section.title}
     </a>
@@ -302,15 +301,22 @@ export function HelpTocLink({
 
 export function HelpOpenLink({
   href,
+  asButton,
   children,
 }: Readonly<{
   href: string;
+  /** Show as a small button (used beside a step) instead of an inline link. */
+  asButton?: boolean;
   children: React.ReactNode;
 }>) {
   return (
     <Link
       href={href}
-      className="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-900"
+      className={
+        asButton
+          ? "btn-secondary min-h-9"
+          : "font-medium text-[var(--brand)] underline decoration-[var(--border)] underline-offset-2 hover:decoration-[var(--brand)]"
+      }
     >
       {children}
     </Link>

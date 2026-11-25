@@ -2,7 +2,16 @@
 
 import { useActionState } from "react";
 
+import Link from "next/link";
+
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import {
+  Field,
+  FormHeader,
+  FormMessage,
+  INPUT_CLASS,
+  TEXTAREA_CLASS,
+} from "@/components/ui/Field";
 
 import {
   saveCompanyProfileAction,
@@ -34,24 +43,25 @@ function TextField({
   defaultValue,
   required,
   type = "text",
+  tip,
 }: Readonly<{
   name: string;
   label: string;
   defaultValue: string;
   required?: boolean;
   type?: string;
+  tip?: string;
 }>) {
   return (
-    <label className="block text-sm">
-      <span className="mb-1 block font-medium text-zinc-800">{label}</span>
+    <Field label={label} tip={tip}>
       <input
         name={name}
         type={type}
         required={required}
         defaultValue={defaultValue}
-        className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+        className={INPUT_CLASS}
       />
-    </label>
+    </Field>
   );
 }
 
@@ -69,105 +79,141 @@ export function CompanyProfileForm({
   );
   useGlobalPending(isPending);
 
+  const grid = "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]";
+  const card = "surface-card flex flex-col gap-4 p-5";
+
   return (
-    <form action={formAction} className="space-y-6 surface-card p-4 sm:p-6">
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-zinc-800">Company details</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField
-            name="legalName"
-            label="Legal name"
-            defaultValue={defaults.legalName}
-            required
+    <form action={formAction} className="flex flex-wrap items-start gap-6">
+      <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-5">
+        <section className={card} aria-labelledby="company-details">
+          <h2 id="company-details" className="text-[17px] font-bold">
+            Company details
+          </h2>
+          <div className={grid}>
+            <TextField
+              name="legalName"
+              label="Legal name"
+              defaultValue={defaults.legalName}
+              required
+            />
+            <TextField
+              name="trn"
+              label="TRN"
+              defaultValue={defaults.trn}
+              tip="Your tax registration number. It appears on tax invoices."
+            />
+            <TextField
+              name="addressLine1"
+              label="Address line 1"
+              defaultValue={defaults.addressLine1}
+            />
+            <TextField
+              name="addressLine2"
+              label="Address line 2"
+              defaultValue={defaults.addressLine2}
+            />
+            <TextField name="phone" label="Phone" defaultValue={defaults.phone} />
+            <TextField
+              name="email"
+              label="Email"
+              type="email"
+              defaultValue={defaults.email}
+            />
+            <TextField name="website" label="Website" defaultValue={defaults.website} />
+          </div>
+        </section>
+
+        <section className={card} aria-labelledby="bank-details">
+          <h2 id="bank-details" className="text-[17px] font-bold">
+            Bank details
+          </h2>
+          <div className={grid}>
+            <TextField
+              name="bankName"
+              label="Bank name"
+              defaultValue={defaults.bankName}
+            />
+            <TextField
+              name="bankAccountName"
+              label="Account name"
+              defaultValue={defaults.bankAccountName}
+            />
+            <TextField
+              name="bankAccountNumber"
+              label="Account number"
+              defaultValue={defaults.bankAccountNumber}
+            />
+            <TextField name="bankIban" label="IBAN" defaultValue={defaults.bankIban} />
+            <TextField
+              name="bankSwiftCode"
+              label="SWIFT / BIC"
+              defaultValue={defaults.bankSwiftCode}
+            />
+          </div>
+        </section>
+
+        <section className={card} aria-labelledby="default-wording">
+          <FormHeader
+            title="Default wording"
+            help="The terms are used on quotations. The footer is printed on every document you create."
           />
-          <TextField name="trn" label="TRN" defaultValue={defaults.trn} />
-          <TextField
-            name="addressLine1"
-            label="Address line 1"
-            defaultValue={defaults.addressLine1}
-          />
-          <TextField
-            name="addressLine2"
-            label="Address line 2"
-            defaultValue={defaults.addressLine2}
-          />
-          <TextField name="phone" label="Phone" defaultValue={defaults.phone} />
-          <TextField
-            name="email"
-            label="Email"
-            type="email"
-            defaultValue={defaults.email}
-          />
-          <TextField name="website" label="Website" defaultValue={defaults.website} />
+          <Field
+            label="Terms and conditions (used on quotations)"
+            hint="One clause per line. Leave blank to use the standard 16 clauses. Wrap text in **double asterisks** to make it bold."
+            tip="One clause per line. Each line becomes one numbered clause on the quotation. Wrap text in double asterisks to make it bold. Leave this blank to use the standard 16 clauses."
+          >
+            <textarea
+              name="defaultTermsText"
+              defaultValue={defaults.defaultTermsText}
+              rows={12}
+              className={TEXTAREA_CLASS}
+            />
+          </Field>
+          <Field label="Footer text">
+            <textarea
+              name="defaultFooterText"
+              defaultValue={defaults.defaultFooterText}
+              rows={2}
+              className={TEXTAREA_CLASS}
+            />
+          </Field>
+        </section>
+
+        <div className="flex flex-wrap items-center gap-3.5">
+          <button type="submit" disabled={isPending} className="btn-primary">
+            {isPending ? "Saving…" : "Save company profile"}
+          </button>
+          {state.ok ? (
+            <p
+              role="status"
+              className="rounded-[10px] bg-[var(--brand-muted)] px-3.5 py-2 text-sm font-semibold text-[#2a4d33]"
+            >
+              {state.message || "Saved. New documents will use these details."}
+            </p>
+          ) : (
+            <FormMessage ok={false} message={state.message} />
+          )}
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-zinc-800">Bank details</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField name="bankName" label="Bank name" defaultValue={defaults.bankName} />
-          <TextField
-            name="bankAccountName"
-            label="Account name"
-            defaultValue={defaults.bankAccountName}
-          />
-          <TextField
-            name="bankAccountNumber"
-            label="Account number"
-            defaultValue={defaults.bankAccountNumber}
-          />
-          <TextField name="bankIban" label="IBAN" defaultValue={defaults.bankIban} />
-          <TextField
-            name="bankSwiftCode"
-            label="SWIFT / BIC"
-            defaultValue={defaults.bankSwiftCode}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-zinc-800">Default document text</h3>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Default terms &amp; conditions (used on Quotations)
-          </span>
-          <span className="mb-1 block text-xs text-zinc-500">
-            One clause per line — each line becomes one numbered clause on the Quotation.
-            Leave blank to use the standard 16-clause terms. Wrap text in **double
-            asterisks** to make it bold.
-          </span>
-          <textarea
-            name="defaultTermsText"
-            defaultValue={defaults.defaultTermsText}
-            rows={12}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Default footer text
-          </span>
-          <textarea
-            name="defaultFooterText"
-            defaultValue={defaults.defaultFooterText}
-            rows={2}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-          />
-        </label>
-      </div>
-
-      {state.message ? (
-        <p
-          className={`text-sm ${state.ok ? "text-emerald-700" : "text-red-700"}`}
-          role="status"
-        >
-          {state.message}
-        </p>
-      ) : null}
-
-      <button type="submit" disabled={isPending} className="btn-primary min-h-11">
-        {isPending ? "Saving…" : "Save company profile"}
-      </button>
+      <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-4">
+        <section className="surface-card flex flex-col gap-2.5 p-5">
+          <h2 className="text-[17px] font-bold">Where this appears</h2>
+          <p className="text-sm text-[var(--text-muted)]">
+            Your name, address, TRN and bank details are printed at the top and bottom of
+            every document created from now on.
+          </p>
+          <p className="text-sm text-[var(--text-muted)]">
+            Documents you already created keep the details they were made with.
+          </p>
+          <Link
+            href="/documents/new"
+            className="inline-flex min-h-8 items-center text-sm font-semibold text-[var(--brand)] hover:underline"
+          >
+            Create a document →
+          </Link>
+        </section>
+      </aside>
     </form>
   );
 }

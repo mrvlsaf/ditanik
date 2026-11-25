@@ -20,6 +20,7 @@ import { listActiveRates } from "@/modules/fabric/application/consumption";
 import { generateQuotationAction } from "@/modules/documents/application/generate-quotation-action";
 import { generateInvoiceAction } from "@/modules/documents/application/generate-invoice-action";
 import { generateDeliveryNoteAction } from "@/modules/documents/application/generate-delivery-note-action";
+import { documentTypeLabel } from "@/modules/documents/domain/independent-document";
 import { listGeneratedDocumentsForLpo } from "@/modules/documents/application/list-generated-documents";
 import { listForLpo } from "@/modules/fabric/application/lpo-fabric-requirements";
 import { getLpoById } from "@/modules/lpo/application/get-lpo";
@@ -365,13 +366,20 @@ export default async function LpoDetailPage({
           {generatedDocuments.length > 0 ? (
             <div className="overflow-x-auto border-t border-[var(--border)] pt-3">
               <table className="w-full min-w-[480px] text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
-                    <th className="py-2 pr-3">Document #</th>
-                    <th className="py-2 pr-3">Type</th>
-                    <th className="py-2 pr-3">Generated</th>
-                    <th className="py-2 pr-3">By</th>
-                    <th className="py-2 pr-3" />
+                <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
+                  <tr>
+                    <th scope="col" className="px-4 py-3">
+                      Document number
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Type
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Created
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -382,7 +390,8 @@ export default async function LpoDetailPage({
                       doc={{
                         id: doc.id,
                         documentNumber: doc.documentNumber,
-                        type: doc.type,
+                        type: documentTypeLabel(doc.type),
+                        typeKey: doc.type,
                         generatedAtLabel: formatBusinessDateTime(doc.generatedAt),
                         generatedByLabel: doc.generatedBy.name ?? doc.generatedBy.email,
                         fileKey: doc.fileKey,

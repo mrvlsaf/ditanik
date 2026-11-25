@@ -36,12 +36,6 @@ export const APP_NAV_GROUPS: readonly NavGroup[] = [
         label: "Documents",
         icon: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
       },
-      // Moves inside Documents as a tab in a later step.
-      {
-        href: "/documents/convert",
-        label: "Convert to PDF",
-        icon: "M7 3h7l5 5v13H7zM14 3v5h5M10 15l2 2 2-2M12 11v6",
-      },
     ],
   },
   {
@@ -95,8 +89,8 @@ function matchesPath(pathname: string, href: string): boolean {
 }
 
 /**
- * The sidebar item a path belongs to. The longest matching href wins, so
- * "/documents" does not also light up on "/documents/convert".
+ * The sidebar item a path belongs to. The longest matching href wins, so a
+ * nested item (if one is added later) is not hidden by its parent.
  */
 export function activeNavItem(pathname: string): NavItem | null {
   let best: NavItem | null = null;

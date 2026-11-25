@@ -1,7 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { ActionsMenu, type ActionsMenuItem } from "@/components/ui/ActionsMenu";
 import { useConfirmDelete } from "@/components/ui/useConfirmDelete";
+import { withRequestNonce } from "@/lib/with-request-nonce";
 import { deleteFabricBatchAction } from "@/modules/fabric/application/delete-fabric-action";
 
 export function FabricBatchActionsMenu({
@@ -11,6 +14,7 @@ export function FabricBatchActionsMenu({
   batchId: string;
   fabricCode: string;
 }>) {
+  const router = useRouter();
   const { requestDelete, isPending, dialog } = useConfirmDelete({
     title: `Delete fabric batch ${fabricCode}?`,
     description:
@@ -21,8 +25,15 @@ export function FabricBatchActionsMenu({
   const items: ActionsMenuItem[] = [
     {
       kind: "button",
+      id: "return",
+      label: "Record a return",
+      onSelect: () =>
+        router.push(withRequestNonce(`/fabric?tab=return&batch=${batchId}`)),
+    },
+    {
+      kind: "button",
       id: "delete",
-      label: "Delete",
+      label: "Delete batch",
       tone: "danger",
       disabled: isPending,
       onSelect: requestDelete,

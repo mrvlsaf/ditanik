@@ -33,7 +33,6 @@ describe("grouped navigation", () => {
       "/manufacturers",
       "/consumption",
       "/documents",
-      "/documents/convert",
       "/settings/company",
     ]) {
       expect(hrefs).toContain(href);
@@ -47,10 +46,10 @@ describe("grouped navigation", () => {
     expect(activeNavItem("/manufacturers/m1")?.href).toBe("/manufacturers");
   });
 
-  it("does not light up Documents on the Convert to PDF page", () => {
+  it("lights up Documents on its own pages, including the old Convert to PDF address", () => {
     expect(activeNavItem("/documents")?.href).toBe("/documents");
     expect(activeNavItem("/documents/new")?.href).toBe("/documents");
-    expect(activeNavItem("/documents/convert")?.href).toBe("/documents/convert");
+    expect(activeNavItem("/documents/convert")?.href).toBe("/documents");
   });
 
   it("lights up Today only on the home page", () => {
