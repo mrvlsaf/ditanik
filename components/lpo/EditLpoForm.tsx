@@ -84,7 +84,7 @@ export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaul
 
       <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-5">
         <FormSection step={1} title="The order">
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
             <FormField label="LPO number" htmlFor="lpo-number" hint="Fixed once saved.">
               <input
                 id="lpo-number"

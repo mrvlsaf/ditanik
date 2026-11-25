@@ -97,7 +97,7 @@ export function NotificationBell({
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg">
+        <div className="fixed inset-x-4 top-[68px] z-50 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[22rem]">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2">
             <p className="text-sm font-semibold text-[var(--foreground)]">
               Notifications
@@ -124,7 +124,7 @@ export function NotificationBell({
               No notifications yet.
             </p>
           ) : (
-            <ul className="max-h-80 overflow-y-auto">
+            <ul className="max-h-[60dvh] overflow-y-auto sm:max-h-80">
               {recent.map((item) => {
                 const unread = !item.readAt;
                 return (

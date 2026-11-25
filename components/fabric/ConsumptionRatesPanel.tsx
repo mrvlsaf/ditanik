@@ -48,7 +48,7 @@ export function ConsumptionRatesPanel({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[360px] text-left text-sm">
+            <table className="table-stack w-full min-w-[360px] text-left text-sm">
               <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                 <tr>
                   <th scope="col" className="px-4 py-3">
@@ -65,11 +65,13 @@ export function ConsumptionRatesPanel({
               <tbody className="divide-y divide-[var(--border)]">
                 {rates.map((rate) => (
                   <tr key={rate.id}>
-                    <td className="px-4 py-3 font-semibold">{rate.garmentName}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td data-label="Garment" className="px-4 py-3 font-semibold">
+                      {rate.garmentName}
+                    </td>
+                    <td data-label="Metres per garment" className="px-4 py-3 text-right">
                       {formatMeters(rate.metersPerUnit)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Actions" className="px-4 py-3">
                       <button
                         type="button"
                         disabled={isDeactivating}

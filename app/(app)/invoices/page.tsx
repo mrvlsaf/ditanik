@@ -202,7 +202,7 @@ async function InvoicesContent({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[920px] text-left text-sm">
+                  <table className="table-stack-lg w-full min-w-[920px] text-left text-sm">
                     <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-bold tracking-wide text-[#4d544d] uppercase">
                       <tr>
                         <th scope="col" className="px-4 py-3">
@@ -236,26 +236,29 @@ async function InvoicesContent({
                         const info = INVOICE_TYPE_INFO[row.type];
                         return (
                           <tr key={row.key} className="hover:bg-[#fafbf9]">
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td data-label="Date" className="px-4 py-3 whitespace-nowrap">
                               {formatCalendarDate(row.date)}
                             </td>
-                            <td className="px-4 py-3">
+                            <td data-label="Type" className="px-4 py-3">
                               <Chip tone={info.tone}>{info.label}</Chip>
                             </td>
-                            <td className="px-4 py-3">
+                            <td data-label="Client or supplier" className="px-4 py-3">
                               <div className="font-semibold">{row.party}</div>
                               <div className="text-[13px] text-[#4d544d]">
                                 {info.role}
                               </div>
                             </td>
-                            <td className="px-4 py-3 font-semibold">
+                            <td
+                              data-label="Reference"
+                              className="px-4 py-3 font-semibold"
+                            >
                               {row.reference ?? (
                                 <span className="font-normal text-[#4d544d]">
                                   No reference
                                 </span>
                               )}
                             </td>
-                            <td className="px-4 py-3">
+                            <td data-label="Linked to" className="px-4 py-3">
                               {row.linkLabel && row.linkHref ? (
                                 <Link
                                   href={row.linkHref}
@@ -274,13 +277,19 @@ async function InvoicesContent({
                                 <span className="text-[#4d544d]">No link</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-right font-semibold whitespace-nowrap">
+                            <td
+                              data-label="Amount (AED)"
+                              className="px-4 py-3 text-right font-semibold whitespace-nowrap"
+                            >
                               {row.amount === null ? "—" : formatAmount(row.amount)}
                             </td>
-                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <td
+                              data-label="VAT"
+                              className="px-4 py-3 text-right whitespace-nowrap"
+                            >
                               {row.vat === null ? "—" : formatAmount(row.vat)}
                             </td>
-                            <td className="px-4 py-3">
+                            <td data-label="Actions" className="px-4 py-3">
                               <InvoiceRowActions
                                 type={row.type}
                                 id={row.id}

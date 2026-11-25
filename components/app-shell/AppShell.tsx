@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { signOutAction } from "@/app/auth-actions";
 import { PandaMark } from "@/components/brand/PandaMark";
@@ -141,14 +141,14 @@ function AppTopBar({
             <PandaMark className="h-6 w-6" />
           </button>
           <p className="min-w-0 truncate text-sm text-[var(--text-muted)]">
-            Workspace:{" "}
+            <span className="max-sm:sr-only">Workspace: </span>
             <span className="font-semibold text-[var(--foreground)]">
               {workspaceSlot}
             </span>
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <Link href="/help" className="topbar-link">
+          <Link href="/help" className="topbar-link max-sm:hidden">
             Help
           </Link>
           {notificationSlot}
@@ -186,6 +186,25 @@ export function AppShell({
   function closeMobileMenu() {
     setIsMobileMenuOpen(false);
   }
+
+  // While the phone menu is open: Escape closes it and the page behind does not scroll.
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isMobileMenuOpen]);
 
   return (
     <div className="flex h-dvh min-h-0 w-full flex-col overflow-hidden lg:flex-row">

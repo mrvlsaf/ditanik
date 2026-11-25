@@ -114,7 +114,7 @@ export function AddInvoiceForm({
           <div
             role="group"
             aria-label="Kind of invoice"
-            className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]"
+            className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]"
           >
             {SUPPLIER_INVOICE_TYPES.map((key) => {
               const selected = key === type;
@@ -143,7 +143,7 @@ export function AddInvoiceForm({
         </FormSection>
 
         <FormSection step={2} title="Invoice details">
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
             <FormField label="Supplier name" htmlFor="si-supplier">
               <input
                 id="si-supplier"
@@ -195,7 +195,7 @@ export function AddInvoiceForm({
           help="Copy the lines from the invoice. Totals update as you type."
         >
           <div className="-mx-5 overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table className="table-stack min-w-full text-sm">
               <thead className="border-y border-[var(--border)] bg-[var(--surface-muted)] text-left text-xs font-bold tracking-wide text-[#4d544d] uppercase">
                 <tr>
                   <th scope="col" className="px-3 py-2.5 first:pl-5">
@@ -221,7 +221,7 @@ export function AddInvoiceForm({
               <tbody className="divide-y divide-[#eef0ea]">
                 {lines.map((row, index) => (
                   <tr key={index}>
-                    <td className="px-3 py-2 first:pl-5">
+                    <td data-label="Description" className="px-3 py-2 first:pl-5">
                       <input
                         required
                         aria-label={`Description, line ${index + 1}`}
@@ -232,7 +232,7 @@ export function AddInvoiceForm({
                         className={`${CELL_INPUT_CLASS} min-w-52`}
                       />
                     </td>
-                    <td className="px-3 py-2">
+                    <td data-label="Qty" className="px-3 py-2">
                       <input
                         type="number"
                         min="0"
@@ -244,7 +244,7 @@ export function AddInvoiceForm({
                         className={`${CELL_INPUT_CLASS} w-24 text-right`}
                       />
                     </td>
-                    <td className="px-3 py-2">
+                    <td data-label="Unit price" className="px-3 py-2">
                       <input
                         type="number"
                         min="0"
@@ -256,7 +256,7 @@ export function AddInvoiceForm({
                         className={`${CELL_INPUT_CLASS} w-28 text-right`}
                       />
                     </td>
-                    <td className="px-3 py-2">
+                    <td data-label="VAT %" className="px-3 py-2">
                       <input
                         type="number"
                         min="0"
@@ -270,12 +270,15 @@ export function AddInvoiceForm({
                         className={`${CELL_INPUT_CLASS} w-20 text-right`}
                       />
                     </td>
-                    <td className="px-3 py-2 text-right font-medium whitespace-nowrap">
+                    <td
+                      data-label="Line total"
+                      className="px-3 py-2 text-right font-medium whitespace-nowrap"
+                    >
                       {preview.lineAmounts[index] != null
                         ? formatAmount(preview.lineAmounts[index]!)
                         : "—"}
                     </td>
-                    <td className="px-3 py-2 pr-5">
+                    <td data-label="" className="px-3 py-2 pr-5">
                       {lines.length > 1 ? (
                         <button
                           type="button"

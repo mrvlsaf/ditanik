@@ -134,7 +134,7 @@ async function DocumentsContent({
           ) : (
             <section className="surface-card overflow-hidden" aria-label="Document list">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[820px] text-left text-sm">
+                <table className="table-stack-lg w-full min-w-[820px] text-left text-sm">
                   <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                     <tr>
                       <th scope="col" className="px-4 py-3">

@@ -50,7 +50,7 @@ export function ReturnFabricForm({
         help="Use this when a manufacturer gives unused metres back. They go back into your stock and a return movement is recorded."
       />
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
         <Field label="Batch" className="col-span-full">
           <select
             name="batchId"

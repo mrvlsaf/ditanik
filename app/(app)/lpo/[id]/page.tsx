@@ -210,7 +210,7 @@ export default async function LpoDetailPage({
               What the client ordered
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-sm">
+              <table className="table-stack w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)] text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                     <th className="py-2 pr-3">#</th>
@@ -225,10 +225,13 @@ export default async function LpoDetailPage({
                 <tbody>
                   {lpo.lineItems.map((line) => (
                     <tr key={line.id} className="border-b border-[var(--border)]">
-                      <td className="py-2 pr-3 text-[var(--text-muted)]">
+                      <td data-label="#" className="py-2 pr-3 text-[var(--text-muted)]">
                         {line.position}
                       </td>
-                      <td className="py-2 pr-3 text-[var(--foreground)]">
+                      <td
+                        data-label="Description"
+                        className="py-2 pr-3 text-[var(--foreground)]"
+                      >
                         {line.description}
                         {line.category ? (
                           <span className="ml-2 text-xs text-[var(--text-muted)]">
@@ -236,17 +239,25 @@ export default async function LpoDetailPage({
                           </span>
                         ) : null}
                       </td>
-                      <td className="py-2 pr-3 text-[var(--text-muted)]">
+                      <td
+                        data-label="Article no."
+                        className="py-2 pr-3 text-[var(--text-muted)]"
+                      >
                         {line.articleNo ?? "—"}
                       </td>
-                      <td className="py-2 pr-3 text-right">{line.quantity}</td>
-                      <td className="py-2 pr-3 text-right">
+                      <td data-label="Qty" className="py-2 pr-3 text-right">
+                        {line.quantity}
+                      </td>
+                      <td data-label="Unit price" className="py-2 pr-3 text-right">
                         {Number(line.unitPrice).toFixed(2)}
                       </td>
-                      <td className="py-2 pr-3 text-right">
+                      <td data-label="Discount %" className="py-2 pr-3 text-right">
                         {Number(line.discountPercent).toFixed(2)}
                       </td>
-                      <td className="py-2 pr-3 text-right font-medium">
+                      <td
+                        data-label="Line total"
+                        className="py-2 pr-3 text-right font-medium"
+                      >
                         {Number(line.lineTotal).toFixed(2)}
                       </td>
                     </tr>
@@ -387,7 +398,7 @@ export default async function LpoDetailPage({
 
           {generatedDocuments.length > 0 ? (
             <div className="overflow-x-auto border-t border-[var(--border)] pt-3">
-              <table className="w-full min-w-[480px] text-sm">
+              <table className="table-stack w-full min-w-[480px] text-sm">
                 <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                   <tr>
                     <th scope="col" className="px-4 py-3">
@@ -474,7 +485,7 @@ export default async function LpoDetailPage({
 
         <section
           aria-label="Order at a glance"
-          className="surface-card grid [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))] gap-px overflow-hidden bg-[var(--border)]"
+          className="surface-card grid [grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))] gap-px overflow-hidden bg-[var(--border)]"
         >
           <GlanceCell
             label="Client"

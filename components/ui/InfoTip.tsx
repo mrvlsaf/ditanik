@@ -1,19 +1,22 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+
+// On phones the tip is a full-width card under the icon (a floating box would run
+// off the screen edge); from `sm` up it sits beside or under the icon.
+const PHONE_CLASS =
+  "max-sm:fixed max-sm:inset-x-4 max-sm:top-auto max-sm:mt-7 max-sm:w-auto";
 
 const SIDE_CLASS = {
-  // Beside the icon on tablets and up; under it on phones, where there is no
-  // room to the right.
-  right: "left-0 sm:top-1/2 sm:left-full sm:ml-2 sm:-translate-y-1/2",
+  right: `${PHONE_CLASS} sm:top-1/2 sm:left-full sm:ml-2 sm:-translate-y-1/2`,
   // Under the icon, for icons near the right edge of the screen.
-  below: "left-1/2 -translate-x-1/2",
+  below: `${PHONE_CLASS} sm:left-1/2 sm:-translate-x-1/2`,
 } as const;
 
 /**
  * A small (i) icon that explains a term right where it appears. The tip shows
- * only while the pointer is over the icon. Open state is tracked in React
- * rather than CSS :hover so it behaves the same in every browser.
+ * while the pointer is over the icon, or after a tap or Enter (touch screens
+ * have no hover); a tap elsewhere or Escape closes it.
  */
 export function InfoTip({
   label,
@@ -28,25 +31,53 @@ export function InfoTip({
 }>) {
   const tipId = useId();
   const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const rootRef = useRef<HTMLSpanElement>(null);
+  const visible = hovered || pinned;
+
+  useEffect(() => {
+    if (!pinned) {
+      return;
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setPinned(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setPinned(false);
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [pinned]);
 
   return (
     <span
+      ref={rootRef}
       className="relative inline-flex align-middle"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <span
-        role="img"
+      <button
+        type="button"
         aria-label={label}
         aria-describedby={tipId}
-        className="info-tip-button"
+        aria-expanded={visible}
+        className="info-tip-button cursor-help"
+        onClick={() => setPinned((value) => !value)}
       >
         i
-      </span>
+      </button>
       <span
         id={tipId}
         role="tooltip"
-        className={`info-tip-box ${SIDE_CLASS[side]} ${hovered ? "block" : "hidden"}`}
+        className={`info-tip-box ${SIDE_CLASS[side]} ${visible ? "block" : "hidden"}`}
       >
         {children}
       </span>

@@ -63,7 +63,7 @@ export function LpoDatesSection({
       <h2 className="text-base font-bold text-[var(--foreground)]">Key dates</h2>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[420px] text-sm">
+        <table className="table-stack w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-[var(--border)] text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
               <th className="py-2 pr-3">Date</th>
@@ -77,13 +77,16 @@ export function LpoDatesSection({
                 key={row.field}
                 className="border-b border-[var(--border)] last:border-0"
               >
-                <td className="py-2.5 pr-3 font-medium text-[var(--foreground)]">
+                <td
+                  data-label="Date"
+                  className="py-2.5 pr-3 font-medium text-[var(--foreground)]"
+                >
                   {FIELD_LABELS[row.field]}
                 </td>
-                <td className="py-2.5 pr-3 text-[var(--foreground)]">
+                <td data-label="When" className="py-2.5 pr-3 text-[var(--foreground)]">
                   {formatBusinessDateTime(row.value)}
                 </td>
-                <td className="py-2.5 pr-3">
+                <td data-label="Status" className="py-2.5 pr-3">
                   <Chip tone={isExtended(dateChanges, row.field) ? "amber" : "gray"}>
                     {extensionLabel(dateChanges, row.field)}
                   </Chip>

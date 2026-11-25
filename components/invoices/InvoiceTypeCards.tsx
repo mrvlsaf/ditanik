@@ -22,7 +22,7 @@ export function InvoiceTypeCards({
   return (
     <section
       aria-label="Invoice types"
-      className="grid [grid-template-columns:repeat(auto-fit,minmax(210px,1fr))] gap-3"
+      className="grid [grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr))] gap-3"
     >
       {cards.map((card, index) => {
         const active = activeStates[index] ?? card.active;

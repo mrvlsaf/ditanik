@@ -84,7 +84,7 @@ async function LpoDashboard({
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
+                <table className="table-stack-lg min-w-full text-left text-sm">
                   <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-bold tracking-wide text-[#4d544d] uppercase">
                     <tr>
                       <th scope="col" className="px-4 py-3">
@@ -116,7 +116,7 @@ async function LpoDashboard({
                   <tbody className="divide-y divide-[#eef0ea]">
                     {rows.map((lpo) => (
                       <tr key={lpo.id} className="hover:bg-[#fafbf9]">
-                        <td className="px-4 py-3">
+                        <td data-label="LPO" className="px-4 py-3">
                           <Link
                             href={`/lpo/${lpo.id}`}
                             className="font-bold text-[#2f5639] hover:text-[#1f3d27]"
@@ -125,24 +125,32 @@ async function LpoDashboard({
                           </Link>
                           <div className="text-xs text-[#4d544d]">{lpo.lpoNumber}</div>
                         </td>
-                        <td className="px-4 py-3">{lpo.clientName}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td data-label="Client" className="px-4 py-3">
+                          {lpo.clientName}
+                        </td>
+                        <td data-label="Received" className="px-4 py-3 whitespace-nowrap">
                           {formatCalendarDate(lpo.receivedDate)}
                         </td>
-                        <td className="px-4 py-3">
+                        <td data-label="Manufacturer" className="px-4 py-3">
                           {lpo.manufacturer?.name ?? "Not assigned"}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td
+                          data-label="Production due"
+                          className="px-4 py-3 whitespace-nowrap"
+                        >
                           {lpo.productionDeadlineAt
                             ? formatBusinessDate(lpo.productionDeadlineAt)
                             : "No deadline"}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td
+                          data-label="Client delivery"
+                          className="px-4 py-3 whitespace-nowrap"
+                        >
                           {lpo.clientDeliveryAt
                             ? formatBusinessDate(lpo.clientDeliveryAt)
                             : "No deadline"}
                         </td>
-                        <td className="px-4 py-3">
+                        <td data-label="Status" className="px-4 py-3">
                           <span className="flex flex-wrap gap-1.5">
                             <LpoStatusBadge status={lpo.status} />
                             {isOverdue(
@@ -157,7 +165,7 @@ async function LpoDashboard({
                             {lpo.isUrgent ? <Chip tone="purple">Urgent</Chip> : null}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td data-label="Actions" className="px-4 py-3">
                           <span className="flex items-center gap-2">
                             <Link href={`/lpo/${lpo.id}`} className="btn-secondary">
                               Open

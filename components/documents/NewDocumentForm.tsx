@@ -114,7 +114,7 @@ function DocumentForm({
           <div
             role="radiogroup"
             aria-label="Document type"
-            className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]"
+            className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))]"
           >
             {INDEPENDENT_DOCUMENT_TYPES.map((value) => (
               <label
@@ -152,7 +152,7 @@ function DocumentForm({
         </FormSection>
 
         <FormSection step={2} title="Who is it for?">
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
             <Field
               label="Site code"
               hint="Letters, numbers and dashes, up to 20."
@@ -207,7 +207,7 @@ function DocumentForm({
         </FormSection>
 
         <FormSection step={3} title={`Details for this ${typeLower}`}>
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
             {type !== "QUOTATION" ? (
               <Field
                 label="Customer LPO number"
@@ -254,7 +254,7 @@ function DocumentForm({
           help="Add 1 to 100 lines. Totals update as you type."
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="table-stack w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                   <th scope="col" className="py-2 pr-3">
@@ -285,7 +285,7 @@ function DocumentForm({
               <tbody>
                 {lines.map((row, index) => (
                   <tr key={index}>
-                    <td className="py-1 pr-3">
+                    <td data-label="Description" className="py-1 pr-3">
                       <input
                         required
                         value={row.description}
@@ -297,7 +297,7 @@ function DocumentForm({
                       />
                     </td>
                     {type === "QUOTATION" ? (
-                      <td className="py-1 pr-3">
+                      <td data-label="Category" className="py-1 pr-3">
                         <input
                           value={row.category}
                           onChange={(e) =>
@@ -308,7 +308,7 @@ function DocumentForm({
                         />
                       </td>
                     ) : null}
-                    <td className="py-1 pr-3">
+                    <td data-label="Qty" className="py-1 pr-3">
                       <input
                         type="number"
                         min="1"
@@ -320,7 +320,7 @@ function DocumentForm({
                         className={`${CELL_INPUT_CLASS} w-24`}
                       />
                     </td>
-                    <td className="py-1 pr-3">
+                    <td data-label="Unit price" className="py-1 pr-3">
                       <input
                         type="number"
                         min="0"
@@ -332,7 +332,7 @@ function DocumentForm({
                         className={`${CELL_INPUT_CLASS} w-28`}
                       />
                     </td>
-                    <td className="py-1 pr-3">
+                    <td data-label="Discount %" className="py-1 pr-3">
                       <input
                         type="number"
                         min="0"
@@ -346,10 +346,13 @@ function DocumentForm({
                         className={`${CELL_INPUT_CLASS} w-24`}
                       />
                     </td>
-                    <td className="py-1 pr-3 text-right font-semibold">
+                    <td
+                      data-label="Line total"
+                      className="py-1 pr-3 text-right font-semibold"
+                    >
                       {rowTotals[index] != null ? formatAmount(rowTotals[index]!) : "—"}
                     </td>
-                    <td className="py-1 text-right">
+                    <td data-label="" className="py-1 text-right">
                       {lines.length > 1 ? (
                         <button
                           type="button"

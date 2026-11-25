@@ -52,7 +52,7 @@ export function IssueFabricForm({
         help="Sends metres from a batch to a manufacturer. Your stock goes down and a movement is recorded. You cannot issue more than is available."
       />
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
         <Field label="Batch" className="col-span-full">
           <select
             name="batchId"

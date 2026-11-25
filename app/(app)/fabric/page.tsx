@@ -92,7 +92,7 @@ async function FabricContent({
               </p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
+              <table className="table-stack-lg w-full min-w-[760px] text-left text-sm">
                 <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                   <tr>
                     <th scope="col" className="px-4 py-3">
@@ -121,25 +121,35 @@ async function FabricContent({
                 <tbody className="divide-y divide-[var(--border)]">
                   {batches.map((b) => (
                     <tr key={b.id}>
-                      <td className="px-4 py-3 font-mono text-[13px] font-medium">
+                      <td
+                        data-label="Fabric ID"
+                        className="px-4 py-3 font-mono text-[13px] font-medium"
+                      >
                         {b.fabricCode}
                       </td>
-                      <td className="px-4 py-3 font-semibold">{b.fabricType}</td>
-                      <td className="px-4 py-3">{b.colour}</td>
-                      <td className="px-4 py-3">
+                      <td data-label="Type" className="px-4 py-3 font-semibold">
+                        {b.fabricType}
+                      </td>
+                      <td data-label="Colour" className="px-4 py-3">
+                        {b.colour}
+                      </td>
+                      <td data-label="Supplier" className="px-4 py-3">
                         {b.invoice.supplierName}
                         <span className="block text-xs text-[var(--text-muted)]">
                           {b.invoice.invoiceRef} ·{" "}
                           {formatCalendarDate(b.invoice.receivedDate)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td data-label="Received" className="px-4 py-3 text-right">
                         {formatMeters(b.qtyReceived)}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold">
+                      <td
+                        data-label="Available"
+                        className="px-4 py-3 text-right font-bold"
+                      >
                         {formatMeters(b.stockMeters)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Actions" className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {b.stockMeters > 0 ? (
                             <TabLink
@@ -213,7 +223,7 @@ async function FabricContent({
               </p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="table-stack-lg w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                   <tr>
                     <th scope="col" className="px-4 py-3">
@@ -239,13 +249,13 @@ async function FabricContent({
                 <tbody className="divide-y divide-[var(--border)]">
                   {movements.map((m) => (
                     <tr key={m.id}>
-                      <td className="px-4 py-3">
+                      <td data-label="When" className="px-4 py-3">
                         {formatBusinessDateTime(m.occurredAt)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Type" className="px-4 py-3">
                         <Chip tone={movementTone(m.type)}>{movementLabel(m.type)}</Chip>
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Batch" className="px-4 py-3">
                         <span className="font-mono text-[13px] font-medium">
                           {m.batch.fabricCode}
                         </span>
@@ -253,9 +263,16 @@ async function FabricContent({
                           {m.batch.fabricType} / {m.batch.colour}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{m.manufacturer?.name ?? "—"}</td>
-                      <td className="px-4 py-3">{m.lpo?.lpoNumber ?? "—"}</td>
-                      <td className="px-4 py-3 text-right font-semibold">
+                      <td data-label="Manufacturer" className="px-4 py-3">
+                        {m.manufacturer?.name ?? "—"}
+                      </td>
+                      <td data-label="LPO" className="px-4 py-3">
+                        {m.lpo?.lpoNumber ?? "—"}
+                      </td>
+                      <td
+                        data-label="Metres"
+                        className="px-4 py-3 text-right font-semibold"
+                      >
                         {formatSignedMeters(m.quantityMeters)}
                       </td>
                     </tr>

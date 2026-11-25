@@ -38,7 +38,7 @@ function LedgerBatchTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px] text-left text-sm">
+      <table className="table-stack w-full min-w-[560px] text-left text-sm">
         <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
           <tr>
             <th scope="col" className="px-4 py-3">
@@ -63,16 +63,25 @@ function LedgerBatchTable({
         <tbody className="divide-y divide-[var(--border)]">
           {batches.map((b) => (
             <tr key={b.batchId}>
-              <td className="px-4 py-3">
+              <td data-label="Fabric" className="px-4 py-3">
                 <span className="font-mono text-[13px] font-medium">{b.fabricCode}</span>{" "}
                 {b.fabricType} / {b.colour}
               </td>
-              <td className="px-4 py-3 text-right">{formatMeters(b.sent)}</td>
+              <td data-label="Sent" className="px-4 py-3 text-right">
+                {formatMeters(b.sent)}
+              </td>
               {showExpectedUsed ? (
-                <td className="px-4 py-3 text-right">{formatMeters(b.used)}</td>
+                <td data-label="Expected used" className="px-4 py-3 text-right">
+                  {formatMeters(b.used)}
+                </td>
               ) : null}
-              <td className="px-4 py-3 text-right">{formatMeters(b.returned)}</td>
-              <td className="px-4 py-3 text-right font-bold">
+              <td data-label="Returned" className="px-4 py-3 text-right">
+                {formatMeters(b.returned)}
+              </td>
+              <td
+                data-label="Expected balance"
+                className="px-4 py-3 text-right font-bold"
+              >
                 {formatMeters(b.expectedBalance)}
               </td>
             </tr>

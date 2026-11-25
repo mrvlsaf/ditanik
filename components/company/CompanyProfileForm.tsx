@@ -79,7 +79,8 @@ export function CompanyProfileForm({
   );
   useGlobalPending(isPending);
 
-  const grid = "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]";
+  const grid =
+    "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]";
   const card = "surface-card flex flex-col gap-4 p-5";
 
   return (

@@ -102,7 +102,7 @@ export function ClientDetailsFields({
 }>) {
   return (
     <>
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
         <FormField label="Client name" htmlFor="lpo-client-name">
           <input
             id="lpo-client-name"
@@ -160,7 +160,7 @@ export function ClientDetailsFields({
         </FormField>
       </div>
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))]">
         <FormField label="Invoice address" htmlFor="lpo-invoice-address">
           <textarea
             id="lpo-invoice-address"
@@ -186,7 +186,7 @@ export function ClientDetailsFields({
         </FormField>
       </div>
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
         <FormField label="Payment terms" htmlFor="lpo-payment-terms" optional>
           <input
             id="lpo-payment-terms"
@@ -238,7 +238,7 @@ export function LineItemsSection({
         fabric an order needs is added separately, on the LPO page.
       </p>
       <div className="-mx-5 overflow-x-auto">
-        <table className="min-w-full text-sm">
+        <table className="table-stack min-w-full text-sm">
           <thead className="border-y border-[var(--border)] bg-[var(--surface-muted)] text-left text-xs font-bold tracking-wide text-[#4d544d] uppercase">
             <tr>
               <th scope="col" className="px-3 py-2.5 first:pl-5">
@@ -270,7 +270,7 @@ export function LineItemsSection({
           <tbody className="divide-y divide-[#eef0ea]">
             {rows.map((row, index) => (
               <tr key={index}>
-                <td className="px-3 py-2 first:pl-5">
+                <td data-label="Description" className="px-3 py-2 first:pl-5">
                   <input
                     required
                     aria-label={`Description, line ${index + 1}`}
@@ -279,7 +279,7 @@ export function LineItemsSection({
                     className={`${CELL_INPUT_CLASS} min-w-48`}
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td data-label="Category" className="px-3 py-2">
                   <input
                     aria-label={`Category, line ${index + 1}`}
                     value={row.category}
@@ -287,7 +287,7 @@ export function LineItemsSection({
                     className={`${CELL_INPUT_CLASS} min-w-28`}
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td data-label="Article no." className="px-3 py-2">
                   <input
                     aria-label={`Article number, line ${index + 1}`}
                     value={row.articleNo}
@@ -295,7 +295,7 @@ export function LineItemsSection({
                     className={`${CELL_INPUT_CLASS} w-28`}
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td data-label="Qty" className="px-3 py-2">
                   <input
                     type="number"
                     min="1"
@@ -307,7 +307,7 @@ export function LineItemsSection({
                     className={`${CELL_INPUT_CLASS} w-20 text-right`}
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td data-label="Unit price" className="px-3 py-2">
                   <input
                     type="number"
                     min="0"
@@ -319,7 +319,7 @@ export function LineItemsSection({
                     className={`${CELL_INPUT_CLASS} w-28 text-right`}
                   />
                 </td>
-                <td className="px-3 py-2">
+                <td data-label="Discount %" className="px-3 py-2">
                   <input
                     type="number"
                     min="0"
@@ -333,10 +333,13 @@ export function LineItemsSection({
                     className={`${CELL_INPUT_CLASS} w-24 text-right`}
                   />
                 </td>
-                <td className="px-3 py-2 text-right font-medium whitespace-nowrap">
+                <td
+                  data-label="Line total"
+                  className="px-3 py-2 text-right font-medium whitespace-nowrap"
+                >
                   {rowTotals[index] != null ? rowTotals[index]!.toFixed(2) : "—"}
                 </td>
-                <td className="px-3 py-2 pr-5">
+                <td data-label="" className="px-3 py-2 pr-5">
                   {rows.length > 1 ? (
                     <button
                       type="button"

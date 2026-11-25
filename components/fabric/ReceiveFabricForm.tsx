@@ -112,7 +112,7 @@ export function ReceiveFabricForm({
         }
       />
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))]">
         <Field label="Supplier">
           <input
             name="supplierName"
@@ -170,7 +170,7 @@ export function ReceiveFabricForm({
       <div className="flex flex-col gap-2.5">
         <p className="text-sm font-semibold text-[var(--foreground)]">Fabric lines</p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="table-stack w-full min-w-[640px] text-sm">
             <thead>
               <tr className="text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                 <th scope="col" className="py-2 pr-3">
@@ -193,7 +193,7 @@ export function ReceiveFabricForm({
             <tbody>
               {batches.map((row, index) => (
                 <tr key={index}>
-                  <td className="py-1 pr-3">
+                  <td data-label="Type" className="py-1 pr-3">
                     <input
                       required
                       value={row.fabricType}
@@ -202,7 +202,7 @@ export function ReceiveFabricForm({
                       className={`${CELL_INPUT_CLASS} min-w-36`}
                     />
                   </td>
-                  <td className="py-1 pr-3">
+                  <td data-label="Colour" className="py-1 pr-3">
                     <input
                       required
                       value={row.colour}
@@ -211,7 +211,7 @@ export function ReceiveFabricForm({
                       className={`${CELL_INPUT_CLASS} min-w-28`}
                     />
                   </td>
-                  <td className="py-1 pr-3">
+                  <td data-label="Qty (metres)" className="py-1 pr-3">
                     <input
                       type="number"
                       min="0.001"
@@ -223,7 +223,7 @@ export function ReceiveFabricForm({
                       className={`${CELL_INPUT_CLASS} w-28`}
                     />
                   </td>
-                  <td className="py-1 pr-3">
+                  <td data-label="Remarks" className="py-1 pr-3">
                     <input
                       value={row.remarks}
                       onChange={(e) => updateRow(index, { remarks: e.target.value })}
@@ -231,7 +231,7 @@ export function ReceiveFabricForm({
                       className={`${CELL_INPUT_CLASS} min-w-40`}
                     />
                   </td>
-                  <td className="py-1 text-right">
+                  <td data-label="" className="py-1 text-right">
                     {batches.length > 1 ? (
                       <button
                         type="button"

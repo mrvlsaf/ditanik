@@ -148,7 +148,7 @@ async function TodayContent() {
     <div className="flex flex-col gap-6">
       <section
         aria-label="At a glance"
-        className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]"
+        className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))]"
       >
         <StatTile
           label="Under review"

@@ -53,16 +53,21 @@ export function GeneratedDocumentRow({
 
   return (
     <tr className="border-t border-[var(--border)] align-top">
-      <td className="px-4 py-3 font-mono text-[13px] font-bold text-[var(--foreground)]">
+      <td
+        data-label="Document number"
+        className="px-4 py-3 font-mono text-[13px] font-bold text-[var(--foreground)]"
+      >
         {doc.documentNumber}
       </td>
-      <td className="px-4 py-3">
+      <td data-label="Type" className="px-4 py-3">
         <Chip tone={documentTypeTone(doc.typeKey ?? "")}>{doc.type}</Chip>
       </td>
       {columns === "all" ? (
         <>
-          <td className="px-4 py-3">{doc.clientName ?? "—"}</td>
-          <td className="px-4 py-3">
+          <td data-label="Client" className="px-4 py-3">
+            {doc.clientName ?? "—"}
+          </td>
+          <td data-label="LPO" className="px-4 py-3">
             {lpoId && doc.lpoNumber ? (
               <Link
                 href={`/lpo/${lpoId}`}
@@ -76,13 +81,13 @@ export function GeneratedDocumentRow({
           </td>
         </>
       ) : null}
-      <td className="px-4 py-3">
+      <td data-label="Created" className="px-4 py-3">
         {doc.generatedAtLabel}
         <span className="block text-xs text-[var(--text-muted)]">
           by {doc.generatedByLabel}
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td data-label="Actions" className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <a href={fileUrl(doc.fileKey, true)} className="btn-secondary min-h-9">
             Download

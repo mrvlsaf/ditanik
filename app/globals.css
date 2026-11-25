@@ -281,3 +281,146 @@ body {
     border-color: var(--brand);
   }
 }
+
+/*
+ * Tables become stacked cards on narrow screens (each cell gets its column name
+ * from data-label). `table-stack` stacks below tablet; `table-stack-lg` also on
+ * tablet portrait, for tables with many columns.
+ */
+@media (max-width: 1023px) {
+  .table-stack-lg {
+    width: 100%;
+    min-width: 0 !important;
+  }
+  .table-stack-lg thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .table-stack-lg,
+  .table-stack-lg tbody {
+    display: block;
+  }
+  .table-stack-lg tbody > tr {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 0.625rem 1rem;
+    padding: 0.875rem 1rem;
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+  .table-stack-lg tbody > tr:first-child {
+    border-top: 0;
+  }
+  .table-stack-lg td {
+    display: block;
+    min-width: 0;
+    padding: 0 !important;
+    text-align: left !important;
+  }
+  .table-stack-lg td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.125rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .table-stack-lg td[data-label=""]::before,
+  .table-stack-lg td[data-label="Actions"]::before {
+    display: none;
+  }
+  .table-stack-lg td:first-child,
+  .table-stack-lg td[data-label=""],
+  .table-stack-lg td[data-label="Actions"] {
+    grid-column: 1 / -1;
+  }
+  .table-stack-lg td input,
+  .table-stack-lg td select,
+  .table-stack-lg td textarea {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+  }
+}
+@media (max-width: 767px) {
+  .table-stack {
+    width: 100%;
+    min-width: 0 !important;
+  }
+  .table-stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .table-stack,
+  .table-stack tbody {
+    display: block;
+  }
+  .table-stack tbody > tr {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 0.625rem 1rem;
+    padding: 0.875rem 1rem;
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+  .table-stack tbody > tr:first-child {
+    border-top: 0;
+  }
+  .table-stack td {
+    display: block;
+    min-width: 0;
+    padding: 0 !important;
+    text-align: left !important;
+  }
+  .table-stack td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.125rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .table-stack td[data-label=""]::before,
+  .table-stack td[data-label="Actions"]::before {
+    display: none;
+  }
+  .table-stack td:first-child,
+  .table-stack td[data-label=""],
+  .table-stack td[data-label="Actions"] {
+    grid-column: 1 / -1;
+  }
+  .table-stack td input,
+  .table-stack td select,
+  .table-stack td textarea {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+  }
+}
+
+/* iOS Safari zooms the page when a field under 16px is focused; keep fields at 16px on touch screens. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Avoid the grey flash on tap and keep text size stable when a phone is rotated. */
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}

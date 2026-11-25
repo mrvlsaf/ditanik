@@ -46,7 +46,7 @@ export function VarianceForm({
         title="Record a variance"
         help="Use this when the fabric actually used differs from what was expected, so the ledger stays honest."
       />
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr))]">
         <Field label="Expected (m)">
           <input
             type="number"

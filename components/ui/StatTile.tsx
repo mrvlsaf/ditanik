@@ -38,7 +38,7 @@ export function StatTileRow({
   return (
     <section
       aria-label={label}
-      className="grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4"
+      className="grid [grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-4"
     >
       {children}
     </section>

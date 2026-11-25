@@ -257,7 +257,7 @@ export function CreateLpoForm({
             {isUrgent ? <input type="hidden" name="isUrgent" value="on" /> : null}
           </div>
 
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
             {isUrgent ? (
               <FormField
                 label="LPO number"
