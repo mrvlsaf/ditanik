@@ -13,6 +13,12 @@ export const receiveFabricSchema = z.object({
   receivedDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Received date must be YYYY-MM-DD"),
+  /** Optional invoice total including VAT (AED), for the Invoices VAT summary. */
+  totalInclVat: z
+    .number()
+    .min(0, "Invoice total cannot be negative")
+    .max(999_999_999_999, "Invoice total is too large")
+    .optional(),
   batches: z
     .array(receiveFabricBatchSchema)
     .min(1, "At least one fabric batch is required"),

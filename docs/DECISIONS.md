@@ -532,6 +532,40 @@ Deep links: `/lpo/{id}?action=assign|dates|complete` via `APP_BASE_URL` (fallbac
 
 ---
 
+## D-031 — Urgent LPOs
+
+| | |
+|---|---|
+| **Date** | 2026-10-14 |
+| **Status** | accepted |
+
+**Context:** Rush orders are delivered in 1 to 2 days. The normal flow (customer PDF required, three planned dates, review and overdue reminders) does not fit them and would only produce noise.
+
+**Decision:** `lpos.is_urgent` (default false). An urgent LPO is created with the **Urgent LPO** switch on New LPO: the customer's PDF is optional, the number is generated as `URGENT_<n>` from a single-row counter (`urgent_lpo_counter`, one atomic increment inside the create transaction), and the three due dates and the original-file columns are nullable and stay null (migration `20261014090000_urgent_lpo`). No date means nothing can become overdue: the due-date rules return false for urgent or date-less LPOs, the daily job queries `is_urgent = false`, and the Today page skips them. The flow is unchanged otherwise: a manufacturer is still assigned (production PDF optional for urgent LPOs), then client delivery is marked completed. The LPO list gets an **Urgent** filter and an Urgent chip; the Dates tab explains why there are no dates; changing a date on an urgent LPO is refused. The shared `createLpo` still creates normal LPOs exactly as before, and a typed number that looks like `URGENT_<n>` is rejected so it cannot clash with a generated one.
+
+**Alternatives:** Reuse the normal flow with very short dates (rejected: still generates reminders and needs a PDF); a separate table for urgent LPOs (rejected: every list, document and fabric link would need two code paths).
+
+**Consequences:** Every reader of the date and original-file columns must handle null (list, details, notifications, Today, file route were updated). The counter never goes down, so deleting an urgent LPO leaves a gap in the numbers. There is no "add the PDF later" action yet.
+
+---
+
+## D-032 — Invoices hub (four invoice kinds, VAT summary)
+
+| | |
+|---|---|
+| **Date** | 2026-10-15 |
+| **Status** | accepted |
+
+**Context:** The Invoices page only listed fabric supplier invoices. For VAT filing the client needs every invoice in one place: tax invoices they send, and the invoices they receive for fabric, accessories and manufacturing.
+
+**Decision:** `/invoices` now merges three sources into one list: tax invoices (`generated_documents` of type TAX_INVOICE, amounts read from the frozen snapshot), fabric invoices (`fabric_supplier_invoices`, which gain an optional `total_incl_vat`; the VAT part is worked out at 5%), and new **accessory** and **manufacturing** invoices in `supplier_invoices` / `supplier_invoice_lines` (migration `20261015090000_supplier_invoices`). These two are added on **Invoices -> Add invoice** with a free-text supplier, optional reference, date received, a **required** PDF and manual lines (description, quantity, unit price, VAT %, default 5). They are deliberately not linked to an LPO or a manufacturer. The list filters by type, month, search and (tax invoices only) with/without an LPO, and shows VAT charged, VAT paid and net for what is on screen. Amounts are AED and include VAT. Fabric invoices without a total show a dash and are left out of the VAT tiles, which say so. The fabric invoice PDF stays optional.
+
+**Alternatives:** Put accessory and manufacturing invoices into the fabric invoice table (rejected: it creates stock batches); link them to manufacturers or LPOs (rejected by the client for now); compute fabric VAT from batch prices (there are none).
+
+**Consequences:** The list reads up to 1,000 rows per kind and filters in memory, which is fine for this volume but would need paging later. Tax invoices are not deletable from Invoices (they stay in Documents). Deleting a supplier invoice keeps its PDF in storage. `components/fabric/InvoiceActionsMenu.tsx` and `modules/fabric/application/list-fabric-invoices.ts` are no longer used by any page.
+
+---
+
 ## How to add a new decision
 
 When you change something that would confuse a future reader (library, pattern, product rule, intentional omission), append **D-0XX** with the same sections. Prefer honesty about tradeoffs over marketing the choice.

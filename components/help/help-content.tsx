@@ -78,6 +78,12 @@ export const HELP_SECTIONS: HelpSection[] = [
         href: "/lpo/new",
       },
       {
+        title: "Rush order? Switch on Urgent",
+        detail:
+          "Urgent LPOs are for orders delivered in 1 to 2 days. Switch on Urgent on the New LPO page: the PDF is optional, the number is made for you (URGENT_1, URGENT_2, and so on), and there are no dates, deadlines or reminders. Assign a manufacturer (no production PDF needed), then mark delivery completed. Find them under the Urgent filter on the LPO list.",
+        href: "/lpo/new",
+      },
+      {
         title: "Review & extend dates if needed",
         detail:
           "Open the LPO. Extend assignment or production deadline with a mandatory reason. Client delivery reason is optional.",
@@ -100,7 +106,7 @@ export const HELP_SECTIONS: HelpSection[] = [
     ],
     tips: [
       "You can delete an LPO from the dashboard or detail page (confirmation required).",
-      "You cannot assign until the LPO is Under Review with a production PDF ready.",
+      "You cannot assign until the LPO is Under Review. A normal LPO also needs its production PDF; an urgent LPO does not.",
       "Dashboard columns show production due and client delivery for operational tracking.",
       "Each LPO page has tabs (Summary, Lines, Dates, Fabric needed, Production and delivery, Documents). A green Next step banner at the top says what to do next, and links from notifications open the right tab.",
       "PDF auto-fill is calibrated to a specific client's LPO layout — always review auto-filled fields and line items before saving, especially for a new client's PO format.",
@@ -140,12 +146,13 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "Find invoices later",
         detail:
-          "Use Invoices to filter by supplier, month, or reference and open the PDF.",
+          "Fabric invoices are listed under Invoices, together with your tax invoices and your accessory and manufacturing invoices. Filter by type or month and open the PDF.",
         href: "/invoices",
       },
     ],
     tips: [
       "The supplier invoice PDF is optional — you can receive fabric without one.",
+      "Add the invoice total incl. VAT when you have it. It is optional, and the Invoices page uses it for the VAT totals.",
       "You cannot issue more meters than available on a batch.",
       "Delete a batch from Fabric stock, or a whole invoice from Invoices, to undo a mistaken receive.",
     ],
@@ -210,6 +217,42 @@ export const HELP_SECTIONS: HelpSection[] = [
     ],
   },
   {
+    id: "invoices",
+    title: "Invoices and VAT",
+    summary:
+      "One list of every invoice, for VAT filing and payments: tax invoices you send to clients, and invoices you receive for fabric, accessories and manufacturing.",
+    steps: [
+      {
+        title: "Browse and filter",
+        detail:
+          "Open Invoices. Pick a type card, a month, or search by reference, client or supplier. For tax invoices you can also show only those with an LPO or without one.",
+        href: "/invoices",
+      },
+      {
+        title: "Read the VAT totals",
+        detail:
+          "The three tiles above the list add up VAT charged (tax invoices), VAT paid (invoices you received) and the net, for whatever is on screen. A fabric invoice saved without a total is left out and the tile says so.",
+        href: "/invoices",
+      },
+      {
+        title: "Add an accessory or manufacturing invoice",
+        detail:
+          "Use Add invoice. Choose the kind, enter the supplier, optional reference and date received, upload the supplier's PDF (required) and copy the lines with their VAT %. The invoice is not linked to any LPO or manufacturer.",
+        href: "/invoices/new",
+      },
+      {
+        title: "Tax invoices and fabric invoices",
+        detail:
+          "Tax invoices are created in Documents, from an LPO or on their own. Fabric invoices are added when you receive fabric.",
+        href: "/documents/new",
+      },
+    ],
+    tips: [
+      "Accessory and manufacturing invoices can be deleted from the More menu on their row. Tax invoices stay in Documents.",
+      "Always check the VAT totals against your VAT return. They cover only the invoices recorded here.",
+    ],
+  },
+  {
     id: "consumption",
     title: "Consumption rates",
     summary:
@@ -253,6 +296,7 @@ export const HELP_SECTIONS: HelpSection[] = [
     ],
     tips: [
       "Without Resend configured, emails dry-run but in-app rows still appear after the cron runs.",
+      "Urgent LPOs have no dates, so they never raise reminders or an Overdue tag.",
       "Locally, cron is triggered manually (see Help → Ops tips).",
     ],
   },
@@ -264,7 +308,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "PDFs",
         detail:
-          "LPO original, production file, and fabric invoice must be PDFs. View/Download opens the private file viewer.",
+          "LPO original, production file, fabric invoice and accessory or manufacturing invoice must be PDFs. View/Download opens the private file viewer.",
       },
       {
         title: "Slow pages / Neon sleep",
@@ -278,7 +322,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       },
     ],
     tips: [
-      "Fill supplier + invoice reference + PDF before submitting Receive fabric.",
+      "Fill supplier and invoice reference before submitting Receive fabric. The PDF and total are optional.",
       "Keep at least one Under Review LPO if you want to test notifications.",
     ],
   },

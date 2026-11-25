@@ -243,6 +243,18 @@ Keep a scratch pad:
 | [ ] | 4.2 | Open LPO A detail | Header shows LPO number; dates default to received **+2** (assignment), **+12** (production), **+15** (client delivery), Asia/Dubai EOD |
 | [ ] | 4.3 | View and Download original PDF | Viewer opens; download works |
 
+### 4a-2. Urgent LPO
+
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 4.U1 | `/lpo/new`, switch **Urgent LPO** on | LPO number becomes a read-only `URGENT_n`; PDF label says optional; side panel shows "Not set" for all three dates |
+| [ ] | 4.U2 | Fill the order, skip the PDF, create | LPO opens with an **Urgent** chip, status Under Review; glance strip shows "None" for both deadlines; Dates tab explains there are no dates |
+| [ ] | 4.U3 | Assign a manufacturer without a production PDF | Assigned; "Mark client delivery completed" appears and works |
+| [ ] | 4.U4 | `/lpo` -> **Urgent** filter | Only urgent LPOs; "No deadline" in the date columns; never an Overdue tag |
+| [ ] | 4.U5 | Run the cron (section 9) | No notification is created for the urgent LPO |
+| [ ] | 4.U6 | Create a second urgent LPO | Number is the next one (`URGENT_n+1`) |
+| [ ] | 4.U7 | Create a normal LPO numbered `URGENT_9` | Refused with a message pointing to the Urgent option |
+
 ### 4b. Date changes
 
 | Done | Step | Action | Pass if |
@@ -331,9 +343,16 @@ Keep LPO B under review for section 8.
 
 ### Invoices
 
-1. Go to `/invoices`.
-2. Filter by supplier, month, and search text.
-3. View/Download invoice PDF for a row you received.
+| Done | Step | Action | Pass if |
+|------|------|--------|---------|
+| [ ] | 7.1 | `/fabric` Receive fabric: add an **Invoice total incl. VAT** (e.g. 8400) and save | Saved; the invoice shows 8,400.00 with VAT 400.00 on `/invoices` |
+| [ ] | 7.2 | Receive fabric again with no total | Saved; amount and VAT show a dash; the VAT tile says one invoice has no total |
+| [ ] | 7.3 | `/invoices/new`: add an **Accessory invoice** with a PDF and two lines at 5% | Summary updates while typing; saves; row appears with the amber chip and the right total and VAT |
+| [ ] | 7.4 | Add a **Manufacturing invoice** with no reference | Row shows "No reference" and a purple chip |
+| [ ] | 7.5 | Try to save an accessory invoice without a PDF | Blocked (PDF required) |
+| [ ] | 7.6 | Create a tax invoice from an LPO and one from Documents -> New document | Both appear as Tax invoice with amounts; "With an LPO" / "Without an LPO" filters split them and leave other kinds alone |
+| [ ] | 7.7 | Use the type cards, Month and Search | Counts on the cards stay put; the list, footer count and VAT tiles follow the filters |
+| [ ] | 7.8 | View PDF, Download and More -> Delete on an accessory invoice | Viewer opens, file downloads, delete asks first and removes the row |
 
 ### Ledger + variance
 

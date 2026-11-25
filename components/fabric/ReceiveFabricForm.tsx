@@ -144,6 +144,20 @@ export function ReceiveFabricForm({
           />
         </Field>
         <Field
+          label="Invoice total incl. VAT (AED)"
+          optional
+          tip="Used for the VAT figures on the Invoices page. The VAT part is worked out at 5%. Leave it blank if you do not have it yet."
+        >
+          <input
+            type="number"
+            name="totalInclVat"
+            min="0"
+            step="0.01"
+            placeholder="e.g. 8400"
+            className={INPUT_CLASS}
+          />
+        </Field>
+        <Field
           label="Invoice file (PDF)"
           optional
           tip="Optional, but recommended. If you add it, it is stored with the invoice so you can open it again later."

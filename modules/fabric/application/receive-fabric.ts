@@ -16,6 +16,8 @@ export type ReceiveFabricInput = {
   supplierName: string;
   invoiceRef: string;
   receivedDate: string;
+  /** Optional invoice total including VAT (AED). */
+  totalInclVat?: number;
   batches: ReadonlyArray<ReceiveFabricBatchValues>;
   /** Optional: a receive can be recorded without a supplier invoice PDF. */
   invoiceFile?: File | UploadedFileRef | null;
@@ -52,6 +54,7 @@ export async function receiveFabric(input: ReceiveFabricInput) {
     supplierName: input.supplierName,
     invoiceRef: input.invoiceRef,
     receivedDate: input.receivedDate,
+    totalInclVat: input.totalInclVat,
     batches: input.batches,
   });
 
@@ -78,6 +81,7 @@ export async function receiveFabric(input: ReceiveFabricInput) {
           supplierName: values.supplierName,
           invoiceRef: values.invoiceRef,
           receivedDate,
+          totalInclVat: values.totalInclVat ?? null,
           invoiceFileKey: storedFile?.fileKey ?? null,
           invoiceFileName: storedFile?.fileName ?? null,
           invoiceMimeType: storedFile?.mimeType ?? null,
@@ -125,6 +129,7 @@ export async function receiveFabric(input: ReceiveFabricInput) {
             supplierName: invoice.supplierName,
             invoiceRef: invoice.invoiceRef,
             receivedDate: values.receivedDate,
+            totalInclVat: values.totalInclVat ?? null,
             batchCount: createdBatches.length,
             batchIds: createdBatches.map((batch) => batch.id),
             fabricCodes: createdBatches.map((batch) => batch.fabricCode),

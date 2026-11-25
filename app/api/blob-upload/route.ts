@@ -17,7 +17,12 @@ import { BLOB_KEY_PREFIX } from "@/modules/files/domain/pdf-rules";
  * (with the resulting file reference in the form) is what commits anything
  * to the database — see readPdfUploadFromForm / FileStorage.adopt().
  */
-const ALLOWED_FOLDERS = new Set(["lpo-originals", "lpo-production", "fabric-invoices"]);
+const ALLOWED_FOLDERS = new Set([
+  "lpo-originals",
+  "lpo-production",
+  "fabric-invoices",
+  "supplier-invoices",
+]);
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: Request): Promise<NextResponse> {

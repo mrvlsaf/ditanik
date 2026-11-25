@@ -69,6 +69,8 @@ app/(app)/lpo/page.tsx
           → revalidatePath("/lpo")
 ```
 
+**Urgent LPO (D-031):** the form's Urgent switch posts `isUrgent=on`. `createLpo` then skips the typed number and the existing-number check, makes the PDF optional, leaves the three dates null, and takes the number from `urgentLpoCounter` (atomic upsert/increment) inside the same transaction. `getNextUrgentLpoNumber()` only previews it on the form.
+
 **List after create:** same page → `listRecentLpos` (`get-lpo.ts`) → table + `DocumentActions` for original PDF.
 
 **Modify create fields/dates?** Schema + `create-lpo.ts` + form. Status auto-transition lives in create transaction + `initialStatusAfterCreate()`.
@@ -196,16 +198,23 @@ Movement ledger: `listRecentMovements`.
 
 ---
 
-## 7. Invoices page (filters)
+## 7. Invoices hub (four kinds + VAT summary)
 
 ```text
-app/(app)/invoices/page.tsx  (searchParams: supplier, month, q)
-  → listFabricInvoiceSuppliers / listFabricInvoiceMonths / listFabricInvoices
-  → filter in query + Dubai month key in memory
-  → DocumentActions when invoiceFileKey present
+app/(app)/invoices/page.tsx  (searchParams: type, month, q, lpo)
+  → modules/invoices/application/list-invoices.ts   listAllInvoices()
+        generatedDocument (TAX_INVOICE) + fabricSupplierInvoice + supplierInvoice
+        → domain/invoice-hub.ts row builders (taxInvoiceRow / fabricInvoiceRow / supplierInvoiceRow)
+  → parseInvoiceFilters → filterInvoiceRows → summariseVat (all in domain/invoice-hub.ts)
+  → components/invoices/InvoiceRowActions.tsx  (Download / View PDF, More, Delete)
+
+app/(app)/invoices/new/page.tsx  → components/invoices/AddInvoiceForm.tsx
+  → modules/invoices/application/create-supplier-invoice-action.ts
+      → createSupplierInvoice → calculateSupplierInvoice (domain/supplier-invoice-lines.ts)
+      → storePdfUpload (folder supplier-invoices, PDF required) → supplierInvoice.create + lines + audit log
 ```
 
-**Modify month TZ?** `list-fabric-invoices.ts` uses `BUSINESS_TIMEZONE` (Asia/Dubai).
+**Fabric invoices:** still created by Receive fabric (section 5), which now also takes an optional `totalInclVat`. **Modify month TZ?** `dubaiMonthKey` in `domain/invoice-hub.ts` (Asia/Dubai). **Files:** `/api/files` also resolves `supplierInvoice.fileKey`; `blob-upload` allows the `supplier-invoices` folder.
 
 ---
 
@@ -337,7 +346,8 @@ Any prisma.* call
 | `/lpo` | list + create | `modules/lpo` |
 | `/lpo/[id]` | detail workflow | `lpo` + `fabric` requirements + `manufacturer` |
 | `/fabric` | receive/stock/issue/return | `modules/fabric` |
-| `/invoices` | filtered invoice PDFs | `list-fabric-invoices` |
+| `/invoices` | all invoices + VAT summary | `modules/invoices` |
+| `/invoices/new` | add accessory / manufacturing invoice | `modules/invoices` |
 | `/manufacturers` | registry | `modules/manufacturer` |
 | `/manufacturers/[id]` | ledger + variance | `manufacturer-ledger`, `variance` |
 | `/consumption` | garment rates | `consumption` |
@@ -351,6 +361,7 @@ Layout streams shell after `auth()` only; notification bell and page data load i
 
 ### In progress / last change
 - 2026-08-11: streaming nav + loading spinners; bell no longer blocks layout.
+- 2026-10-14: Urgent LPOs (D-031). 2026-10-15: Invoices hub and Add invoice (D-032).
 
 ---
 
@@ -385,6 +396,8 @@ Example:
 | Convert to PDF failing | `GOTENBERG_URL` env var (not yet deployed — see `infra/gotenberg/README.md`), `pdf-conversion.ts` |
 | PDF auto-fill (prefill) failing | `lpo-extraction.ts`, `pdf-text-extraction.ts`, `serverExternalPackages` in `next.config.ts` |
 | Stock math wrong | `domain/meters.ts` + movement types in issue/receive |
-| Invoice not listed | `list-fabric-invoices.ts` filters; invoice required on receive |
+| Invoice not listed | `modules/invoices/application/list-invoices.ts` + `domain/invoice-hub.ts` filters; fabric invoices need `isActive` |
+| VAT tile looks wrong | `summariseVat` in `domain/invoice-hub.ts`; fabric invoices without a total are left out |
+| Urgent LPO shows dates / reminders | `due-notification-rules.ts` (`isUrgent`), `process-due-notifications.ts` (`isUrgent: false`) |
 | Cron 401 | `CRON_SECRET` vs `Authorization` header on route |
 | Neon sleep errors | `lib/db.ts` retries + `db-errors.ts` UI |

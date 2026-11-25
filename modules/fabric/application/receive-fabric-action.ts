@@ -78,10 +78,16 @@ export async function receiveFabricAction(
 
   try {
     const batches = parseBatchesFromForm(formData);
+    const totalText = readFormString(formData, "totalInclVat").trim();
+    const totalInclVat = totalText === "" ? undefined : Number(totalText);
+    if (totalInclVat !== undefined && !Number.isFinite(totalInclVat)) {
+      return { ok: false, message: "Invoice total must be a number." };
+    }
     await receiveFabric({
       supplierName: readFormString(formData, "supplierName"),
       invoiceRef: readFormString(formData, "invoiceRef"),
       receivedDate: readFormString(formData, "receivedDate"),
+      totalInclVat,
       batches,
       invoiceFile: fileValue,
       createdByUserId: session.user.id,
