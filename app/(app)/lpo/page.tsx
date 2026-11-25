@@ -3,7 +3,6 @@ import { Suspense } from "react";
 
 import { PageContainer } from "@/components/app-shell/PageContainer";
 import { SectionLoading } from "@/components/app-shell/SectionLoading";
-import { CreateLpoForm } from "@/components/lpo/CreateLpoForm";
 import { LpoActionsMenu } from "@/components/lpo/LpoActionsMenu";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
 import { Chip } from "@/components/ui/Chip";
@@ -19,7 +18,6 @@ import {
   type LpoFilterKey,
 } from "@/modules/lpo/domain/lpo-filters";
 import { isOverdue } from "@/modules/lpo/domain/today";
-import { isUsingBlobStorage } from "@/modules/files/infrastructure/get-file-storage";
 
 async function LpoDashboard({
   filter,
@@ -39,8 +37,15 @@ async function LpoDashboard({
 
   if (counts.all === 0) {
     return (
-      <EmptyState title="No LPOs yet">
-        Create the first one with the form above. It starts as Under review.
+      <EmptyState
+        title="No LPOs yet"
+        action={
+          <Link href="/lpo/new" className="btn-primary">
+            New LPO
+          </Link>
+        }
+      >
+        Create the first one. It starts as Under review.
       </EmptyState>
     );
   }
@@ -207,26 +212,17 @@ export default async function LpoPage({
   return (
     <PageContainer
       title="LPOs"
+      actions={
+        <Link href="/lpo/new" className="btn-primary">
+          New LPO
+        </Link>
+      }
       description="Every customer order in one list. Open an LPO to assign a manufacturer, extend dates, and create its documents."
       info="LPO stands for Local Purchase Order: the order your customer sends you. Each LPO moves from Under review, to Assigned to a manufacturer, to Client delivery completed. A red Overdue tag means a planned date has passed. Dates are worked out from the date received."
     >
-      <div className="space-y-8">
-        <section>
-          <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Create LPO
-          </h2>
-          <CreateLpoForm usesBlobStorage={isUsingBlobStorage()} />
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            LPO list
-          </h2>
-          <Suspense fallback={<SectionLoading label="Loading dashboard…" />}>
-            <LpoDashboard filter={filter} requestedPage={requestedPage} />
-          </Suspense>
-        </section>
-      </div>
+      <Suspense fallback={<SectionLoading label="Loading dashboard…" />}>
+        <LpoDashboard filter={filter} requestedPage={requestedPage} />
+      </Suspense>
     </PageContainer>
   );
 }

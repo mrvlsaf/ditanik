@@ -11,6 +11,8 @@ import type { LpoLineItemValues } from "@/modules/lpo/schemas/line-items";
 export type CreateLpoActionState = {
   ok: boolean;
   message: string | null;
+  /** Set when the LPO was created, so the form can open it. */
+  lpoId?: string;
 };
 
 function readFormString(formData: FormData, key: string): string {
@@ -100,7 +102,7 @@ export async function createLpoAction(
   try {
     const lineItems = parseLineItemsFromForm(formData);
 
-    await createLpo({
+    const created = await createLpo({
       lpoNumber: readFormString(formData, "lpoNumber"),
       nickname: readFormString(formData, "nickname"),
       clientName: readFormString(formData, "clientName"),
@@ -119,7 +121,7 @@ export async function createLpoAction(
     });
 
     revalidatePath("/lpo");
-    return { ok: true, message: "LPO created." };
+    return { ok: true, message: "LPO created.", lpoId: created.id };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Could not create LPO.";
     return { ok: false, message };

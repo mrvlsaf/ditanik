@@ -4,12 +4,14 @@ import { LpoDateField } from "@prisma/client";
 import { useActionState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { Chip } from "@/components/ui/Chip";
 
 import {
   changeLpoDateAction,
   type ChangeLpoDateActionState,
 } from "@/modules/lpo/application/change-lpo-date-action";
 import { MIN_DATE_CHANGE_REASON_LENGTH } from "@/modules/lpo/domain/due-dates";
+import { extensionLabel, isExtended } from "@/modules/lpo/domain/lpo-detail";
 import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
 
 const initialState: ChangeLpoDateActionState = {
@@ -50,41 +52,50 @@ export function LpoDatesSection({
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
   useGlobalPending(isPending);
 
+  const keyDates: Array<{ field: LpoDateField; value: Date }> = [
+    { field: LpoDateField.ASSIGNMENT, value: manufacturerAssignmentAt },
+    { field: LpoDateField.PRODUCTION_DEADLINE, value: productionDeadlineAt },
+    { field: LpoDateField.CLIENT_DELIVERY, value: clientDeliveryAt },
+  ];
+
   return (
     <section id="lpo-dates" className="scroll-mt-4 space-y-4 surface-card p-4 sm:p-6">
-      <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-        Dates
-      </h2>
+      <h2 className="text-base font-bold text-[var(--foreground)]">Key dates</h2>
 
-      <dl className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-            Manufacturer assignment
-          </dt>
-          <dd className="mt-1 text-sm text-zinc-900">
-            {formatBusinessDateTime(manufacturerAssignmentAt)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-            Production deadline
-          </dt>
-          <dd className="mt-1 text-sm text-zinc-900">
-            {formatBusinessDateTime(productionDeadlineAt)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-            Client delivery
-          </dt>
-          <dd className="mt-1 text-sm text-zinc-900">
-            {formatBusinessDateTime(clientDeliveryAt)}
-          </dd>
-        </div>
-      </dl>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
+          <thead>
+            <tr className="border-b border-[var(--border)] text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
+              <th className="py-2 pr-3">Date</th>
+              <th className="py-2 pr-3">When</th>
+              <th className="py-2 pr-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {keyDates.map((row) => (
+              <tr
+                key={row.field}
+                className="border-b border-[var(--border)] last:border-0"
+              >
+                <td className="py-2.5 pr-3 font-medium text-[var(--foreground)]">
+                  {FIELD_LABELS[row.field]}
+                </td>
+                <td className="py-2.5 pr-3 text-[var(--foreground)]">
+                  {formatBusinessDateTime(row.value)}
+                </td>
+                <td className="py-2.5 pr-3">
+                  <Chip tone={isExtended(dateChanges, row.field) ? "amber" : "gray"}>
+                    {extensionLabel(dateChanges, row.field)}
+                  </Chip>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <form action={formAction} className="space-y-3 border-t border-zinc-100 pt-4">
-        <p className="text-sm font-medium text-zinc-800">Extend a date</p>
+        <h3 className="text-base font-bold text-[var(--foreground)]">Extend a date</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">
             <span className="mb-1 block text-zinc-700">Field</span>

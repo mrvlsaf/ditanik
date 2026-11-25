@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { Chip } from "@/components/ui/Chip";
 import { PageContainer } from "@/components/app-shell/PageContainer";
 import { LpoActionsMenu } from "@/components/lpo/LpoActionsMenu";
 import { LpoAssignmentPanel } from "@/components/lpo/LpoAssignmentPanel";
@@ -8,6 +9,9 @@ import { LpoDatesSection } from "@/components/lpo/LpoDatesSection";
 import { LpoDeepLinkFocus } from "@/components/lpo/LpoDeepLinkFocus";
 import { LpoFabricRequirementsSection } from "@/components/lpo/LpoFabricRequirementsSection";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
+import { OpenTabLink } from "@/components/lpo/OpenTabLink";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { DocumentActions } from "@/components/documents/DocumentActions";
 import { GenerateDocumentButton } from "@/components/documents/GenerateDocumentButton";
 import { GeneratedDocumentRow } from "@/components/documents/GeneratedDocumentRow";
@@ -25,6 +29,13 @@ import {
   calculateLineItemsSubtotal,
   calculateVatAmount,
 } from "@/modules/lpo/domain/line-items";
+import {
+  extensionLabel,
+  initialDetailTab,
+  nextStepFor,
+  primaryActionFor,
+  progressSteps,
+} from "@/modules/lpo/domain/lpo-detail";
 import { lpoStatusDetailLabel } from "@/modules/lpo/domain/lpo-status";
 import type { NotificationAction } from "@/modules/notification/domain/due-notification-rules";
 import { listManufacturers } from "@/modules/manufacturer/application/manufacturers";
@@ -50,12 +61,17 @@ export default async function LpoDetailPage({
   searchParams,
 }: Readonly<{
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ action?: string | string[]; r?: string | string[] }>;
+  searchParams: Promise<{
+    action?: string | string[];
+    r?: string | string[];
+    tab?: string | string[];
+  }>;
 }>) {
   const { id } = await params;
   const query = await searchParams;
   const action = parseActionParam(query.action);
   const requestId = parseRequestIdParam(query.r);
+  const tabParam = parseRequestIdParam(query.tab);
   const [lpo, manufacturers, rates, requirements, generatedDocuments] = await Promise.all(
     [
       getLpoById(id),
@@ -71,139 +87,72 @@ export default async function LpoDetailPage({
   }
 
   const createdByLabel = lpo.createdBy.name ?? lpo.createdBy.email;
+  const heading = lpo.nickname?.trim() ? lpo.nickname : `LPO ${lpo.lpoNumber}`;
 
-  return (
-    <PageContainer title={`LPO ${lpo.lpoNumber}`} description={lpo.nickname}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/lpo"
-          className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
-        >
-          ← Back to LPO dashboard
-        </Link>
-        <LpoActionsMenu
-          lpoId={lpo.id}
-          lpoNumber={lpo.lpoNumber}
-          fileKey={lpo.originalFileKey}
-          fileName={lpo.originalFileName}
-          redirectTo="/lpo"
-          includeDocumentActions={false}
-        />
-      </div>
+  const subtotal = calculateLineItemsSubtotal(
+    lpo.lineItems.map((line) => ({ lineTotal: Number(line.lineTotal) })),
+  );
+  const vatAmount = calculateVatAmount(subtotal);
+  const grandTotal = calculateGrandTotal(subtotal, vatAmount);
 
-      <LpoDeepLinkFocus action={action} requestId={requestId} />
+  const nextStep = nextStepFor(lpo.status);
+  const primaryAction = primaryActionFor(lpo.status);
+  const steps = progressSteps(lpo.status);
 
-      <div className="space-y-8">
-        <section className="surface-card p-4 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <LpoStatusBadge status={lpo.status} />
-            <p className="text-sm text-zinc-500">
-              {lpoStatusDetailLabel(lpo.status)} · Created by {createdByLabel}
-            </p>
-          </div>
+  const initialTab = initialDetailTab(tabParam, action);
 
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Client
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-900">{lpo.clientName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Manufacturer
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-900">
-                {lpo.manufacturer?.name ?? "Pending"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Received date
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-900">
+  const tabs: TabItem[] = [
+    {
+      id: "summary",
+      label: "Summary",
+      content: (
+        <div className="grid gap-6 lg:grid-cols-3">
+          <section className="surface-card p-4 sm:p-6 lg:col-span-2">
+            <h2 className="mb-4 text-base font-bold text-[var(--foreground)]">
+              Order details
+            </h2>
+            <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              <Detail label="Client">{lpo.clientName}</Detail>
+              <Detail label="Site code">{lpo.siteCode ?? "—"}</Detail>
+              {lpo.clientSubEntityName ? (
+                <Detail label="Client sub-entity">{lpo.clientSubEntityName}</Detail>
+              ) : null}
+              {lpo.clientTrn ? <Detail label="Client TRN">{lpo.clientTrn}</Detail> : null}
+              <Detail label="Received date">
                 {formatCalendarDate(lpo.receivedDate)}
-              </dd>
-            </div>
-            {lpo.clientDeliveredAt ? (
-              <div>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  Client delivered at
-                </dt>
-                <dd className="mt-1 text-sm text-zinc-900">
+              </Detail>
+              {lpo.clientDeliveredAt ? (
+                <Detail label="Client delivered at">
                   {formatBusinessDateTime(lpo.clientDeliveredAt)}
-                </dd>
-              </div>
-            ) : null}
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Site code
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-900">{lpo.siteCode ?? "—"}</dd>
-            </div>
-            {lpo.clientSubEntityName ? (
-              <div>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  Client sub-entity
-                </dt>
-                <dd className="mt-1 text-sm text-zinc-900">{lpo.clientSubEntityName}</dd>
-              </div>
-            ) : null}
-            {lpo.clientTrn ? (
-              <div>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  Client TRN
-                </dt>
-                <dd className="mt-1 text-sm text-zinc-900">{lpo.clientTrn}</dd>
-              </div>
-            ) : null}
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                Currency
-              </dt>
-              <dd className="mt-1 text-sm text-zinc-900">{lpo.currency}</dd>
-            </div>
-            {lpo.paymentTerms ? (
-              <div>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  Payment terms
-                </dt>
-                <dd className="mt-1 text-sm text-zinc-900">{lpo.paymentTerms}</dd>
-              </div>
-            ) : null}
-            {lpo.deliveryTerms ? (
-              <div>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  Delivery terms
-                </dt>
-                <dd className="mt-1 text-sm text-zinc-900">{lpo.deliveryTerms}</dd>
-              </div>
-            ) : null}
-            {lpo.invoiceAddress ? (
-              <div>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  Invoice address
-                </dt>
-                <dd className="mt-1 whitespace-pre-line text-sm text-zinc-900">
+                </Detail>
+              ) : null}
+              <Detail label="Manufacturer">{lpo.manufacturer?.name ?? "Pending"}</Detail>
+              <Detail label="Currency">{lpo.currency}</Detail>
+              {lpo.paymentTerms ? (
+                <Detail label="Payment terms">{lpo.paymentTerms}</Detail>
+              ) : null}
+              {lpo.deliveryTerms ? (
+                <Detail label="Delivery terms">{lpo.deliveryTerms}</Detail>
+              ) : null}
+              {lpo.invoiceAddress ? (
+                <Detail label="Invoice address" preserveLines>
                   {lpo.invoiceAddress}
-                </dd>
-              </div>
-            ) : null}
-            {lpo.deliveryAddress ? (
-              <div>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                  Delivery address
-                </dt>
-                <dd className="mt-1 whitespace-pre-line text-sm text-zinc-900">
+                </Detail>
+              ) : null}
+              {lpo.deliveryAddress ? (
+                <Detail label="Delivery address" preserveLines>
                   {lpo.deliveryAddress}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
+                </Detail>
+              ) : null}
+            </dl>
+          </section>
 
-          <div className="mt-5 space-y-4 border-t border-zinc-100 pt-4">
+          <section className="surface-card space-y-4 p-4 sm:p-6">
+            <h2 className="text-base font-bold text-[var(--foreground)]">
+              Files and links
+            </h2>
             <div>
-              <p className="mb-2 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+              <p className="mb-2 text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                 LPO document
               </p>
               <DocumentActions
@@ -213,7 +162,7 @@ export default async function LpoDetailPage({
             </div>
             {lpo.productionFileKey && lpo.productionFileName ? (
               <div>
-                <p className="mb-2 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                <p className="mb-2 text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                   Production file
                 </p>
                 <DocumentActions
@@ -222,18 +171,41 @@ export default async function LpoDetailPage({
                 />
               </div>
             ) : null}
-          </div>
-        </section>
-
-        {lpo.lineItems.length > 0 ? (
+            <div className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-4 text-sm">
+              <Link
+                href="/fabric"
+                className="font-medium text-[var(--brand)] hover:underline"
+              >
+                Open the Fabric page
+              </Link>
+              <Link
+                href="/documents"
+                className="font-medium text-[var(--brand)] hover:underline"
+              >
+                Open all documents
+              </Link>
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Created by {createdByLabel} on {formatCalendarDate(lpo.createdAt)}
+            </p>
+          </section>
+        </div>
+      ),
+    },
+    {
+      id: "lines",
+      label: "Lines",
+      count: lpo.lineItems.length,
+      content:
+        lpo.lineItems.length > 0 ? (
           <section className="surface-card p-4 sm:p-6">
-            <h2 className="mb-4 text-sm font-medium text-zinc-800">
-              Commercial line items
+            <h2 className="mb-4 text-base font-bold text-[var(--foreground)]">
+              What the client ordered
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
-                  <tr className="border-b border-zinc-200 text-left text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                  <tr className="border-b border-[var(--border)] text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                     <th className="py-2 pr-3">#</th>
                     <th className="py-2 pr-3">Description</th>
                     <th className="py-2 pr-3">Article no.</th>
@@ -245,27 +217,29 @@ export default async function LpoDetailPage({
                 </thead>
                 <tbody>
                   {lpo.lineItems.map((line) => (
-                    <tr key={line.id} className="border-b border-zinc-100">
-                      <td className="py-2 pr-3 text-zinc-500">{line.position}</td>
-                      <td className="py-2 pr-3 text-zinc-900">
+                    <tr key={line.id} className="border-b border-[var(--border)]">
+                      <td className="py-2 pr-3 text-[var(--text-muted)]">
+                        {line.position}
+                      </td>
+                      <td className="py-2 pr-3 text-[var(--foreground)]">
                         {line.description}
                         {line.category ? (
-                          <span className="ml-2 text-xs text-zinc-500">
+                          <span className="ml-2 text-xs text-[var(--text-muted)]">
                             ({line.category})
                           </span>
                         ) : null}
                       </td>
-                      <td className="py-2 pr-3 text-zinc-700">{line.articleNo ?? "—"}</td>
-                      <td className="py-2 pr-3 text-right text-zinc-900">
-                        {line.quantity}
+                      <td className="py-2 pr-3 text-[var(--text-muted)]">
+                        {line.articleNo ?? "—"}
                       </td>
-                      <td className="py-2 pr-3 text-right text-zinc-900">
+                      <td className="py-2 pr-3 text-right">{line.quantity}</td>
+                      <td className="py-2 pr-3 text-right">
                         {Number(line.unitPrice).toFixed(2)}
                       </td>
-                      <td className="py-2 pr-3 text-right text-zinc-900">
+                      <td className="py-2 pr-3 text-right">
                         {Number(line.discountPercent).toFixed(2)}
                       </td>
-                      <td className="py-2 pr-3 text-right font-medium text-zinc-900">
+                      <td className="py-2 pr-3 text-right font-medium">
                         {Number(line.lineTotal).toFixed(2)}
                       </td>
                     </tr>
@@ -273,44 +247,87 @@ export default async function LpoDetailPage({
                 </tbody>
               </table>
             </div>
-            {(() => {
-              const subtotal = calculateLineItemsSubtotal(
-                lpo.lineItems.map((line) => ({ lineTotal: Number(line.lineTotal) })),
-              );
-              const vatAmount = calculateVatAmount(subtotal);
-              const grandTotal = calculateGrandTotal(subtotal, vatAmount);
-              return (
-                <div className="mt-4 flex flex-col items-end gap-1 border-t border-zinc-100 pt-3 text-sm">
-                  <span className="text-zinc-600">
-                    Subtotal:{" "}
-                    <span className="font-medium text-zinc-900">
-                      {subtotal.toFixed(2)} {lpo.currency}
-                    </span>
-                  </span>
-                  <span className="text-zinc-600">
-                    VAT ({DEFAULT_VAT_PERCENT}%):{" "}
-                    <span className="font-medium text-zinc-900">
-                      {vatAmount.toFixed(2)} {lpo.currency}
-                    </span>
-                  </span>
-                  <span className="text-zinc-800">
-                    Grand total:{" "}
-                    <span className="font-semibold text-zinc-900">
-                      {grandTotal.toFixed(2)} {lpo.currency}
-                    </span>
-                  </span>
-                </div>
-              );
-            })()}
+            <div className="mt-4 flex flex-col items-end gap-1 border-t border-[var(--border)] pt-3 text-sm">
+              <span className="text-[var(--text-muted)]">
+                Subtotal:{" "}
+                <span className="font-medium text-[var(--foreground)]">
+                  {subtotal.toFixed(2)} {lpo.currency}
+                </span>
+              </span>
+              <span className="text-[var(--text-muted)]">
+                VAT ({DEFAULT_VAT_PERCENT}%):{" "}
+                <span className="font-medium text-[var(--foreground)]">
+                  {vatAmount.toFixed(2)} {lpo.currency}
+                </span>
+              </span>
+              <span className="text-[var(--foreground)]">
+                Grand total:{" "}
+                <span className="font-bold">
+                  {grandTotal.toFixed(2)} {lpo.currency}
+                </span>
+              </span>
+            </div>
           </section>
-        ) : null}
-
+        ) : (
+          <EmptyState title="No lines on this order">
+            Edit the details to add what the client ordered.
+          </EmptyState>
+        ),
+    },
+    {
+      id: "dates",
+      label: "Dates",
+      content: (
+        <LpoDatesSection
+          lpoId={lpo.id}
+          manufacturerAssignmentAt={lpo.manufacturerAssignmentAt}
+          productionDeadlineAt={lpo.productionDeadlineAt}
+          clientDeliveryAt={lpo.clientDeliveryAt}
+          dateChanges={lpo.dateChanges}
+        />
+      ),
+    },
+    {
+      id: "fabric",
+      label: "Fabric needed",
+      content: (
+        <LpoFabricRequirementsSection
+          lpoId={lpo.id}
+          rates={rates}
+          requirements={requirements}
+        />
+      ),
+    },
+    {
+      id: "production",
+      label: "Production and delivery",
+      content: (
+        <LpoAssignmentPanel
+          lpoId={lpo.id}
+          status={lpo.status}
+          manufacturerId={lpo.manufacturerId}
+          manufacturerName={lpo.manufacturer?.name ?? null}
+          productionFileKey={lpo.productionFileKey}
+          manufacturers={manufacturers.map((m) => ({
+            id: m.id,
+            name: m.name,
+          }))}
+          usesBlobStorage={isUsingBlobStorage()}
+        />
+      ),
+    },
+    {
+      id: "documents",
+      label: "Documents",
+      count: generatedDocuments.length,
+      content: (
         <section className="surface-card space-y-4 p-4 sm:p-6">
           <div>
-            <h2 className="text-sm font-medium text-zinc-800">Generated documents</h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Fills the real Deezano workbooks — pixel-accurate templates taken straight
-              from Deezano&apos;s own Excel files — from this LPO&apos;s stored details.
+            <h2 className="text-base font-bold text-[var(--foreground)]">
+              Create a document
+            </h2>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
+              Fills Deezano&apos;s own Excel templates from this LPO&apos;s details.
               Download the result as Excel to edit by hand, or convert it to PDF to send
               as-is.
             </p>
@@ -346,10 +363,10 @@ export default async function LpoDetailPage({
           </div>
 
           {generatedDocuments.length > 0 ? (
-            <div className="overflow-x-auto border-t border-zinc-100 pt-3">
+            <div className="overflow-x-auto border-t border-[var(--border)] pt-3">
               <table className="w-full min-w-[480px] text-sm">
                 <thead>
-                  <tr className="text-left text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                  <tr className="text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                     <th className="py-2 pr-3">Document #</th>
                     <th className="py-2 pr-3">Type</th>
                     <th className="py-2 pr-3">Generated</th>
@@ -376,36 +393,171 @@ export default async function LpoDetailPage({
                 </tbody>
               </table>
             </div>
-          ) : null}
+          ) : (
+            <p className="border-t border-[var(--border)] pt-3 text-sm text-[var(--text-muted)]">
+              Nothing has been generated for this order yet. Use the buttons above to
+              create a quotation, tax invoice or delivery note.
+            </p>
+          )}
+        </section>
+      ),
+    },
+  ];
+
+  return (
+    <PageContainer
+      title={heading}
+      description={`LPO ${lpo.lpoNumber}`}
+      breadcrumb={[
+        { label: "Orders" },
+        { label: "LPOs", href: "/lpo" },
+        { label: lpo.lpoNumber },
+      ]}
+      actions={
+        <>
+          <Link href={`/lpo/${lpo.id}/edit`} className="btn-secondary">
+            Edit details
+          </Link>
+          <OpenTabLink lpoId={lpo.id} tab={primaryAction.tab} className="btn-primary">
+            {primaryAction.label}
+          </OpenTabLink>
+          <LpoActionsMenu
+            lpoId={lpo.id}
+            lpoNumber={lpo.lpoNumber}
+            fileKey={lpo.originalFileKey}
+            fileName={lpo.originalFileName}
+            redirectTo="/lpo"
+            includeDocumentActions={false}
+          />
+        </>
+      }
+    >
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <LpoStatusBadge status={lpo.status} />
+          <p className="text-sm text-[var(--text-muted)]">
+            {lpoStatusDetailLabel(lpo.status)} · Created by {createdByLabel}
+          </p>
+        </div>
+
+        <section
+          aria-label="Order at a glance"
+          className="surface-card grid [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))] gap-px overflow-hidden bg-[var(--border)]"
+        >
+          <GlanceCell
+            label="Client"
+            value={lpo.clientName}
+            sub={lpo.siteCode ?? undefined}
+          />
+          <GlanceCell
+            label="Order total"
+            value={`${lpo.currency} ${subtotal.toFixed(2)}`}
+            sub={`${lpo.lineItems.length} ${lpo.lineItems.length === 1 ? "line" : "lines"}, before VAT`}
+          />
+          <GlanceCell
+            label="Manufacturer"
+            value={lpo.manufacturer?.name ?? "Not assigned yet"}
+            sub={
+              lpo.manufacturer
+                ? `Assigned ${formatCalendarDate(lpo.manufacturerAssignmentAt)}`
+                : `Assign by ${formatCalendarDate(lpo.manufacturerAssignmentAt)}`
+            }
+          />
+          <GlanceCell
+            label="Production deadline"
+            value={formatCalendarDate(lpo.productionDeadlineAt)}
+            sub={extensionLabel(lpo.dateChanges, "PRODUCTION_DEADLINE")}
+          />
+          <GlanceCell
+            label="Client delivery"
+            value={formatCalendarDate(lpo.clientDeliveryAt)}
+            sub={extensionLabel(lpo.dateChanges, "CLIENT_DELIVERY")}
+          />
         </section>
 
-        <LpoDatesSection
-          lpoId={lpo.id}
-          manufacturerAssignmentAt={lpo.manufacturerAssignmentAt}
-          productionDeadlineAt={lpo.productionDeadlineAt}
-          clientDeliveryAt={lpo.clientDeliveryAt}
-          dateChanges={lpo.dateChanges}
-        />
+        <section
+          aria-label="Next step"
+          className="rounded-lg border border-[var(--brand)]/30 bg-[var(--brand-muted)] p-4 sm:p-5"
+        >
+          <p className="text-xs font-semibold tracking-wide text-[var(--brand)] uppercase">
+            Next step
+          </p>
+          <h2 className="mt-1 text-lg font-bold text-[var(--foreground)]">
+            {nextStep.title}
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-[var(--text-muted)]">
+            {nextStep.body}
+          </p>
+          <ol className="mt-3 flex flex-wrap gap-2" aria-label="Order progress">
+            {steps.map((step, index) => (
+              <li key={step.label}>
+                <Chip
+                  tone={
+                    step.state === "done"
+                      ? "green"
+                      : step.state === "current"
+                        ? "amber"
+                        : "gray"
+                  }
+                >
+                  {step.state === "done" ? "✓" : index + 1} {step.label}
+                </Chip>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-        <LpoAssignmentPanel
-          lpoId={lpo.id}
-          status={lpo.status}
-          manufacturerId={lpo.manufacturerId}
-          manufacturerName={lpo.manufacturer?.name ?? null}
-          productionFileKey={lpo.productionFileKey}
-          manufacturers={manufacturers.map((m) => ({
-            id: m.id,
-            name: m.name,
-          }))}
-          usesBlobStorage={isUsingBlobStorage()}
-        />
+        <LpoDeepLinkFocus action={action} requestId={requestId} />
 
-        <LpoFabricRequirementsSection
-          lpoId={lpo.id}
-          rates={rates}
-          requirements={requirements}
+        <Tabs
+          key={requestId ?? "initial"}
+          label="LPO sections"
+          tabs={tabs}
+          defaultId={initialTab}
+          syncParam="tab"
         />
       </div>
     </PageContainer>
+  );
+}
+
+function Detail({
+  label,
+  preserveLines,
+  children,
+}: Readonly<{
+  label: string;
+  preserveLines?: boolean;
+  children: React.ReactNode;
+}>) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
+        {label}
+      </dt>
+      <dd
+        className={`mt-1 text-sm text-[var(--foreground)] ${preserveLines ? "whitespace-pre-line" : ""}`}
+      >
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+function GlanceCell({
+  label,
+  value,
+  sub,
+}: Readonly<{ label: string; value: string; sub?: string }>) {
+  return (
+    <div className="bg-[var(--surface)] px-4 py-3">
+      <p className="text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
+        {label}
+      </p>
+      <p className="mt-1 text-[15px] font-bold break-words text-[var(--foreground)]">
+        {value}
+      </p>
+      {sub ? <p className="mt-0.5 text-xs text-[var(--text-muted)]">{sub}</p> : null}
+    </div>
   );
 }

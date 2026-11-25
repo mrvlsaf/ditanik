@@ -3,15 +3,19 @@ import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { LpoDateField } from "@prisma/client";
 
 import { BUSINESS_TIMEZONE } from "@/lib/dates/timezone";
+import {
+  DEFAULT_ASSIGNMENT_DAYS,
+  DEFAULT_CLIENT_DELIVERY_DAYS,
+  DEFAULT_PRODUCTION_DEADLINE_DAYS,
+} from "@/modules/lpo/domain/due-date-defaults";
 
-/** Manufacturer assignment default: received + 2 days. */
-export const DEFAULT_ASSIGNMENT_DAYS = 2;
-
-/** Manufacturer production deadline default: received + 12 days. */
-export const DEFAULT_PRODUCTION_DEADLINE_DAYS = 12;
-
-/** Client delivery default: received + 15 days. */
-export const DEFAULT_CLIENT_DELIVERY_DAYS = 15;
+// The offsets live in a Prisma-free file so the forms can preview the dates in
+// the browser; they are re-exported here so existing imports keep working.
+export {
+  DEFAULT_ASSIGNMENT_DAYS,
+  DEFAULT_CLIENT_DELIVERY_DAYS,
+  DEFAULT_PRODUCTION_DEADLINE_DAYS,
+} from "@/modules/lpo/domain/due-date-defaults";
 
 const MIN_REASON_LENGTH = 10;
 

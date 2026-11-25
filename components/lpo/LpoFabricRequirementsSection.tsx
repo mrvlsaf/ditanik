@@ -37,8 +37,8 @@ export function LpoFabricRequirementsSection({
   return (
     <section className="space-y-4 surface-card p-4 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <h2 className="text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-          Expected fabric requirement
+        <h2 className="text-base font-bold text-[var(--foreground)]">
+          Fabric this order needs
         </h2>
         <p className="text-sm text-zinc-600">
           Total: <span className="font-medium text-zinc-900">{totalExpected} m</span>

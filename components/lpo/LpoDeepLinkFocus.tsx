@@ -33,7 +33,8 @@ export function LpoDeepLinkFocus({
     const el =
       document.getElementById(id) ??
       (action === "complete" ? document.getElementById("lpo-assign") : null);
-    if (!el) {
+    // A section on a tab that is not showing has no size: nothing to scroll to.
+    if (!el || el.getClientRects().length === 0) {
       return;
     }
 
