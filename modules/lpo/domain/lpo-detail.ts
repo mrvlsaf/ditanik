@@ -82,7 +82,10 @@ export type NextStep = {
   body: string;
 };
 
-export function nextStepFor(status: LpoDetailStatus): NextStep {
+export function nextStepFor(status: LpoDetailStatus, urgent = false): NextStep {
+  if (urgent) {
+    return urgentNextStepFor(status);
+  }
   switch (status) {
     case "LPO_RECEIVED":
     case "UNDER_REVIEW":
@@ -98,6 +101,28 @@ export function nextStepFor(status: LpoDetailStatus): NextStep {
     case "CLIENT_DELIVERY_COMPLETED":
       return {
         title: "This order is done. Create the tax invoice",
+        body: "The client has received the goods. Create the tax invoice in the Documents tab, or on the New document page.",
+      };
+  }
+}
+
+/** Urgent LPOs have no deadlines, reminders or required production file. */
+function urgentNextStepFor(status: LpoDetailStatus): NextStep {
+  switch (status) {
+    case "LPO_RECEIVED":
+    case "UNDER_REVIEW":
+      return {
+        title: "Assign a manufacturer",
+        body: "Choose a manufacturer. An urgent LPO has no deadlines, so there is no production date to set and no reminders are sent.",
+      };
+    case "ASSIGNED_TO_MANUFACTURER":
+      return {
+        title: "Mark client delivery completed",
+        body: "When the goods reach your client, mark delivery completed. No production file is needed for an urgent LPO.",
+      };
+    case "CLIENT_DELIVERY_COMPLETED":
+      return {
+        title: "This urgent order is done. Create the tax invoice",
         body: "The client has received the goods. Create the tax invoice in the Documents tab, or on the New document page.",
       };
   }

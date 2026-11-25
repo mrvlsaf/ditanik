@@ -33,6 +33,7 @@ export function LpoAssignmentPanel({
   manufacturerId,
   manufacturerName,
   productionFileKey,
+  isUrgent = false,
   manufacturers,
   usesBlobStorage,
 }: Readonly<{
@@ -41,10 +42,12 @@ export function LpoAssignmentPanel({
   manufacturerId: string | null;
   manufacturerName: string | null;
   productionFileKey: string | null;
+  /** Urgent LPOs may be assigned and delivered without a production PDF. */
+  isUrgent?: boolean;
   manufacturers: ManufacturerOption[];
   usesBlobStorage: boolean;
 }>) {
-  const gate = { status, productionFileKey, manufacturerId };
+  const gate = { status, productionFileKey, manufacturerId, isUrgent };
   const showAssign = canAssignManufacturer(gate);
   const showComplete = canMarkClientDeliveryCompleted(gate);
 
@@ -156,12 +159,17 @@ export function LpoAssignmentPanel({
           <label className="block text-sm">
             <span className="mb-1 block font-medium text-zinc-800">
               Production file (PDF)
+              {isUrgent ? (
+                <span className="ml-1 font-normal text-zinc-500">
+                  (optional for urgent LPOs)
+                </span>
+              ) : null}
             </span>
             <input
               type="file"
               name="productionFile"
               accept="application/pdf,.pdf"
-              required
+              required={!isUrgent}
               className="file-btn"
             />
           </label>

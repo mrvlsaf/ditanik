@@ -26,8 +26,9 @@ export function LpoActionsMenu({
 }: Readonly<{
   lpoId: string;
   lpoNumber: string;
-  fileKey: string;
-  fileName: string;
+  /** Null for an urgent LPO created without the customer's PDF. */
+  fileKey: string | null;
+  fileName: string | null;
   redirectTo?: string;
   /** When false, only Delete stays in the ⋮ menu (detail page shows View/Download inline). */
   includeDocumentActions?: boolean;
@@ -45,7 +46,7 @@ export function LpoActionsMenu({
 
   const items: ActionsMenuItem[] = [];
 
-  if (includeDocumentActions) {
+  if (includeDocumentActions && fileKey && fileName) {
     items.push(
       {
         kind: "button",
@@ -86,7 +87,7 @@ export function LpoActionsMenu({
         trigger={trigger}
       />
       {dialog}
-      {includeDocumentActions && isViewerOpen ? (
+      {includeDocumentActions && fileKey && fileName && isViewerOpen ? (
         <DocumentViewer
           fileUrl={fileUrl(fileKey)}
           title={fileName}

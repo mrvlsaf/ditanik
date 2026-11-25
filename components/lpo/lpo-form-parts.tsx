@@ -400,12 +400,20 @@ export function LineItemsSection({
 }
 
 /** "Dates we will set": the three due dates worked out from the received date. */
-export function DatesPanel({ receivedDate }: Readonly<{ receivedDate: string }>) {
-  const dates = previewDueDates(receivedDate);
+export function DatesPanel({
+  receivedDate,
+  urgent = false,
+}: Readonly<{
+  receivedDate: string;
+  /** Urgent LPOs have no planned dates, so every row reads "Not set". */
+  urgent?: boolean;
+}>) {
+  const dates = urgent ? null : previewDueDates(receivedDate);
+  const fallback = urgent ? "Not set" : "Pick a received date";
   const rows: Array<[string, string]> = [
-    ["Assign a manufacturer by", dates?.assignment ?? "Pick a received date"],
-    ["Production deadline", dates?.productionDeadline ?? "Pick a received date"],
-    ["Client delivery", dates?.clientDelivery ?? "Pick a received date"],
+    ["Assign a manufacturer by", dates?.assignment ?? fallback],
+    ["Production deadline", dates?.productionDeadline ?? fallback],
+    ["Client delivery", dates?.clientDelivery ?? fallback],
   ];
 
   return (

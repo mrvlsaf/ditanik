@@ -96,7 +96,7 @@ export default async function LpoDetailPage({
   const vatAmount = calculateVatAmount(subtotal);
   const grandTotal = calculateGrandTotal(subtotal, vatAmount);
 
-  const nextStep = nextStepFor(lpo.status);
+  const nextStep = nextStepFor(lpo.status, lpo.isUrgent);
   const primaryAction = primaryActionFor(lpo.status);
   const steps = progressSteps(lpo.status);
 
@@ -156,10 +156,16 @@ export default async function LpoDetailPage({
               <p className="mb-2 text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
                 LPO document
               </p>
-              <DocumentActions
-                fileKey={lpo.originalFileKey}
-                fileName={lpo.originalFileName}
-              />
+              {lpo.originalFileKey && lpo.originalFileName ? (
+                <DocumentActions
+                  fileKey={lpo.originalFileKey}
+                  fileName={lpo.originalFileName}
+                />
+              ) : (
+                <p className="text-sm text-[var(--text-muted)]">
+                  No PDF was added (optional for urgent LPOs).
+                </p>
+              )}
             </div>
             {lpo.productionFileKey && lpo.productionFileName ? (
               <div>
@@ -278,15 +284,30 @@ export default async function LpoDetailPage({
     {
       id: "dates",
       label: "Dates",
-      content: (
-        <LpoDatesSection
-          lpoId={lpo.id}
-          manufacturerAssignmentAt={lpo.manufacturerAssignmentAt}
-          productionDeadlineAt={lpo.productionDeadlineAt}
-          clientDeliveryAt={lpo.clientDeliveryAt}
-          dateChanges={lpo.dateChanges}
-        />
-      ),
+      content:
+        !lpo.isUrgent &&
+        lpo.manufacturerAssignmentAt &&
+        lpo.productionDeadlineAt &&
+        lpo.clientDeliveryAt ? (
+          <LpoDatesSection
+            lpoId={lpo.id}
+            manufacturerAssignmentAt={lpo.manufacturerAssignmentAt}
+            productionDeadlineAt={lpo.productionDeadlineAt}
+            clientDeliveryAt={lpo.clientDeliveryAt}
+            dateChanges={lpo.dateChanges}
+          />
+        ) : (
+          <section id="lpo-dates" className="surface-card space-y-2 p-4 sm:p-6">
+            <h2 className="text-base font-bold text-[var(--foreground)]">
+              No dates for urgent LPOs
+            </h2>
+            <p className="max-w-3xl text-sm leading-relaxed text-[var(--text-muted)]">
+              Urgent LPOs are delivered in 1 to 2 days, so they have no assignment date,
+              production deadline or client delivery date. Because there are no dates,
+              nothing becomes overdue and no email or bell reminders are sent.
+            </p>
+          </section>
+        ),
     },
     {
       id: "fabric",
@@ -309,6 +330,7 @@ export default async function LpoDetailPage({
           manufacturerId={lpo.manufacturerId}
           manufacturerName={lpo.manufacturer?.name ?? null}
           productionFileKey={lpo.productionFileKey}
+          isUrgent={lpo.isUrgent}
           manufacturers={manufacturers.map((m) => ({
             id: m.id,
             name: m.name,
@@ -444,6 +466,7 @@ export default async function LpoDetailPage({
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-2.5">
           <LpoStatusBadge status={lpo.status} />
+          {lpo.isUrgent ? <Chip tone="purple">Urgent</Chip> : null}
           <p className="text-sm text-[var(--text-muted)]">
             {lpoStatusDetailLabel(lpo.status)} · Created by {createdByLabel}
           </p>
@@ -467,20 +490,38 @@ export default async function LpoDetailPage({
             label="Manufacturer"
             value={lpo.manufacturer?.name ?? "Not assigned yet"}
             sub={
-              lpo.manufacturer
-                ? `Assigned ${formatCalendarDate(lpo.manufacturerAssignmentAt)}`
-                : `Assign by ${formatCalendarDate(lpo.manufacturerAssignmentAt)}`
+              lpo.isUrgent || !lpo.manufacturerAssignmentAt
+                ? lpo.manufacturer
+                  ? "Assigned"
+                  : "No assignment date"
+                : lpo.manufacturer
+                  ? `Assigned ${formatCalendarDate(lpo.manufacturerAssignmentAt)}`
+                  : `Assign by ${formatCalendarDate(lpo.manufacturerAssignmentAt)}`
             }
           />
           <GlanceCell
             label="Production deadline"
-            value={formatCalendarDate(lpo.productionDeadlineAt)}
-            sub={extensionLabel(lpo.dateChanges, "PRODUCTION_DEADLINE")}
+            value={
+              lpo.productionDeadlineAt
+                ? formatCalendarDate(lpo.productionDeadlineAt)
+                : "None"
+            }
+            sub={
+              lpo.productionDeadlineAt
+                ? extensionLabel(lpo.dateChanges, "PRODUCTION_DEADLINE")
+                : "Urgent LPO"
+            }
           />
           <GlanceCell
             label="Client delivery"
-            value={formatCalendarDate(lpo.clientDeliveryAt)}
-            sub={extensionLabel(lpo.dateChanges, "CLIENT_DELIVERY")}
+            value={
+              lpo.clientDeliveryAt ? formatCalendarDate(lpo.clientDeliveryAt) : "None"
+            }
+            sub={
+              lpo.clientDeliveryAt
+                ? extensionLabel(lpo.dateChanges, "CLIENT_DELIVERY")
+                : "No reminders sent"
+            }
           />
         </section>
 

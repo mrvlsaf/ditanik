@@ -108,13 +108,17 @@ model Lpo {
   clientName                 String    @map("client_name")
   lpoDate                    DateTime  @db.Date @map("lpo_date")
   receivedDate               DateTime  @db.Date @map("received_date")
-  originalFileKey            String    @map("original_file_key")
-  originalFileName           String    @map("original_file_name")
-  originalMimeType           String    @map("original_mime_type")
+  /// Urgent LPOs may be created without the customer's PDF, so the original file is optional.
+  originalFileKey            String?   @map("original_file_key")
+  originalFileName           String?   @map("original_file_name")
+  originalMimeType           String?   @map("original_mime_type")
   status                     LpoStatus @default(LPO_RECEIVED)
-  manufacturerAssignmentAt   DateTime  @map("manufacturer_assignment_at")
-  productionDeadlineAt       DateTime  @map("production_deadline_at")
-  clientDeliveryAt           DateTime  @map("client_delivery_at")
+  /// Urgent LPOs skip the planned dates (and so every reminder); normal LPOs always have all three.
+  manufacturerAssignmentAt   DateTime? @map("manufacturer_assignment_at")
+  productionDeadlineAt       DateTime? @map("production_deadline_at")
+  clientDeliveryAt           DateTime? @map("client_delivery_at")
+  /// Urgent LPO: rushed through without planned dates, reminders or a required PDF.
+  isUrgent                   Boolean   @default(false) @map("is_urgent")
   manufacturerId             String?   @map("manufacturer_id")
   productionFileKey          String?   @map("production_file_key")
   productionFileName         String?   @map("production_file_name")
@@ -150,7 +154,17 @@ model Lpo {
   @@index([productionDeadlineAt])
   @@index([clientDeliveryAt])
   @@index([manufacturerId])
+  @@index([isUrgent])
   @@map("lpos")
+}
+
+/// Single-row counter behind the URGENT_1, URGENT_2 ... LPO numbers. It only
+/// ever goes up, so a number is never reused even if an urgent LPO is removed.
+model UrgentLpoCounter {
+  id        Int @id @default(1)
+  lastValue Int @default(0) @map("last_value")
+
+  @@map("urgent_lpo_counter")
 }
 
 model LpoDateChange {

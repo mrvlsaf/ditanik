@@ -14,6 +14,7 @@ import {
   isReviewPending,
   overdueDedupeKey,
   parseBusinessDayLabel,
+  requireDate,
   pendingDedupeKey,
   titleForType,
   type LpoDueSnapshot,
@@ -44,9 +45,10 @@ function toSnapshot(row: {
   lpoNumber: string;
   nickname: string;
   status: LpoDueSnapshot["status"];
-  manufacturerAssignmentAt: Date;
-  productionDeadlineAt: Date;
-  clientDeliveryAt: Date;
+  manufacturerAssignmentAt: Date | null;
+  productionDeadlineAt: Date | null;
+  clientDeliveryAt: Date | null;
+  isUrgent: boolean;
   manufacturer: { name: string } | null;
 }): LpoDueSnapshot {
   return {
@@ -57,6 +59,7 @@ function toSnapshot(row: {
     manufacturerAssignmentAt: row.manufacturerAssignmentAt,
     productionDeadlineAt: row.productionDeadlineAt,
     clientDeliveryAt: row.clientDeliveryAt,
+    isUrgent: row.isUrgent,
     manufacturerName: row.manufacturer?.name ?? null,
   };
 }
@@ -173,8 +176,11 @@ export async function processDueNotifications(
   let skipped = 0;
   let digestSent = false;
 
+  // Urgent LPOs have no planned dates and never trigger reminders.
   const lpos = await prisma.lpo.findMany({
+    where: { isUrgent: false },
     select: {
+      isUrgent: true,
       id: true,
       lpoNumber: true,
       nickname: true,
@@ -214,7 +220,7 @@ export async function processDueNotifications(
 
     if (isAssignmentOverdue(lpo, now)) {
       const type = NotificationType.ASSIGNMENT_OVERDUE;
-      const dueAt = lpo.manufacturerAssignmentAt;
+      const dueAt = requireDate(lpo.manufacturerAssignmentAt);
       const actionPath = actionPathFor(type, lpo.id, lpo.status);
       const result = await createIfNew({
         type,
@@ -254,7 +260,7 @@ export async function processDueNotifications(
 
     if (isProductionOverdue(lpo, now)) {
       const type = NotificationType.PRODUCTION_OVERDUE;
-      const dueAt = lpo.productionDeadlineAt;
+      const dueAt = requireDate(lpo.productionDeadlineAt);
       const actionPath = actionPathFor(type, lpo.id, lpo.status);
       const result = await createIfNew({
         type,
@@ -294,7 +300,7 @@ export async function processDueNotifications(
 
     if (isClientDeliveryOverdue(lpo, now)) {
       const type = NotificationType.CLIENT_DELIVERY_OVERDUE;
-      const dueAt = lpo.clientDeliveryAt;
+      const dueAt = requireDate(lpo.clientDeliveryAt);
       const actionPath = actionPathFor(type, lpo.id, lpo.status);
       const result = await createIfNew({
         type,

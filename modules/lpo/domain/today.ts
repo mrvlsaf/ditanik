@@ -11,6 +11,7 @@ import {
   isProductionOverdue,
   isReviewPending,
   parseBusinessDayLabel,
+  requireDate,
   type LpoDueSnapshot,
   type NotificationAction,
 } from "@/modules/notification/domain/due-notification-rules";
@@ -107,15 +108,15 @@ export function attentionFor(lpo: TodayLpo, now: Date): AttentionItem | null {
 
   if (isClientDeliveryOverdue(lpo, now)) {
     type = NotificationType.CLIENT_DELIVERY_OVERDUE;
-    dueAt = lpo.clientDeliveryAt;
+    dueAt = requireDate(lpo.clientDeliveryAt);
     reason = `Client delivery date was ${agoLabel(businessDaysBetween(dueAt, now))}`;
   } else if (isProductionOverdue(lpo, now)) {
     type = NotificationType.PRODUCTION_OVERDUE;
-    dueAt = lpo.productionDeadlineAt;
+    dueAt = requireDate(lpo.productionDeadlineAt);
     reason = `Production deadline passed ${agoLabel(businessDaysBetween(dueAt, now))}`;
   } else if (isAssignmentOverdue(lpo, now)) {
     type = NotificationType.ASSIGNMENT_OVERDUE;
-    dueAt = lpo.manufacturerAssignmentAt;
+    dueAt = requireDate(lpo.manufacturerAssignmentAt);
     const days = businessDaysBetween(dueAt, now);
     reason =
       days <= 0
@@ -124,7 +125,7 @@ export function attentionFor(lpo: TodayLpo, now: Date): AttentionItem | null {
   } else if (isReviewPending(lpo)) {
     type = NotificationType.REVIEW_PENDING;
     tone = "amber";
-    dueAt = lpo.manufacturerAssignmentAt;
+    dueAt = requireDate(lpo.manufacturerAssignmentAt);
     reason = "Review pending: not assigned yet";
   } else {
     return null;
@@ -164,25 +165,27 @@ export function upcomingFor(
   now: Date,
   days = UPCOMING_DAYS,
 ): UpcomingItem[] {
-  if (lpo.status === LpoStatus.CLIENT_DELIVERY_COMPLETED) {
+  if (lpo.isUrgent || lpo.status === LpoStatus.CLIENT_DELIVERY_COMPLETED) {
     return [];
   }
   const who = lpo.manufacturerName ?? "Not assigned yet";
   const items: UpcomingItem[] = [];
 
   const candidates: Array<{ kind: UpcomingKind; label: string; at: Date }> = [];
-  if (lpo.status === LpoStatus.ASSIGNED_TO_MANUFACTURER) {
+  if (lpo.status === LpoStatus.ASSIGNED_TO_MANUFACTURER && lpo.productionDeadlineAt) {
     candidates.push({
       kind: "PRODUCTION_DEADLINE",
       label: "Production deadline",
       at: lpo.productionDeadlineAt,
     });
   }
-  candidates.push({
-    kind: "CLIENT_DELIVERY",
-    label: "Client delivery",
-    at: lpo.clientDeliveryAt,
-  });
+  if (lpo.clientDeliveryAt) {
+    candidates.push({
+      kind: "CLIENT_DELIVERY",
+      label: "Client delivery",
+      at: lpo.clientDeliveryAt,
+    });
+  }
 
   for (const candidate of candidates) {
     if (withinWindow(candidate.at, now, days)) {

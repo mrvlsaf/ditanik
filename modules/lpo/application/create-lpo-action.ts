@@ -94,8 +94,10 @@ export async function createLpoAction(
     };
   }
 
+  const isUrgent = readFormString(formData, "isUrgent") === "on";
   const fileValue = readPdfUploadFromForm(formData, "file", "fileRef");
-  if (!fileValue) {
+  // The customer's PDF is only optional for an urgent LPO.
+  if (!fileValue && !isUrgent) {
     return { ok: false, message: "LPO document PDF is required." };
   }
 
@@ -117,11 +119,16 @@ export async function createLpoAction(
       currency: readOptionalFormString(formData, "currency"),
       lineItems,
       file: fileValue,
+      isUrgent,
       createdByUserId: dbUser.id,
     });
 
     revalidatePath("/lpo");
-    return { ok: true, message: "LPO created.", lpoId: created.id };
+    return {
+      ok: true,
+      message: isUrgent ? `Urgent LPO created as ${created.lpoNumber}.` : "LPO created.",
+      lpoId: created.id,
+    };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Could not create LPO.";
     return { ok: false, message };

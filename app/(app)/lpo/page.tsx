@@ -126,10 +126,14 @@ async function LpoDashboard({
                       {lpo.manufacturer?.name ?? "Not assigned"}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {formatBusinessDate(lpo.productionDeadlineAt)}
+                      {lpo.productionDeadlineAt
+                        ? formatBusinessDate(lpo.productionDeadlineAt)
+                        : "No deadline"}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {formatBusinessDate(lpo.clientDeliveryAt)}
+                      {lpo.clientDeliveryAt
+                        ? formatBusinessDate(lpo.clientDeliveryAt)
+                        : "No deadline"}
                     </td>
                     <td className="px-4 py-3">
                       <span className="flex flex-wrap gap-1.5">
@@ -143,6 +147,7 @@ async function LpoDashboard({
                         ) ? (
                           <Chip tone="red">Overdue</Chip>
                         ) : null}
+                        {lpo.isUrgent ? <Chip tone="purple">Urgent</Chip> : null}
                       </span>
                     </td>
                     <td className="px-4 py-3">

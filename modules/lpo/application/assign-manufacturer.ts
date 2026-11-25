@@ -13,7 +13,8 @@ export type AssignManufacturerInput = {
   lpoId: string;
   manufacturerId?: string;
   newManufacturerName?: string;
-  productionFile: File | UploadedFileRef;
+  /** Required for a normal LPO, optional for an urgent one. */
+  productionFile?: File | UploadedFileRef | null;
   actorUserId: string;
 };
 
@@ -32,13 +33,20 @@ export async function assignManufacturerToLpo(input: AssignManufacturerInput) {
     status: lpo.status,
     productionFileKey: lpo.productionFileKey,
     manufacturerId: lpo.manufacturerId,
+    isUrgent: lpo.isUrgent,
   });
 
   if (lpo.productionFileKey) {
     throw new Error("Production file is already attached.");
   }
 
-  const stored = await storePdfUpload(input.productionFile, "lpo-production");
+  if (!input.productionFile && !lpo.isUrgent) {
+    throw new Error("Production file PDF is required.");
+  }
+
+  const stored = input.productionFile
+    ? await storePdfUpload(input.productionFile, "lpo-production")
+    : null;
 
   return prisma.$transaction(async (tx) => {
     let manufacturerId = values.manufacturerId;
@@ -78,9 +86,9 @@ export async function assignManufacturerToLpo(input: AssignManufacturerInput) {
       where: { id: lpo.id },
       data: {
         manufacturerId,
-        productionFileKey: stored.fileKey,
-        productionFileName: stored.fileName,
-        productionMimeType: stored.mimeType,
+        productionFileKey: stored?.fileKey ?? null,
+        productionFileName: stored?.fileName ?? null,
+        productionMimeType: stored?.mimeType ?? null,
         status: LpoStatus.ASSIGNED_TO_MANUFACTURER,
       },
     });
@@ -94,7 +102,7 @@ export async function assignManufacturerToLpo(input: AssignManufacturerInput) {
         payload: {
           manufacturerId,
           manufacturerName: manufacturer.name,
-          productionFileKey: stored.fileKey,
+          productionFileKey: stored?.fileKey ?? null,
         },
       },
     });

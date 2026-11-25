@@ -9,6 +9,7 @@ export const LPO_FILTERS = [
   { key: "with-manufacturers", label: "With manufacturer" },
   { key: "completed", label: "Client delivery completed" },
   { key: "overdue", label: "Overdue" },
+  { key: "urgent", label: "Urgent" },
 ] as const;
 
 export type LpoFilterKey = (typeof LPO_FILTERS)[number]["key"];
@@ -34,6 +35,7 @@ export function parsePage(value: string | string[] | undefined): number {
  * under review.
  */
 export function lpoFilterWhere(filter: LpoFilterKey, now: Date): Prisma.LpoWhereInput {
+  // Urgent LPOs have no planned dates, so none of the date tests below can match them.
   switch (filter) {
     case "all":
       return {};
@@ -43,6 +45,8 @@ export function lpoFilterWhere(filter: LpoFilterKey, now: Date): Prisma.LpoWhere
       return { status: LpoStatus.ASSIGNED_TO_MANUFACTURER };
     case "completed":
       return { status: LpoStatus.CLIENT_DELIVERY_COMPLETED };
+    case "urgent":
+      return { isUrgent: true };
     case "overdue":
       return {
         status: { not: LpoStatus.CLIENT_DELIVERY_COMPLETED },

@@ -32,9 +32,7 @@ export async function assignManufacturerAction(
     "productionFile",
     "productionFileRef",
   );
-  if (!fileValue) {
-    return { ok: false, message: "Production file PDF is required." };
-  }
+  // A missing PDF is only allowed for an urgent LPO; assignManufacturerToLpo checks that.
 
   const manufacturerId = readFormString(formData, "manufacturerId");
   const newManufacturerName = readFormString(formData, "newManufacturerName");

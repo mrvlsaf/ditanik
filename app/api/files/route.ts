@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
     const fileName = lpo
       ? fileKey === lpo.originalFileKey
-        ? lpo.originalFileName
+        ? (lpo.originalFileName ?? stored.fileName)
         : (lpo.productionFileName ?? stored.fileName)
       : (invoice?.invoiceFileName ?? generatedDocumentName ?? stored.fileName);
 

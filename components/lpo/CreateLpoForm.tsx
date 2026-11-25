@@ -67,7 +67,12 @@ function todayInputValue(): string {
 
 export function CreateLpoForm({
   usesBlobStorage,
-}: Readonly<{ usesBlobStorage: boolean }>) {
+  nextUrgentNumber,
+}: Readonly<{
+  usesBlobStorage: boolean;
+  /** The number the next urgent LPO will get, shown read-only while Urgent is on. */
+  nextUrgentNumber: string;
+}>) {
   const today = todayInputValue();
   const emptyFields: FieldValues = {
     lpoNumber: "",
@@ -85,6 +90,7 @@ export function CreateLpoForm({
   };
 
   const [fields, setFields] = useState<FieldValues>(emptyFields);
+  const [isUrgent, setIsUrgent] = useState(false);
   const router = useRouter();
   const [lineItems, setLineItems] = useState<LpoLineItemRow[]>([
     { ...EMPTY_LINE_ITEM_ROW },
@@ -182,7 +188,8 @@ export function CreateLpoForm({
       const extracted = result.data;
       setFields((prev) => ({
         ...prev,
-        lpoNumber: extracted.orderNumber ?? prev.lpoNumber,
+        // An urgent LPO keeps its generated number, so only a normal one takes the PDF's.
+        lpoNumber: isUrgent ? prev.lpoNumber : (extracted.orderNumber ?? prev.lpoNumber),
         clientName: extracted.clientName ?? prev.clientName,
         clientSubEntityName: extracted.clientSubEntityName ?? prev.clientSubEntityName,
         clientTrn: extracted.clientTrn ?? prev.clientTrn,
@@ -226,18 +233,70 @@ export function CreateLpoForm({
 
       <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-5">
         <FormSection step={1} title="The order">
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
-            <FormField label="LPO number" htmlFor="lpo-number">
-              <input
-                id="lpo-number"
-                name="lpoNumber"
-                required
-                value={fields.lpoNumber}
-                onChange={(e) => updateField({ lpoNumber: e.target.value })}
-                className={INPUT_CLASS}
-                placeholder="e.g. 45892"
+          <div
+            className={`flex flex-wrap items-center gap-4 rounded-xl border px-4 py-3.5 ${
+              isUrgent
+                ? "border-[var(--brand)] bg-[var(--brand-muted)]"
+                : "border-[var(--border)] bg-[var(--surface-muted)]"
+            }`}
+          >
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isUrgent}
+              aria-labelledby="lpo-urgent-label"
+              onClick={() => setIsUrgent((value) => !value)}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)] ${
+                isUrgent ? "bg-[var(--brand)]" : "bg-[#b9beb7]"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                  isUrgent ? "translate-x-5" : ""
+                }`}
               />
-            </FormField>
+            </button>
+            <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-0.5">
+              <span id="lpo-urgent-label" className="text-[15px] font-bold">
+                Urgent LPO
+              </span>
+              <span className="text-[13px] leading-snug text-[#4d544d]">
+                For rush orders delivered in 1 to 2 days. The PDF becomes optional, the
+                number is made for you, and there are no deadlines or reminders.
+              </span>
+            </div>
+            {isUrgent ? <input type="hidden" name="isUrgent" value="on" /> : null}
+          </div>
+
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+            {isUrgent ? (
+              <FormField
+                label="LPO number"
+                htmlFor="lpo-number-urgent"
+                tip="Made automatically: URGENT_ and the next number after your existing urgent LPOs. The final number is set when you save."
+                hint="Made for you from your existing urgent LPOs."
+              >
+                <input
+                  id="lpo-number-urgent"
+                  readOnly
+                  value={nextUrgentNumber}
+                  className={`${INPUT_CLASS} bg-[#f3f4f2] font-bold`}
+                />
+              </FormField>
+            ) : (
+              <FormField label="LPO number" htmlFor="lpo-number">
+                <input
+                  id="lpo-number"
+                  name="lpoNumber"
+                  required
+                  value={fields.lpoNumber}
+                  onChange={(e) => updateField({ lpoNumber: e.target.value })}
+                  className={INPUT_CLASS}
+                  placeholder="e.g. 45892"
+                />
+              </FormField>
+            )}
             <FormField
               label="Nickname"
               htmlFor="lpo-nickname"
@@ -274,6 +333,11 @@ export function CreateLpoForm({
                 className="text-[13px] font-semibold text-[#2c322c]"
               >
                 Original LPO (PDF)
+                {isUrgent ? (
+                  <span className="ml-1.5 font-normal text-[#4d544d]">
+                    (optional for urgent LPOs)
+                  </span>
+                ) : null}
               </label>
               <InfoTip label="What does Prefill do?">
                 Reads the PDF in your browser and fills in the number, client, addresses,
@@ -288,7 +352,7 @@ export function CreateLpoForm({
                 type="file"
                 name="file"
                 accept="application/pdf,.pdf"
-                required
+                required={!isUrgent}
                 className="file-btn"
               />
               <button
@@ -330,7 +394,7 @@ export function CreateLpoForm({
       </div>
 
       <aside className="flex min-w-0 flex-[1_1_300px] flex-col gap-4 lg:sticky lg:top-6">
-        <DatesPanel receivedDate={fields.receivedDate} />
+        <DatesPanel receivedDate={fields.receivedDate} urgent={isUrgent} />
 
         <section
           className="surface-card flex flex-col gap-3.5 p-5"
@@ -340,8 +404,9 @@ export function CreateLpoForm({
             Ready to save?
           </h2>
           <p className="text-[13px] leading-snug text-[#4d544d]">
-            The LPO is saved as Under review. Next you will assign a manufacturer and add
-            the fabric it needs.
+            {isUrgent
+              ? "Saved as an urgent LPO, Under review. Assign a manufacturer, then mark delivery completed. No deadlines or reminders."
+              : "The LPO is saved as Under review. Next you will assign a manufacturer and add the fabric it needs."}
           </p>
 
           {uploadError ? (
@@ -363,7 +428,13 @@ export function CreateLpoForm({
             disabled={isPending || isUploadingFile}
             className="btn-primary min-h-11 w-full"
           >
-            {isUploadingFile ? "Uploading…" : isPending ? "Creating…" : "Create LPO"}
+            {isUploadingFile
+              ? "Uploading…"
+              : isPending
+                ? "Creating…"
+                : isUrgent
+                  ? "Create urgent LPO"
+                  : "Create LPO"}
           </button>
         </section>
       </aside>
