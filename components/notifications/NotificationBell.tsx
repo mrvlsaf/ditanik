@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { useNavigateWithLoader } from "@/components/ui/useNavigateWithLoader";
 import { withRequestNonce } from "@/lib/with-request-nonce";
 
 import {
@@ -32,6 +33,7 @@ export function NotificationBell({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const navigate = useNavigateWithLoader();
   const [isPending, startTransition] = useTransition();
   useGlobalPending(isPending);
 
@@ -139,7 +141,7 @@ export function NotificationBell({
                             refresh();
                           });
                         }
-                        router.push(withRequestNonce(item.actionPath), { scroll: false });
+                        navigate(withRequestNonce(item.actionPath), { scroll: false });
                       }}
                       className={`block px-3 py-3 hover:bg-[var(--surface-muted)] ${
                         unread ? "bg-[var(--brand-muted)]/40" : ""

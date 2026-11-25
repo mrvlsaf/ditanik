@@ -8,6 +8,11 @@ import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterChips, type FilterChipItem } from "@/components/ui/FilterChips";
+import {
+  FilterLink,
+  FilterNavigation,
+  PendingRegion,
+} from "@/components/ui/FilterNavigation";
 import { formatBusinessDate, formatCalendarDate } from "@/lib/dates/format";
 import { countLposByFilter, listLposPage } from "@/modules/lpo/application/get-lpo";
 import {
@@ -58,150 +63,156 @@ async function LpoDashboard({
   }));
 
   return (
-    <div className="space-y-4">
-      <FilterChips label="Filter LPOs by status" items={chips} />
+    <FilterNavigation>
+      <div className="space-y-4">
+        <FilterChips label="Filter LPOs by status" items={chips} />
 
-      <section className="surface-card" aria-label="LPO list">
-        {rows.length === 0 ? (
-          <div className="p-5">
-            <EmptyState
-              title="No LPOs here"
-              action={
-                <Link href={lpoListHref("all")} className="btn-secondary">
-                  Show all LPOs
-                </Link>
-              }
-            >
-              No LPO matches this filter right now.
-            </EmptyState>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-bold tracking-wide text-[#4d544d] uppercase">
-                <tr>
-                  <th scope="col" className="px-4 py-3">
-                    LPO
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Client
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Received
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Manufacturer
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Production due
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Client delivery
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Status
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eef0ea]">
-                {rows.map((lpo) => (
-                  <tr key={lpo.id} className="hover:bg-[#fafbf9]">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/lpo/${lpo.id}`}
-                        className="font-bold text-[#2f5639] hover:text-[#1f3d27]"
-                      >
-                        {lpo.nickname}
-                      </Link>
-                      <div className="text-xs text-[#4d544d]">{lpo.lpoNumber}</div>
-                    </td>
-                    <td className="px-4 py-3">{lpo.clientName}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatCalendarDate(lpo.receivedDate)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {lpo.manufacturer?.name ?? "Not assigned"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {lpo.productionDeadlineAt
-                        ? formatBusinessDate(lpo.productionDeadlineAt)
-                        : "No deadline"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {lpo.clientDeliveryAt
-                        ? formatBusinessDate(lpo.clientDeliveryAt)
-                        : "No deadline"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="flex flex-wrap gap-1.5">
-                        <LpoStatusBadge status={lpo.status} />
-                        {isOverdue(
-                          {
-                            ...lpo,
-                            manufacturerName: lpo.manufacturer?.name ?? null,
-                          },
-                          now,
-                        ) ? (
-                          <Chip tone="red">Overdue</Chip>
-                        ) : null}
-                        {lpo.isUrgent ? <Chip tone="purple">Urgent</Chip> : null}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-2">
-                        <Link href={`/lpo/${lpo.id}`} className="btn-secondary">
-                          Open
-                        </Link>
-                        <LpoActionsMenu
-                          lpoId={lpo.id}
-                          lpoNumber={lpo.lpoNumber}
-                          fileKey={lpo.originalFileKey}
-                          fileName={lpo.originalFileName}
-                          trigger="more"
-                        />
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <PendingRegion>
+          <section className="surface-card" aria-label="LPO list">
+            {rows.length === 0 ? (
+              <div className="p-5">
+                <EmptyState
+                  title="No LPOs here"
+                  action={
+                    <FilterLink href={lpoListHref("all")} className="btn-secondary">
+                      Show all LPOs
+                    </FilterLink>
+                  }
+                >
+                  No LPO matches this filter right now.
+                </EmptyState>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-bold tracking-wide text-[#4d544d] uppercase">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">
+                        LPO
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Client
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Received
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Manufacturer
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Production due
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Client delivery
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Status
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#eef0ea]">
+                    {rows.map((lpo) => (
+                      <tr key={lpo.id} className="hover:bg-[#fafbf9]">
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/lpo/${lpo.id}`}
+                            className="font-bold text-[#2f5639] hover:text-[#1f3d27]"
+                          >
+                            {lpo.nickname}
+                          </Link>
+                          <div className="text-xs text-[#4d544d]">{lpo.lpoNumber}</div>
+                        </td>
+                        <td className="px-4 py-3">{lpo.clientName}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {formatCalendarDate(lpo.receivedDate)}
+                        </td>
+                        <td className="px-4 py-3">
+                          {lpo.manufacturer?.name ?? "Not assigned"}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {lpo.productionDeadlineAt
+                            ? formatBusinessDate(lpo.productionDeadlineAt)
+                            : "No deadline"}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {lpo.clientDeliveryAt
+                            ? formatBusinessDate(lpo.clientDeliveryAt)
+                            : "No deadline"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="flex flex-wrap gap-1.5">
+                            <LpoStatusBadge status={lpo.status} />
+                            {isOverdue(
+                              {
+                                ...lpo,
+                                manufacturerName: lpo.manufacturer?.name ?? null,
+                              },
+                              now,
+                            ) ? (
+                              <Chip tone="red">Overdue</Chip>
+                            ) : null}
+                            {lpo.isUrgent ? <Chip tone="purple">Urgent</Chip> : null}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="flex items-center gap-2">
+                            <Link href={`/lpo/${lpo.id}`} className="btn-secondary">
+                              Open
+                            </Link>
+                            <LpoActionsMenu
+                              lpoId={lpo.id}
+                              lpoNumber={lpo.lpoNumber}
+                              fileKey={lpo.originalFileKey}
+                              fileName={lpo.originalFileName}
+                              trigger="more"
+                            />
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3.5 text-[13px] text-[#4d544d]">
-          <p>
-            Showing {window.from}–{window.to} of {total} {total === 1 ? "LPO" : "LPOs"},
-            newest first
-          </p>
-          {window.totalPages > 1 ? (
-            <nav aria-label="Pages" className="flex items-center gap-2">
-              {window.page > 1 ? (
-                <Link
-                  href={lpoListHref(filter, window.page - 1)}
-                  className="btn-secondary"
-                >
-                  Previous
-                </Link>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3.5 text-[13px] text-[#4d544d]">
+              <p>
+                Showing {window.from}–{window.to} of {total}{" "}
+                {total === 1 ? "LPO" : "LPOs"}, newest first
+              </p>
+              {window.totalPages > 1 ? (
+                <nav aria-label="Pages" className="flex items-center gap-2">
+                  {window.page > 1 ? (
+                    <FilterLink
+                      href={lpoListHref(filter, window.page - 1)}
+                      className="btn-secondary"
+                      scroll
+                    >
+                      Previous
+                    </FilterLink>
+                  ) : null}
+                  <span>
+                    Page {window.page} of {window.totalPages}
+                  </span>
+                  {window.page < window.totalPages ? (
+                    <FilterLink
+                      href={lpoListHref(filter, window.page + 1)}
+                      className="btn-secondary"
+                      scroll
+                    >
+                      Next
+                    </FilterLink>
+                  ) : null}
+                </nav>
               ) : null}
-              <span>
-                Page {window.page} of {window.totalPages}
-              </span>
-              {window.page < window.totalPages ? (
-                <Link
-                  href={lpoListHref(filter, window.page + 1)}
-                  className="btn-secondary"
-                >
-                  Next
-                </Link>
-              ) : null}
-            </nav>
-          ) : null}
-        </div>
-      </section>
-    </div>
+            </div>
+          </section>
+        </PendingRegion>
+      </div>
+    </FilterNavigation>
   );
 }
 

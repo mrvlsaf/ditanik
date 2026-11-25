@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useNavigateWithLoader } from "@/components/ui/useNavigateWithLoader";
 import { withRequestNonce } from "@/lib/with-request-nonce";
 import {
   countUnread,
@@ -39,6 +40,7 @@ export function NotificationsList({
   items: NotificationListItem[];
 }>) {
   const router = useRouter();
+  const navigate = useNavigateWithLoader();
   const [isPending, startTransition] = useTransition();
   const [view, setView] = useState<NotificationView>("all");
   useGlobalPending(isPending);
@@ -144,7 +146,7 @@ export function NotificationsList({
                         if (unread) {
                           markRead(item.id);
                         }
-                        router.push(withRequestNonce(item.actionPath), { scroll: false });
+                        navigate(withRequestNonce(item.actionPath), { scroll: false });
                       }}
                       className="btn-primary"
                     >

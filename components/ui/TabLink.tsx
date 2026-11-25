@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
+import { useNavigateWithLoader } from "@/components/ui/useNavigateWithLoader";
 import { withRequestNonce } from "@/lib/with-request-nonce";
 
 /**
@@ -18,7 +18,7 @@ export function TabLink({
   className?: string;
   children: React.ReactNode;
 }>) {
-  const router = useRouter();
+  const navigate = useNavigateWithLoader();
 
   return (
     <Link
@@ -29,7 +29,7 @@ export function TabLink({
           return;
         }
         event.preventDefault();
-        router.push(withRequestNonce(href), { scroll: true });
+        navigate(withRequestNonce(href), { scroll: true });
       }}
     >
       {children}
