@@ -2,29 +2,15 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
 import type { PdfLine, PdfToken } from "@/modules/lpo/infrastructure/pdf-text-extraction";
 
-// Same-origin worker, same reasoning as DocumentViewer.tsx: the app's CSP
-// only allows scripts from 'self', so pdfjs-dist's documented CDN default
-// would get silently blocked. scripts/copy-pdf-worker.mjs keeps this file
-// in sync with whichever pdfjs-dist version is installed.
+// Same-origin worker: the CSP only allows scripts from 'self'.
+// scripts/copy-pdf-worker.mjs keeps this file in sync with the installed pdfjs-dist.
 GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 /**
- * Browser-build mirror of pdf-text-extraction.ts's `extractPdfLines`, for
- * running the "Prefill from this PDF" parse entirely client-side (see
- * CreateLpoForm.tsx's handlePrefillFromPdf) instead of shipping the file to
- * a Server Action just to read it back apart — that round trip served no
- * purpose (nothing is stored during extraction) and cost the same
- * Vercel Serverless Function payload cap every other upload in this app
- * hits on a large file. `extractLpoData` (modules/lpo/domain/lpo-extraction.ts)
- * is a pure function over `PdfLine[]` with no server-only dependencies, so
- * the exact same parser runs unchanged on whichever line-extraction this
- * produces.
- *
- * Kept as a separate module from pdf-text-extraction.ts rather than a
- * shared implementation: that file deliberately uses pdfjs-dist's Node
- * "legacy" build (needs @napi-rs/canvas, no GlobalWorkerOptions), which
- * would drag a large native-dependent module into the client bundle if
- * imported from here.
+ * Browser-build mirror of pdf-text-extraction.ts's `extractPdfLines`, so the
+ * "Prefill from this PDF" parse runs client-side (no upload to a Server Action).
+ * Separate from the Node module because that one needs the native @napi-rs/canvas
+ * build, which must stay out of the client bundle.
  */
 export async function extractPdfLinesInBrowser(file: File): Promise<PdfLine[]> {
   const bytes = new Uint8Array(await file.arrayBuffer());

@@ -27,12 +27,9 @@ import {
 import { listRecentLpos } from "@/modules/lpo/application/get-lpo";
 import { listManufacturers } from "@/modules/manufacturer/application/manufacturers";
 import { isUsingBlobStorage } from "@/modules/files/infrastructure/get-file-storage";
+import { firstParam } from "@/lib/search-params";
 
 const TAB_IDS = ["stock", "receive", "issue", "return", "movements"] as const;
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 async function FabricContent({
   tab,
@@ -330,9 +327,9 @@ export default async function FabricPage({
     >
       <Suspense fallback={<SectionLoading label="Loading stock and movements…" />}>
         <FabricContent
-          tab={firstValue(query.tab) ?? "stock"}
-          batchParam={firstValue(query.batch)}
-          requestId={firstValue(query.r)}
+          tab={firstParam(query.tab) ?? "stock"}
+          batchParam={firstParam(query.batch)}
+          requestId={firstParam(query.r)}
         />
       </Suspense>
     </PageContainer>

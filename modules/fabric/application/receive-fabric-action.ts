@@ -6,16 +6,12 @@ import { auth } from "@/auth";
 import { receiveFabric } from "@/modules/fabric/application/receive-fabric";
 import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import type { ReceiveFabricBatchValues } from "@/modules/fabric/schemas/receive-fabric";
+import { readFormString } from "@/lib/form-data";
 
 export type ReceiveFabricActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 function parseBatchesFromForm(formData: FormData): ReceiveFabricBatchValues[] {
   const batchesJson = readFormString(formData, "batchesJson");

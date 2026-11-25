@@ -11,7 +11,7 @@ export type LpoDetailStatus =
   | "ASSIGNED_TO_MANUFACTURER"
   | "CLIENT_DELIVERY_COMPLETED";
 
-export const LPO_DETAIL_TAB_IDS = [
+const LPO_DETAIL_TAB_IDS = [
   "summary",
   "lines",
   "dates",

@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { INPUT_CLASS } from "@/components/ui/Field";
 import {
   ClientDetailsFields,
   DatesPanel,
   FormField,
   FormSection,
-  INPUT_CLASS,
   LineItemsSection,
   type ClientDetailsValues,
 } from "@/components/lpo/lpo-form-parts";
@@ -33,6 +33,7 @@ import {
   lineItemRowsToJson,
   type LpoLineItemRow,
 } from "@/modules/lpo/domain/line-item-rows";
+import { todayInputValue } from "@/lib/dates/today-input";
 
 const initialState: CreateLpoActionState = {
   ok: false,
@@ -56,14 +57,6 @@ type FieldValues = ClientDetailsValues & {
   nickname: string;
   receivedDate: string;
 };
-
-function todayInputValue(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export function CreateLpoForm({
   usesBlobStorage,
@@ -133,12 +126,7 @@ export function CreateLpoForm({
     setFields((prev) => ({ ...prev, ...patch }));
   }
 
-  // Runs entirely in the browser — this used to POST the file to a
-  // Server Action just to read text back out of it, which both cost an
-  // unnecessary round trip and, for a large PDF, hit the same Vercel
-  // Serverless Function payload cap the other uploads on this form now
-  // route around (see lib/direct-blob-upload.ts). Nothing here is ever
-  // stored, so there was nothing the server actually needed to do.
+  // Runs in the browser: nothing is stored, so no Server Action round trip is needed.
   async function handlePrefillFromPdf() {
     const file = fileInputRef.current?.files?.[0];
     if (!file) {

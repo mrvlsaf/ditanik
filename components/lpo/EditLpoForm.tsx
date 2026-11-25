@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { INPUT_CLASS } from "@/components/ui/Field";
 import {
   ClientDetailsFields,
   FormField,
   FormSection,
-  INPUT_CLASS,
   LineItemsSection,
   type ClientDetailsValues,
 } from "@/components/lpo/lpo-form-parts";
@@ -41,11 +41,9 @@ export type EditLpoFormDefaults = {
 };
 
 /**
- * Edits an LPO's client & commercial details and line items after creation —
- * the LPO number, received date, and original PDF stay fixed (those have
- * their own dedicated flows / are the immutable record of what came in).
- * Documents already generated keep their own frozen snapshot, so saving
- * changes here never rewrites something already sent.
+ * Edits an LPO's client/commercial details and line items after creation. The
+ * LPO number, received date and original PDF stay fixed; generated documents
+ * keep their own frozen snapshot.
  */
 export function EditLpoForm({ defaults }: Readonly<{ defaults: EditLpoFormDefaults }>) {
   const router = useRouter();

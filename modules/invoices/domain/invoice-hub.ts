@@ -7,6 +7,7 @@ import {
   roundMoney,
   vatInsideTotal,
 } from "@/modules/invoices/domain/supplier-invoice-lines";
+import { trimmedParam } from "@/lib/search-params";
 
 /** One row in the Invoices list, whichever kind of invoice it came from. */
 export type InvoiceRow = {
@@ -156,10 +157,6 @@ export type InvoiceFilters = {
   lpo: TaxLpoFilter;
 };
 
-function firstValue(value: string | string[] | undefined): string {
-  return (Array.isArray(value) ? value[0] : value)?.trim() ?? "";
-}
-
 /** Reads ?type=&month=&q=&lpo=; anything unknown becomes "all". */
 export function parseInvoiceFilters(params: {
   type?: string | string[];
@@ -167,13 +164,13 @@ export function parseInvoiceFilters(params: {
   q?: string | string[];
   lpo?: string | string[];
 }): InvoiceFilters {
-  const type = firstValue(params.type);
-  const month = firstValue(params.month);
-  const lpo = firstValue(params.lpo);
+  const type = trimmedParam(params.type);
+  const month = trimmedParam(params.month);
+  const lpo = trimmedParam(params.lpo);
   return {
     type: INVOICE_TYPES.find((t) => t === type) ?? "all",
     month: /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? month : "all",
-    q: firstValue(params.q),
+    q: trimmedParam(params.q),
     lpo: TAX_LPO_FILTERS.find((f) => f.key === lpo)?.key ?? "any",
   };
 }

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { SUPPLIER_INVOICE_TYPES } from "@/modules/invoices/domain/invoice-types";
 
-export const supplierInvoiceLineSchema = z.object({
+const supplierInvoiceLineSchema = z.object({
   description: z.string().trim().min(1, "Add a description to every line."),
   quantity: z.number().positive("Quantity must be more than 0."),
   unitPrice: z.number().min(0, "Unit price cannot be negative."),

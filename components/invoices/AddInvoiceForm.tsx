@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useActionState, useMemo, useRef, useState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
-import { FormField, FormSection, INPUT_CLASS } from "@/components/lpo/lpo-form-parts";
+import { FormField, FormSection } from "@/components/lpo/lpo-form-parts";
+import { CELL_INPUT_CLASS, INPUT_CLASS } from "@/components/ui/Field";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { useDirectUploadOnSubmit } from "@/components/ui/useDirectUploadOnSubmit";
 import {
@@ -22,6 +23,8 @@ import {
   DEFAULT_SUPPLIER_VAT_PERCENT,
   previewSupplierInvoice,
 } from "@/modules/invoices/domain/supplier-invoice-lines";
+import { todayInputValue } from "@/lib/dates/today-input";
+import { formatAmount } from "@/lib/format-amount";
 
 const initialState: CreateSupplierInvoiceActionState = { ok: false, message: null };
 
@@ -38,19 +41,6 @@ const EMPTY_LINE: LineRow = {
   unitPrice: "",
   vatPercent: String(DEFAULT_SUPPLIER_VAT_PERCENT),
 };
-
-const CELL_CLASS =
-  "min-h-10 w-full rounded-[10px] border border-[#8b928b] bg-white px-2.5 text-sm text-[var(--foreground)]";
-
-const money = (value: number) =>
-  value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-function todayInputValue(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
 
 export function AddInvoiceForm({
   initialType,
@@ -239,7 +229,7 @@ export function AddInvoiceForm({
                         onChange={(e) =>
                           updateLine(index, { description: e.target.value })
                         }
-                        className={`${CELL_CLASS} min-w-52`}
+                        className={`${CELL_INPUT_CLASS} min-w-52`}
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -251,7 +241,7 @@ export function AddInvoiceForm({
                         aria-label={`Quantity, line ${index + 1}`}
                         value={row.quantity}
                         onChange={(e) => updateLine(index, { quantity: e.target.value })}
-                        className={`${CELL_CLASS} w-24 text-right`}
+                        className={`${CELL_INPUT_CLASS} w-24 text-right`}
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -263,7 +253,7 @@ export function AddInvoiceForm({
                         aria-label={`Unit price, line ${index + 1}`}
                         value={row.unitPrice}
                         onChange={(e) => updateLine(index, { unitPrice: e.target.value })}
-                        className={`${CELL_CLASS} w-28 text-right`}
+                        className={`${CELL_INPUT_CLASS} w-28 text-right`}
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -277,12 +267,12 @@ export function AddInvoiceForm({
                         onChange={(e) =>
                           updateLine(index, { vatPercent: e.target.value })
                         }
-                        className={`${CELL_CLASS} w-20 text-right`}
+                        className={`${CELL_INPUT_CLASS} w-20 text-right`}
                       />
                     </td>
                     <td className="px-3 py-2 text-right font-medium whitespace-nowrap">
                       {preview.lineAmounts[index] != null
-                        ? money(preview.lineAmounts[index]!)
+                        ? formatAmount(preview.lineAmounts[index]!)
                         : "—"}
                     </td>
                     <td className="px-3 py-2 pr-5">
@@ -338,15 +328,15 @@ export function AddInvoiceForm({
             </div>
             <div className="flex justify-between gap-3 border-t border-[#eef0ea] pt-2.5">
               <dt className="text-[#4d544d]">Subtotal</dt>
-              <dd>{money(preview.subtotal)}</dd>
+              <dd>{formatAmount(preview.subtotal)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-[#4d544d]">VAT</dt>
-              <dd>{money(preview.vatAmount)}</dd>
+              <dd>{formatAmount(preview.vatAmount)}</dd>
             </div>
             <div className="flex justify-between gap-3 text-base font-bold">
               <dt>Total (AED)</dt>
-              <dd>{money(preview.total)}</dd>
+              <dd>{formatAmount(preview.total)}</dd>
             </div>
           </dl>
 

@@ -1,24 +1,11 @@
 import type { PdfLine } from "@/modules/lpo/infrastructure/pdf-text-extraction";
 
 /**
- * Rule-based prefill parser for the client LPO PDF format Ishraq
- * Hospitality's procurement system emits. This is deliberately NOT a general
- * PDF-understanding engine: it matches fixed labels ("Order Number", "Order
- * date", "Invoice address", "Delivery address", ...) and reads the line-item
- * table's columns from each document's own content rather than a fixed
- * layout, calibrated against two real sample LPOs
- * (tests/fixtures/johnlpo-sample.pdf, plus a second real order with an extra
- * "Order unit" conversion column that shifted every column to its right).
- * Every field is best-effort and independently optional — a miss on one
- * field never blocks or corrupts another, and nothing here writes to the
- * database. The caller always lands the result in the reviewable Create LPO
- * form; the person filling it out is the last line of defense against a
- * parsing mistake, never this module.
- *
- * The line-item table is still the part most likely to need attention
- * against a new client's LPO layout — see the block comment above
- * `extractLineItems` for how its column detection works and what shifted it
- * away from fixed pixel bands.
+ * Rule-based prefill parser for the client LPO PDF format (Ishraq Hospitality's
+ * procurement system). Not a general PDF reader: it matches fixed labels and
+ * reads the item table's columns from each document's own content.
+ * Every field is best-effort and independent; nothing is written to the
+ * database. The result always lands in the reviewable Create LPO form.
  */
 
 export type ExtractedLpoLineItem = {
@@ -60,18 +47,11 @@ function isPlaceholder(value: string): boolean {
 }
 
 /**
- * Finds `label` as a case-insensitive prefix of some token on some line (the
- * source PDF paints each label as a single text run, sometimes glued
- * directly to its value in the same run) and returns everything after it:
- * whatever's left in that token once the label prefix is stripped, plus any
- * further tokens on the same line — and, when the nearest line below it on
- * the same page starts at roughly the value's own x position (a wrapped
- * value, like the order number's "#034555" continuation) rather than back at
- * the label column, that line's text too. The nearest-below search (rather
- * than just `lines[index + 1]`) matters because this document's label/value
- * pairs sit in a right-hand column that doesn't line up 1:1 with the left
- * column's lines — the very next line in reading order often belongs to the
- * *other* column, not this field's continuation.
+ * Finds `label` as a case-insensitive prefix of a token and returns the rest of
+ * that token, the remaining tokens on the line, and — when the nearest line
+ * below starts at about the value's x position (a wrapped value) — that line too.
+ * The nearest-below search is needed because label/value pairs sit in a right
+ * column that does not line up line-for-line with the left one.
  */
 function extractLabelValue(lines: PdfLine[], label: string): string | null {
   const needle = label.trim().toLowerCase();
@@ -151,11 +131,8 @@ function normalizeCurrency(raw: string | null): string | null {
 type AddressColumn = { headerX: number; lines: PdfLine[] };
 
 /**
- * Locates the side-by-side "Invoice address" / "Delivery address" blocks and
- * splits every line between the header row and the item table into a left
- * column (invoice) and right column (delivery) by x-position — the two
- * blocks are printed as parallel columns, not sequential text, so a plain
- * top-to-bottom read would interleave them.
+ * Splits the side-by-side "Invoice address" / "Delivery address" blocks into
+ * left and right columns by x-position (a top-to-bottom read would interleave them).
  */
 function extractAddressColumns(
   lines: PdfLine[],
@@ -259,35 +236,19 @@ function parseDeliveryColumn(
 ): string | null {
   const texts = column.lines.map(lineText).filter(Boolean);
   if (texts.length === 0) return null;
-  // Drop the leading entity-name line when it repeats the invoice block's —
-  // the address itself starts on the next line either way.
+  // Drop the leading entity-name line when it repeats the invoice block's.
   const addressLines = clientName && texts[0] === clientName ? texts.slice(1) : texts;
   return addressLines.length > 0 ? addressLines.join("\n") : null;
 }
 
-// Line-item table column detection, calibrated against
-// tests/fixtures/johnlpo-sample.pdf (an Ishraq Hospitality-issued PO) and a
-// second real client LPO with an extra "Order unit" conversion column
-// between "Article no." and "Price" — different LPOs from the same source
-// system print a different number of columns there, which shifts the
-// price/quantity columns sideways, so fixed pixel bands for those drift and
-// silently drop every line item on a differently-laid-out LPO. Detection
-// here instead reads each row's own content:
-//   - a new item starts at a line whose leftmost token is a bare position
-//     number (tokens within a line are already sorted left-to-right);
-//   - the description column's left edge is read off the first item's row
-//     (the token right after its position number) rather than assumed, so it
-//     tracks whatever this document's actual layout is;
-//   - the article number is whichever token looks like "(NN-NNNNNN)" or
-//     "NN-NNNNNN", found anywhere in the item's row group, and its
-//     x-position is the description column's right edge for that item;
-//   - price and quantity are told apart by number format, not position:
-//     quantity is the one column consistently printed with exactly 3 decimal
-//     places (e.g. "33.000"), while price and the running total both use 2
-//     (e.g. "90.00", "2'970.00") — telling those two apart uses their order
-//     relative to quantity (price sits just left of it) rather than an
-//     absolute column position, since how many extra columns a template
-//     prints in between varies.
+// Item table column detection reads each row's own content, because the number
+// of columns varies between LPOs from the same system (fixed pixel bands dropped items):
+//   - a new item starts at a line whose leftmost token is a bare position number;
+//   - the description's left edge is the token after the first item's position number;
+//   - the article number looks like "(NN-NNNNNN)" or "NN-NNNNNN" and its x-position
+//     is the description's right edge;
+//   - quantity has exactly 3 decimals; price and running total have 2, and price is
+//     the number just left of the quantity.
 const POSITION_PATTERN = /^\d{1,3}$/;
 const ARTICLE_NO_PATTERN = /^\(?\d{1,4}-\d{3,}\)?$/;
 const QUANTITY_PATTERN = /^\d[\d,']*\.\d{3}$/;
@@ -321,8 +282,7 @@ function extractLineItems(lines: PdfLine[]): ExtractedLpoLineItem[] {
     }
   });
 
-  // The description column's left edge, read off the first item's row rather
-  // than hard-coded — see the block comment above.
+  // The description column's left edge comes from the first item's row.
   const [firstStartIndex] = startIndices;
   const referenceRow =
     firstStartIndex !== undefined ? tableLines[firstStartIndex] : undefined;
@@ -351,9 +311,7 @@ function extractLineItems(lines: PdfLine[]): ExtractedLpoLineItem[] {
     );
     const description = descriptionParts.join(" ").replace(/\s+/g, " ").trim();
 
-    // Quantity is the one number column consistently printed with exactly 3
-    // decimal places; price and the running total both use 2, and are told
-    // apart by which side of the quantity column they land on.
+    // Quantity has exactly 3 decimals; price and running total have 2.
     const quantityToken = firstLine.tokens.find((t) =>
       QUANTITY_PATTERN.test(t.text.trim()),
     );
@@ -422,12 +380,8 @@ export function extractLpoData(lines: PdfLine[]): ExtractedLpoData {
   };
 }
 /**
- * How many of `data`'s fields the parser actually managed to fill in — used
- * to decide whether a PDF was recognizable at all (see handlePrefillFromPdf
- * in CreateLpoForm.tsx, which runs this parser entirely client-side: this
- * used to live in a Server Action, but shipping the file to the server just
- * to read it back apart served no purpose, since nothing here is ever
- * stored during extraction).
+ * How many of `data`'s fields the parser filled in; decides whether a PDF was
+ * recognizable (see handlePrefillFromPdf in CreateLpoForm.tsx, which runs client-side).
  */
 export function countFilledFields(data: ExtractedLpoData): number {
   const headerFields = [

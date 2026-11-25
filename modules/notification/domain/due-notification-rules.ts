@@ -41,14 +41,9 @@ export function actionPathFor(
 }
 
 /**
- * A client-delivery date can lapse before the LPO has even been assigned to
- * a manufacturer (e.g. it's been stuck Under Review). "Mark client delivery
- * completed" only exists once assigned — see canMarkClientDeliveryCompleted
- * in lpo-status.ts — so CLIENT_DELIVERY_OVERDUE must route to "assign"
- * (the real blocking step) in that case. Routing it to "complete"
- * regardless of status used to send people to a deep link with no matching
- * section on the page; LpoDeepLinkFocus's fallback then silently landed
- * them on the assignment panel with no explanation of why.
+ * A client-delivery date can lapse before the LPO is assigned. "Mark client
+ * delivery completed" only exists once assigned (canMarkClientDeliveryCompleted),
+ * so CLIENT_DELIVERY_OVERDUE routes to "assign" in that case.
  */
 export function actionForType(
   type: NotificationType,

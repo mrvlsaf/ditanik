@@ -17,28 +17,14 @@ type GlobalLoadingControls = {
 const GlobalLoadingContext = createContext<GlobalLoadingControls | null>(null);
 
 /**
- * App-wide "something is loading" overlay. Mounted once in the root layout,
- * it renders a full-page spinner that blocks every other click while any
- * async button action (a form submit, a "Prefill from this PDF"-style
- * button, ...) is in flight, so a person can't fire a second action on top
- * of one that's still running.
- *
- * Nothing calls `show`/`hide` directly — call `useGlobalPending(isPending)`
- * from wherever a component already tracks its own pending flag
- * (useTransition, useActionState, or a plain useState loading flag all
- * expose one), and this provider does the counting and rendering.
- *
- * A confirm-delete flow (`useConfirmDelete`) is deliberately NOT wired into
- * this: its `ConfirmDialog` already renders its own full-viewport backdrop
- * that blocks the rest of the page and shows its own "Working…" state while
- * pending, so layering this overlay on top of it would just hide that
- * dialog behind a second, redundant spinner.
+ * App-wide loading overlay, mounted once in the root layout. While any async
+ * action is pending it shows a full-page spinner that blocks clicks.
+ * Components call `useGlobalPending(isPending)`; the provider does the counting.
+ * `useConfirmDelete` is not wired in: its ConfirmDialog has its own backdrop
+ * and "Working…" state.
  */
 export function GlobalLoadingProvider({ children }: { children: React.ReactNode }) {
-  // A count, not a boolean: more than one pending flag can be true at the
-  // same time (e.g. a form's own isPending plus another component further
-  // up the tree), and the overlay must stay up until all of them clear,
-  // not just whichever one changes last.
+  // A count, not a boolean: the overlay stays up until every pending flag clears.
   const [count, setCount] = useState(0);
 
   const show = useCallback(() => setCount((c) => c + 1), []);
@@ -58,9 +44,7 @@ function GlobalLoadingOverlay() {
       role="alert"
       aria-busy="true"
       aria-live="assertive"
-      // fixed + inset-0 + this being the last element painted already
-      // intercepts every pointer event aimed at whatever is behind it; no
-      // click handler is needed to "block" clicks.
+      // fixed + inset-0 + last painted already blocks pointer events.
       className="fixed inset-0 z-[200] flex items-center justify-center bg-white/60"
     >
       <span
@@ -82,14 +66,7 @@ function useGlobalLoadingControls(): GlobalLoadingControls {
   return ctx;
 }
 
-/**
- * Wires an existing pending/loading flag up to the app-wide full-page
- * spinner. Drop this one line into any component that already has an
- * `isPending`-shaped flag — no need to change how that flag is produced, or
- * how the button itself renders its own "Saving…" label/disabled state:
- * both should stay exactly as they are for the per-button feedback, this
- * just adds the page-wide block on top.
- */
+/** Wires an existing pending flag (useTransition, useActionState, useState) to the overlay. */
 export function useGlobalPending(isPending: boolean) {
   const { show, hide } = useGlobalLoadingControls();
   const shownRef = useRef(false);
@@ -104,9 +81,7 @@ export function useGlobalPending(isPending: boolean) {
     }
   }, [isPending, show, hide]);
 
-  // If the component unmounts while still pending (e.g. navigation away
-  // mid-submit), release its count instead of leaving the overlay stuck on
-  // forever.
+  // Release this component's count if it unmounts while pending.
   useEffect(() => {
     return () => {
       if (shownRef.current) {
@@ -114,9 +89,7 @@ export function useGlobalPending(isPending: boolean) {
         hide();
       }
     };
-    // Intentionally runs only on mount/unmount: this cleanup must always
-    // reference the latest hide, but must not re-run on every isPending
-    // change like the effect above does.
+    // Runs only on unmount; must use the latest hide.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

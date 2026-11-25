@@ -10,20 +10,16 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the Quotation template (the client's approved "QUOTATION" format):
- * logo + company block, DATE / QUOTE# / VALIDITY# box, CUSTOMER block, line
- * items (NO. / CATEGORY / DESCRIPTION / QUANTITY / AMOUNT PER UNIT / TOTAL
- * AMOUNT), yellow SUB TOTAL / VAT / GRAND TOTAL rows, the numbered TERMS AND
- * CONDITIONS box and the footer. The line-item table and the terms box both
- * grow/shrink to fit; everything below them shifts along.
+ * Fills the client's approved QUOTATION template: header, customer block, item
+ * table, totals, numbered terms box and footer. The item table and terms box
+ * grow or shrink to fit; everything below shifts.
  */
 
 const TEMPLATE_ROW = 18; // the template's two sample line-item rows (18-19).
 const TEMPLATE_ROW_COUNT = 2;
 
 const TERMS_TEMPLATE_ROW_COUNT = 1; // the template ships with a single term row; it is grown to fit.
-// Terms header sits 4 rows below the first totals row (SUB TOTAL); the first
-// term one row after that — fixed offsets regardless of the item count.
+// Terms header is 4 rows below SUB TOTAL; the first term one row after.
 const TERMS_FIRST_ROW_OFFSET = 5;
 const TERMS_CHARS_PER_LINE = 88; // merged C:F width at the terms font size
 const TERMS_LINE_HEIGHT = 13.5;

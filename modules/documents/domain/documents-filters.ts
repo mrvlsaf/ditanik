@@ -1,3 +1,5 @@
+import { trimmedParam } from "@/lib/search-params";
+
 /**
  * Filters on the Documents list. They live in the address (?type=&source=&q=)
  * so a filtered list survives a refresh and can be shared as a link.
@@ -22,22 +24,18 @@ export type DocumentFilters = {
   q: string;
 };
 
-function firstValue(value: string | string[] | undefined): string {
-  return (Array.isArray(value) ? value[0] : value)?.trim() ?? "";
-}
-
 /** Reads the three filters from the address; anything unknown becomes "All". */
 export function parseDocumentFilters(params: {
   type?: string | string[];
   source?: string | string[];
   q?: string | string[];
 }): DocumentFilters {
-  const type = firstValue(params.type);
-  const source = firstValue(params.source);
+  const type = trimmedParam(params.type);
+  const source = trimmedParam(params.source);
   return {
     type: DOCUMENT_TYPE_FILTERS.some((item) => item.key === type) ? type : "",
     source: DOCUMENT_SOURCE_FILTERS.some((item) => item.key === source) ? source : "",
-    q: firstValue(params.q),
+    q: trimmedParam(params.q),
   };
 }
 

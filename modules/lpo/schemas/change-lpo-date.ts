@@ -25,5 +25,3 @@ export const changeLpoDateSchema = z
       });
     }
   });
-
-export type ChangeLpoDateValues = z.infer<typeof changeLpoDateSchema>;

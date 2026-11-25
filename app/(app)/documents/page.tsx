@@ -22,6 +22,7 @@ import {
   parseDocumentFilters,
 } from "@/modules/documents/domain/documents-filters";
 import { documentTypeLabel } from "@/modules/documents/domain/independent-document";
+import { firstParam } from "@/lib/search-params";
 
 type SearchParams = Promise<{
   type?: string | string[];
@@ -30,10 +31,6 @@ type SearchParams = Promise<{
   tab?: string | string[];
   r?: string | string[];
 }>;
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 async function DocumentsContent({
   searchParams,
@@ -181,13 +178,13 @@ async function DocumentsContent({
 
   return (
     <Tabs
-      key={firstValue(params.r) ?? "initial"}
+      key={firstParam(params.r) ?? "initial"}
       label="Documents sections"
       tabs={[
         { id: "list", label: "All documents", content: list },
         { id: "convert", label: "Convert a file to PDF", content: <ConvertFilePanel /> },
       ]}
-      defaultId={firstValue(params.tab) === "convert" ? "convert" : "list"}
+      defaultId={firstParam(params.tab) === "convert" ? "convert" : "list"}
       syncParam="tab"
     />
   );

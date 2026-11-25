@@ -18,6 +18,7 @@ import {
   receiveFabricAction,
   type ReceiveFabricActionState,
 } from "@/modules/fabric/application/receive-fabric-action";
+import { todayInputValue } from "@/lib/dates/today-input";
 
 const initialState: ReceiveFabricActionState = { ok: false, message: null };
 
@@ -27,11 +28,6 @@ type BatchRow = {
   remarks: string;
   qtyReceived: string;
 };
-
-function todayInputValue(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 export function ReceiveFabricForm({
   usesBlobStorage,

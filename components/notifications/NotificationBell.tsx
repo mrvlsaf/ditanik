@@ -130,12 +130,7 @@ export function NotificationBell({
                     <Link
                       href={item.actionPath}
                       onClick={(event) => {
-                        // Always navigate manually with a fresh nonce, even
-                        // when this notification's actionPath is identical
-                        // to the URL already loaded (e.g. re-clicking the
-                        // same "Client delivery overdue" item twice) —
-                        // otherwise Next.js treats it as a no-op and
-                        // LpoDeepLinkFocus never re-scrolls/re-highlights.
+                        // Navigate with a fresh nonce so re-clicking the same notification still re-focuses (see with-request-nonce.ts).
                         event.preventDefault();
                         setOpen(false);
                         if (unread) {

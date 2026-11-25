@@ -1,10 +1,6 @@
 /**
  * Converts an Office file (xlsx) to PDF via a self-hosted Gotenberg instance
- * (LibreOffice under the hood — Vercel serverless can't run LibreOffice
- * itself). Swappable behind this one function the same way
- * modules/files/infrastructure/get-file-storage.ts swaps storage backends —
- * replace the body to call a paid conversion API instead, without touching
- * any caller.
+ * (LibreOffice; Vercel cannot run it). Swappable by replacing this one function.
  */
 
 export class PdfConversionNotConfiguredError extends Error {
@@ -44,8 +40,7 @@ export async function convertOfficeFileToPdf(
   }
 
   const form = new FormData();
-  // Gotenberg's LibreOffice route picks the converter by the part's filename
-  // extension, so this must keep the real ".xlsx" name, not a generic one.
+  // Gotenberg picks the converter by file extension, so keep the real ".xlsx" name.
   form.append("files", new Blob([new Uint8Array(bytes)]), fileName);
 
   const headers: Record<string, string> = {};

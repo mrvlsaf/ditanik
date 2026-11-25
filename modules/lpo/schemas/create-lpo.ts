@@ -20,5 +20,3 @@ export const createLpoFormSchema = z.object({
   currency: z.string().trim().min(1).default("AED"),
   lineItems: lpoLineItemsSchema,
 });
-
-export type CreateLpoFormValues = z.infer<typeof createLpoFormSchema>;

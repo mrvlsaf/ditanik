@@ -10,5 +10,3 @@ export const createVarianceSchema = z.object({
   lpoId: z.string().trim().min(1).optional(),
   note: z.string().trim().optional(),
 });
-
-export type CreateVarianceValues = z.infer<typeof createVarianceSchema>;

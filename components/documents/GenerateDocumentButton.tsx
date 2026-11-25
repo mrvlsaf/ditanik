@@ -3,6 +3,7 @@
 import { useActionState, type ReactNode } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { fileUrl } from "@/lib/files/file-url";
 
 export type GenerateDocumentActionState = {
   ok: boolean;
@@ -13,11 +14,6 @@ export type GenerateDocumentActionState = {
 };
 
 const initialState: GenerateDocumentActionState = { ok: false, message: null };
-
-function fileDownloadUrl(fileKey: string): string {
-  const params = new URLSearchParams({ key: fileKey, download: "1" });
-  return `/api/files?${params.toString()}`;
-}
 
 type GenerateDocumentButtonProps = Readonly<{
   lpoId: string;
@@ -50,7 +46,7 @@ export function GenerateDocumentButton({
         {isPending ? pendingLabel : label}
       </button>
       {state.ok && state.fileKey ? (
-        <a href={fileDownloadUrl(state.fileKey)} className="btn-secondary">
+        <a href={fileUrl(state.fileKey, true)} className="btn-secondary">
           Download {state.fileName ?? "document.xlsx"}
         </a>
       ) : null}

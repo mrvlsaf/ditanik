@@ -25,6 +25,7 @@ import {
   INVOICE_TYPES,
   INVOICE_TYPE_INFO,
 } from "@/modules/invoices/domain/invoice-types";
+import { formatAmount } from "@/lib/format-amount";
 
 type SearchParams = Promise<{
   type?: string | string[];
@@ -32,9 +33,6 @@ type SearchParams = Promise<{
   q?: string | string[];
   lpo?: string | string[];
 }>;
-
-const aed = (value: number) =>
-  value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 async function InvoicesContent({
   searchParams,
@@ -169,19 +167,19 @@ async function InvoicesContent({
       <StatTileRow label="VAT summary for this list">
         <StatTile
           label="VAT you charged"
-          value={`AED ${aed(vat.charged)}`}
+          value={`AED ${formatAmount(vat.charged)}`}
           sub="On tax invoices in this list"
           tip="The VAT on tax invoices you sent to clients. This is the VAT you collect and pay over."
         />
         <StatTile
           label="VAT you paid"
-          value={`AED ${aed(vat.paid)}`}
+          value={`AED ${formatAmount(vat.paid)}`}
           sub={missingTotalNote ?? "On invoices you received"}
           tip="The VAT on fabric, accessory and manufacturing invoices you received."
         />
         <StatTile
           label="Net VAT"
-          value={`AED ${aed(vat.net)}`}
+          value={`AED ${formatAmount(vat.net)}`}
           sub="Charged minus paid"
           tip="A quick view for the list on screen. Always check it against your VAT return."
         />
@@ -277,10 +275,10 @@ async function InvoicesContent({
                         )}
                       </td>
                       <td className="px-4 py-3 text-right font-semibold whitespace-nowrap">
-                        {row.amount === null ? "—" : aed(row.amount)}
+                        {row.amount === null ? "—" : formatAmount(row.amount)}
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
-                        {row.vat === null ? "—" : aed(row.vat)}
+                        {row.vat === null ? "—" : formatAmount(row.vat)}
                       </td>
                       <td className="px-4 py-3">
                         <InvoiceRowActions

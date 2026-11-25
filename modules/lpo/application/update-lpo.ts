@@ -20,13 +20,9 @@ export type UpdateLpoInput = {
 };
 
 /**
- * Edits an LPO's client/commercial details and line items after creation —
- * real orders change (price renegotiated, quantity adjusted) between when
- * the LPO was entered and when a document actually gets generated off it.
- * Deliberately does NOT touch already-`GeneratedDocument`s: each one froze
- * its own snapshot at generation time, so an edit here never rewrites a
- * document that's already gone out. Line items are fully replaced rather
- * than diffed — simplest correct behavior for "re-enter the corrected list".
+ * Edits an LPO's client/commercial details and line items. Existing
+ * `GeneratedDocument`s are not touched (each froze its own snapshot). Line items
+ * are fully replaced, not diffed.
  */
 export async function updateLpo(input: UpdateLpoInput) {
   const values = editLpoFormSchema.parse({

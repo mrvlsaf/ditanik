@@ -19,10 +19,6 @@ export async function listGeneratedDocumentsForLpo(lpoId: string) {
 
 export const ALL_DOCUMENTS_LIMIT = 200;
 
-/** "lpo": only documents generated from an LPO. "independent": only documents with no LPO. */
-export const DOCUMENT_SOURCES = ["lpo", "independent"] as const;
-export type DocumentSource = (typeof DOCUMENT_SOURCES)[number];
-
 export type ListAllGeneratedDocumentsFilters = {
   type?: string;
   source?: string;

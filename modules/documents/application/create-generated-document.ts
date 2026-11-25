@@ -76,9 +76,7 @@ export type CreateGeneratedDocumentInput = CreateGeneratedDocumentBase &
 
 /**
  * Shared back end of every document generator: numbers the document, fills the
- * Excel template, stores the file and records the GeneratedDocument row with a
- * frozen snapshot. The LPO-bound generators and the independent-document form
- * both go through here, so the two paths can never drift apart.
+ * template, stores the file and records the GeneratedDocument row with a frozen snapshot.
  */
 export async function createGeneratedDocument(input: CreateGeneratedDocumentInput) {
   const companyProfile = await getCompanyProfile();
@@ -94,8 +92,7 @@ export async function createGeneratedDocument(input: CreateGeneratedDocumentInpu
 
   const generatedAt = input.generatedAt ?? new Date();
 
-  // Atomic, race-safe: two people generating a document of the same type at
-  // the same moment still get distinct sequence numbers.
+  // Atomic sequence numbering: concurrent generators still get distinct numbers.
   const documentType = DocumentType[input.type];
   const sequence = await allocateDocumentSequence(documentType, generatedAt);
   const documentNumber = formatDocumentNumber({
@@ -211,8 +208,7 @@ export async function createGeneratedDocument(input: CreateGeneratedDocumentInpu
           addressLine1: companyProfile.addressLine1,
           addressLine2: companyProfile.addressLine2,
         },
-        // LPO-linked: the frozen LPO block, as before. Independent: no LPO —
-        // the typed client details are frozen under `client` instead.
+        // LPO-linked: frozen LPO block. Independent: typed client details under `client`.
         lpo: input.lpo?.snapshot ?? null,
         client: {
           clientName: input.client.clientName,

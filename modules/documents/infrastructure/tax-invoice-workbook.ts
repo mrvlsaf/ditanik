@@ -6,10 +6,8 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the Tax Invoice template. It shares the approved Quotation look (new
- * logo, company block, boxed DATE / TAX INVOICE / LPO REFERENCE fields,
- * CUSTOMER bar, yellow totals, footer) but keeps the invoice's own columns
- * and wording.
+ * Fills the Tax Invoice template: the shared Quotation look with the invoice's own
+ * columns and wording.
  */
 
 const TEMPLATE_ROW = 18; // the template's single sample line-item row.

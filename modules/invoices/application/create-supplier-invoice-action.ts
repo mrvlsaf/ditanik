@@ -6,16 +6,12 @@ import { auth } from "@/auth";
 import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import { createSupplierInvoice } from "@/modules/invoices/application/create-supplier-invoice";
 import { parseSupplierInvoiceType } from "@/modules/invoices/domain/invoice-types";
+import { readFormString } from "@/lib/form-data";
 
 export type CreateSupplierInvoiceActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 function parseLines(formData: FormData) {
   const json = readFormString(formData, "linesJson");

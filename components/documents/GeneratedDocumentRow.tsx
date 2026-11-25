@@ -11,13 +11,9 @@ import {
   convertDocumentToPdfAction,
   type ConvertDocumentToPdfActionState,
 } from "@/modules/documents/application/convert-document-to-pdf-action";
+import { fileUrl } from "@/lib/files/file-url";
 
 const initialState: ConvertDocumentToPdfActionState = { ok: false, message: null };
-
-function fileDownloadUrl(fileKey: string): string {
-  const params = new URLSearchParams({ key: fileKey, download: "1" });
-  return `/api/files?${params.toString()}`;
-}
 
 export type GeneratedDocumentRowData = {
   id: string;
@@ -88,11 +84,11 @@ export function GeneratedDocumentRow({
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <a href={fileDownloadUrl(doc.fileKey)} className="btn-secondary min-h-9">
+          <a href={fileUrl(doc.fileKey, true)} className="btn-secondary min-h-9">
             Download
           </a>
           {pdfFileKey ? (
-            <a href={fileDownloadUrl(pdfFileKey)} className="btn-secondary min-h-9">
+            <a href={fileUrl(pdfFileKey, true)} className="btn-secondary min-h-9">
               Download PDF
             </a>
           ) : (

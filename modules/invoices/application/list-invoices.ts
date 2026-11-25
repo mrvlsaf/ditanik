@@ -10,7 +10,7 @@ import {
 } from "@/modules/invoices/domain/invoice-hub";
 
 /** Most recent rows read from each kind of invoice. The list is filtered in memory. */
-export const INVOICES_PER_KIND_LIMIT = 1000;
+const INVOICES_PER_KIND_LIMIT = 1000;
 
 /** Every invoice of every kind as one list of rows, newest first. */
 export async function listAllInvoices(): Promise<InvoiceRow[]> {

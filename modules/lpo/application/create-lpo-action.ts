@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { createLpo } from "@/modules/lpo/application/create-lpo";
 import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import type { LpoLineItemValues } from "@/modules/lpo/schemas/line-items";
+import { readFormString, readOptionalFormString } from "@/lib/form-data";
 
 export type CreateLpoActionState = {
   ok: boolean;
@@ -14,16 +15,6 @@ export type CreateLpoActionState = {
   /** Set when the LPO was created, so the form can open it. */
   lpoId?: string;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
-
-function readOptionalFormString(formData: FormData, key: string): string | undefined {
-  const value = readFormString(formData, key).trim();
-  return value ? value : undefined;
-}
 
 function parseLineItemsFromForm(formData: FormData): LpoLineItemValues[] {
   const lineItemsJson = readFormString(formData, "lineItemsJson");

@@ -13,5 +13,3 @@ export const assignManufacturerSchema = z.object({
     });
   }
 });
-
-export type AssignManufacturerValues = z.infer<typeof assignManufacturerSchema>;

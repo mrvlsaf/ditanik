@@ -16,11 +16,8 @@ export function LpoDeepLinkFocus({
 }: Readonly<{
   action: NotificationAction | null;
   /**
-   * A per-click nonce (see lib/with-request-nonce.ts) with no meaning of
-   * its own. It's in the dependency array purely so that clicking the same
-   * notification twice in a row — same action, already on this LPO's page
-   * — re-runs this effect and re-scrolls/re-highlights even though `action`
-   * itself didn't change between clicks.
+   * Per-click nonce (lib/with-request-nonce.ts), only in the dependency array so
+   * re-clicking the same notification re-runs the scroll/highlight effect.
    */
   requestId?: string | null;
 }>) {

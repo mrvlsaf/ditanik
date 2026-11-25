@@ -562,7 +562,7 @@ Deep links: `/lpo/{id}?action=assign|dates|complete` via `APP_BASE_URL` (fallbac
 
 **Alternatives:** Put accessory and manufacturing invoices into the fabric invoice table (rejected: it creates stock batches); link them to manufacturers or LPOs (rejected by the client for now); compute fabric VAT from batch prices (there are none).
 
-**Consequences:** The list reads up to 1,000 rows per kind and filters in memory, which is fine for this volume but would need paging later. Tax invoices are not deletable from Invoices (they stay in Documents). Deleting a supplier invoice keeps its PDF in storage. `components/fabric/InvoiceActionsMenu.tsx` and `modules/fabric/application/list-fabric-invoices.ts` are no longer used by any page.
+**Consequences:** The list reads up to 1,000 rows per kind and filters in memory, which is fine for this volume but would need paging later. Tax invoices are not deletable from Invoices (they stay in Documents). Deleting a supplier invoice keeps its PDF in storage. The old fabric-only invoice menu and list were removed as unused.
 
 ---
 

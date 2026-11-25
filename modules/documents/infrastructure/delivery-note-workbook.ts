@@ -6,10 +6,8 @@ import {
 } from "@/modules/documents/infrastructure/workbook-template";
 
 /**
- * Fills the Delivery Note template. It shares the approved Quotation look (new
- * logo, company block, boxed header fields, CUSTOMER bar, yellow totals,
- * footer) but keeps the delivery note's own fields: Delivery Note #, dispatch
- * date, note date/type, LPO reference and a free-text Notes box.
+ * Fills the Delivery Note template: the shared Quotation look with the delivery
+ * note's own fields (number, dispatch date, note date/type, LPO reference, Notes box).
  */
 
 const TEMPLATE_ROW = 18; // the template's single sample line-item row.

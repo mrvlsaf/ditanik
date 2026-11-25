@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const receiveFabricBatchSchema = z.object({
+const receiveFabricBatchSchema = z.object({
   fabricType: z.string().trim().min(1, "Fabric type is required"),
   colour: z.string().trim().min(1, "Colour is required"),
   remarks: z.string().trim().optional(),
@@ -25,4 +25,3 @@ export const receiveFabricSchema = z.object({
 });
 
 export type ReceiveFabricBatchValues = z.infer<typeof receiveFabricBatchSchema>;
-export type ReceiveFabricValues = z.infer<typeof receiveFabricSchema>;

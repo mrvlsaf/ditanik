@@ -6,16 +6,12 @@ import { auth } from "@/auth";
 import { assignManufacturerToLpo } from "@/modules/lpo/application/assign-manufacturer";
 import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import { markClientDeliveryCompleted } from "@/modules/lpo/application/mark-client-delivery";
+import { readFormString } from "@/lib/form-data";
 
 export type LpoMutationActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 export async function assignManufacturerAction(
   lpoId: string,

@@ -8,12 +8,9 @@ import type {
 export type { UploadedFileRef } from "@/modules/files/infrastructure/file-storage";
 
 /**
- * Stores a user-uploaded PDF. `input` is either the raw `File` (the normal
- * path, still how every small upload works) or an `UploadedFileRef` the
- * browser already PUT directly to Blob storage before calling the Server
- * Action (see lib/direct-blob-upload.ts) — used for files too large to fit
- * through the action's own request body without hitting Vercel's
- * non-configurable 4.5MB Serverless Function payload cap.
+ * Stores a user-uploaded PDF. `input` is the raw `File` or an `UploadedFileRef`
+ * the browser already uploaded to Blob (lib/direct-blob-upload.ts; avoids
+ * Vercel's 4.5MB request cap).
  */
 export async function storePdfUpload(
   input: File | UploadedFileRef,
@@ -35,13 +32,9 @@ export async function readStoredFile(fileKey: string) {
 }
 
 /**
- * Reads a PDF upload from a Server Action's FormData — either the raw
- * `File` under `fileField` (small-upload path, form-submitted the normal
- * way) or a JSON-encoded `UploadedFileRef` under `fileRefField` (large-file
- * path: the browser already uploaded it directly to Blob and the form only
- * carries the small reference — see lib/direct-blob-upload.ts). Returns
- * `null` when neither is present so the caller can produce its own "file is
- * required" message.
+ * Reads a PDF from FormData: the raw `File` under `fileField`, or a JSON
+ * `UploadedFileRef` under `fileRefField` (large-file path). Returns `null` when
+ * neither is present.
  */
 export function readPdfUploadFromForm(
   formData: FormData,
@@ -69,7 +62,7 @@ export function readPdfUploadFromForm(
         };
       }
     } catch {
-      // Falls through to null below — treated the same as "no file given".
+      // Treated as "no file given".
     }
   }
 

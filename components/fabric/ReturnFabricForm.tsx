@@ -15,13 +15,9 @@ import {
   returnFabricAction,
   type ReturnFabricActionState,
 } from "@/modules/fabric/application/return-fabric-action";
+import { todayInputValue } from "@/lib/dates/today-input";
 
 const initialState: ReturnFabricActionState = { ok: false, message: null };
-
-function todayInputValue(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 export function ReturnFabricForm({
   batches,

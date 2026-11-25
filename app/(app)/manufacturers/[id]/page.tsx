@@ -21,10 +21,7 @@ import {
   summariseLedgerGlance,
   varianceReasonLabel,
 } from "@/modules/fabric/domain/ledger-glance";
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
+import { firstParam } from "@/lib/search-params";
 
 function LedgerBatchTable({
   batches,
@@ -129,7 +126,7 @@ export default async function ManufacturerDetailPage({
   const glance = summariseLedgerGlance(ledger.lpoSections, ledger.standalone);
 
   const tabIds = ["lpo", "extra", "variances"];
-  const requestedTab = firstValue(query.tab);
+  const requestedTab = firstParam(query.tab);
 
   return (
     <PageContainer
@@ -177,7 +174,7 @@ export default async function ManufacturerDetailPage({
         </StatTileRow>
 
         <Tabs
-          key={firstValue(query.r) ?? "initial"}
+          key={firstParam(query.r) ?? "initial"}
           label="Ledger sections"
           defaultId={requestedTab && tabIds.includes(requestedTab) ? requestedTab : "lpo"}
           syncParam="tab"

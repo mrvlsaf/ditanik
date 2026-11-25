@@ -3,7 +3,7 @@
  * customer's PDF is optional. Their number is generated (URGENT_1, URGENT_2,
  * ...) instead of typed, and counts up on its own.
  */
-export const URGENT_LPO_PREFIX = "URGENT_";
+const URGENT_LPO_PREFIX = "URGENT_";
 
 /** The number given to the nth urgent LPO. */
 export function formatUrgentLpoNumber(n: number): string {

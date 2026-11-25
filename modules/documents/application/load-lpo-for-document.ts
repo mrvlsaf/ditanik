@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/db";
 
 /**
- * Loads an LPO and enforces the "ready to document" rules shared by every
- * LPO-bound generator (site code, invoice address and at least one line item).
- * Returns the typed fields the generators need plus the frozen `lpo` snapshot
- * block stored with each generated document.
+ * Loads an LPO and enforces the "ready to document" rules shared by the LPO-bound
+ * generators (site code, invoice address, at least one line item). Returns the typed
+ * fields plus the frozen `lpo` snapshot block.
  */
 export async function loadLpoForDocument(lpoId: string) {
   const lpo = await prisma.lpo.findUnique({

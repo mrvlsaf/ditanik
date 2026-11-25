@@ -8,18 +8,10 @@ import {
 } from "@/lib/direct-blob-upload";
 
 /**
- * Wraps a `useActionState` form's `onSubmit` so that a large PDF file input
- * is uploaded directly to Blob storage first, and the action receives a
- * small file reference instead of the raw bytes — see
- * DIRECT_UPLOAD_THRESHOLD_BYTES for why (Vercel's non-configurable 4.5MB
- * Serverless Function payload cap, which a Server Action call runs into
- * same as any other function).
- *
- * A small/typical file, or any file when Blob storage isn't the active
- * backend (local dev), is left completely alone: `onSubmit` does nothing
- * and the form's own `action={formAction}` submits it the normal way,
- * unchanged. Only a file over the threshold — and only when
- * `usesBlobStorage` is true — is intercepted.
+ * Wraps a `useActionState` form's `onSubmit`: a PDF over the threshold (and only
+ * when `usesBlobStorage`) is uploaded directly to Blob and the action gets a small
+ * file reference. Anything else is left to the normal `action={formAction}`
+ * (see DIRECT_UPLOAD_THRESHOLD_BYTES).
  */
 export function useDirectUploadOnSubmit({
   formAction,
@@ -48,8 +40,7 @@ export function useDirectUploadOnSubmit({
     const fileValue = new FormData(form).get(fileFieldName);
     const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
     if (!file || !usesBlobStorage || file.size <= DIRECT_UPLOAD_THRESHOLD_BYTES) {
-      // Under the threshold (or nothing selected, or Blob storage isn't
-      // active): let the normal action={formAction} submission proceed.
+      // Small file, no file, or no Blob storage: normal submission.
       return;
     }
 

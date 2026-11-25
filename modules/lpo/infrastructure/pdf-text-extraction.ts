@@ -4,26 +4,13 @@ export type PdfToken = { x: number; text: string };
 export type PdfLine = { page: number; y: number; tokens: PdfToken[] };
 
 /**
- * Extracts every page's text as position-grouped lines — tokens are grouped
- * by their rounded baseline y and sorted left-to-right within a line, which
- * reconstructs the document's visual layout (columns, side-by-side blocks)
- * regardless of the order the PDF's content stream happens to paint them in.
- * This is what `modules/lpo/domain/lpo-extraction.ts`'s rule-based parser
- * reads — column position, not paint order, is what makes a fixed-layout LPO
- * parseable at all.
+ * Extracts every page's text as position-grouped lines (tokens grouped by rounded
+ * baseline y, sorted left-to-right), which rebuilds the visual layout regardless of
+ * paint order. This is what `lpo-extraction.ts` parses.
  *
- * Uses pdfjs-dist's legacy (non-worker) Node build — no `GlobalWorkerOptions`
- * setup needed, unlike `DocumentViewer`'s browser-side worker (see that
- * file's own comment on why its worker script has to be same-origin).
- *
- * `@napi-rs/canvas` is a real dependency (not just pdfjs-dist's optional
- * peer) so this works in a serverless deployment, not only local dev:
- * pdfjs-dist's Node build uses it to polyfill browser-only APIs
- * (DOMMatrix, Path2D, ImageData) that some PDFs exercise even for plain
- * text extraction — e.g. one with embedded images or vector-drawn form
- * fields. Without it, those specific PDFs throw here instead of just
- * degrading, while a simpler text-only PDF can extract fine either way,
- * which is what made this gap easy to miss in testing.
+ * Uses pdfjs-dist's legacy Node build (no worker). `@napi-rs/canvas` is a real
+ * dependency because that build needs it to polyfill DOMMatrix/Path2D/ImageData,
+ * which some PDFs (embedded images, vector form fields) hit even for plain text.
  */
 export async function extractPdfLines(bytes: Buffer): Promise<PdfLine[]> {
   const document = await getDocument({
@@ -58,8 +45,7 @@ export async function extractPdfLines(bytes: Buffer): Promise<PdfLine[]> {
     }
   }
 
-  // Reading order: page, then top-to-bottom (descending y — PDF's y axis
-  // points up) within a page.
+  // Reading order: page, then top-to-bottom (PDF y points up).
   lines.sort((a, b) => (a.page !== b.page ? a.page - b.page : b.y - a.y));
   return lines;
 }

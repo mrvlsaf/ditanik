@@ -58,11 +58,7 @@ export async function receiveFabric(input: ReceiveFabricInput) {
     batches: input.batches,
   });
 
-  // The supplier invoice PDF is optional. When present it is either a raw
-  // upload (validated the normal way) or an UploadedFileRef the browser
-  // already PUT to Blob directly (see lib/direct-blob-upload.ts) —
-  // `storePdfUpload` validates/adopts whichever it is. An empty file input
-  // (size 0) is treated the same as "no file given".
+  // Optional supplier invoice PDF: a raw upload or an UploadedFileRef (`storePdfUpload` handles both). An empty input counts as none.
   const invoiceFile =
     input.invoiceFile instanceof File && input.invoiceFile.size === 0
       ? null

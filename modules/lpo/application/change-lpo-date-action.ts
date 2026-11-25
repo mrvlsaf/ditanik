@@ -5,16 +5,12 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { changeLpoDate } from "@/modules/lpo/application/change-lpo-date";
+import { readFormString } from "@/lib/form-data";
 
 export type ChangeLpoDateActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 export async function changeLpoDateAction(
   lpoId: string,

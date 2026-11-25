@@ -1,11 +1,8 @@
 import { z } from "zod";
 
 /**
- * Deezano's own letterhead/bank details — a single settings row reused as the
- * constant "from" side of every generated Quotation, Invoice and
- * Delivery Note. Everything here is optional at the schema level except
- * legalName, since a partially-filled profile is still useful to save as a
- * draft while the rest of the details are gathered.
+ * Deezano's letterhead/bank details: one settings row used as the "from" side of
+ * every generated document. Only legalName is required, so a partial profile can be saved.
  */
 export const companyProfileSchema = z.object({
   legalName: z.string().trim().min(1, "Legal name is required"),

@@ -6,10 +6,8 @@ import { useRouter } from "next/navigation";
 import { withRequestNonce } from "@/lib/with-request-nonce";
 
 /**
- * A link (styled as a button or plain text) that opens a tab on a page, for
- * example `/fabric?tab=issue`. The nonce makes every click a new address, so
- * the page opens the tab even when the same link was clicked before or the
- * tab was changed by hand in between.
+ * A link that opens a tab on a page (e.g. `/fabric?tab=issue`). The nonce makes
+ * every click a new address, so the tab opens even on a repeat click.
  */
 export function TabLink({
   href,

@@ -26,6 +26,8 @@ import {
   summariseLineItemRows,
   type LpoLineItemRow,
 } from "@/modules/lpo/domain/line-item-rows";
+import { fileUrl } from "@/lib/files/file-url";
+import { formatAmount } from "@/lib/format-amount";
 
 const initialState: GenerateIndependentDocumentActionState = {
   ok: false,
@@ -37,18 +39,6 @@ const DOCUMENT_TYPE_HELP: Record<IndependentDocumentType, string> = {
   TAX_INVOICE: "A request for payment, usually after delivery.",
   DELIVERY_NOTE: "Lists what goes out with the delivery.",
 };
-
-function fileDownloadUrl(fileKey: string): string {
-  const params = new URLSearchParams({ key: fileKey, download: "1" });
-  return `/api/files?${params.toString()}`;
-}
-
-function money(value: number): string {
-  return value.toLocaleString("en-GB", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
 
 function DocumentForm({
   siteCodeSuggestions,
@@ -87,7 +77,7 @@ function DocumentForm({
           document.
         </p>
         <div className="flex flex-wrap gap-3">
-          <a href={fileDownloadUrl(state.fileKey)} className="btn-primary">
+          <a href={fileUrl(state.fileKey, true)} className="btn-primary">
             Download {state.fileName ?? "document.xlsx"}
           </a>
           <Link href="/documents" className="btn-secondary">
@@ -357,7 +347,7 @@ function DocumentForm({
                       />
                     </td>
                     <td className="py-1 pr-3 text-right font-semibold">
-                      {rowTotals[index] != null ? money(rowTotals[index]!) : "—"}
+                      {rowTotals[index] != null ? formatAmount(rowTotals[index]!) : "—"}
                     </td>
                     <td className="py-1 text-right">
                       {lines.length > 1 ? (
@@ -413,15 +403,15 @@ function DocumentForm({
             </div>
             <div className="flex justify-between gap-3 border-t border-[var(--border)] pt-2.5">
               <dt className="text-[var(--text-muted)]">Subtotal</dt>
-              <dd>{money(subtotal)}</dd>
+              <dd>{formatAmount(subtotal)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-[var(--text-muted)]">VAT {DEFAULT_VAT_PERCENT}%</dt>
-              <dd>{money(vatAmount)}</dd>
+              <dd>{formatAmount(vatAmount)}</dd>
             </div>
             <div className="flex justify-between gap-3 text-base font-bold">
               <dt>Total (AED)</dt>
-              <dd>{money(grandTotal)}</dd>
+              <dd>{formatAmount(grandTotal)}</dd>
             </div>
           </dl>
           {!allRowsValid ? (

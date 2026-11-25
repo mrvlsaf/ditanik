@@ -16,13 +16,9 @@ import {
   issueFabricAction,
   type IssueFabricActionState,
 } from "@/modules/fabric/application/issue-fabric-action";
+import { todayInputValue } from "@/lib/dates/today-input";
 
 const initialState: IssueFabricActionState = { ok: false, message: null };
-
-function todayInputValue(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 export function IssueFabricForm({
   batches,

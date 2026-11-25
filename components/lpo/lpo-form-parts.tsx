@@ -1,3 +1,4 @@
+import { CELL_INPUT_CLASS, INPUT_CLASS, TEXTAREA_CLASS } from "@/components/ui/Field";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { DEFAULT_VAT_PERCENT, roundCurrency } from "@/modules/lpo/domain/line-items";
 import {
@@ -6,14 +7,6 @@ import {
   type LpoLineItemRow,
 } from "@/modules/lpo/domain/line-item-rows";
 import { previewDueDates } from "@/modules/lpo/domain/due-date-defaults";
-
-/** Shared input look for the LPO forms. */
-export const INPUT_CLASS =
-  "min-h-11 w-full rounded-[10px] border border-[#8b928b] bg-white px-3 text-sm text-[var(--foreground)]";
-export const TEXTAREA_CLASS =
-  "min-h-22 w-full rounded-[10px] border border-[#8b928b] bg-white px-3 py-2.5 text-sm text-[var(--foreground)]";
-const LINE_INPUT_CLASS =
-  "min-h-10 w-full rounded-[10px] border border-[#8b928b] bg-white px-2.5 text-sm text-[var(--foreground)]";
 
 /** A numbered card: "1 The order", "2 The client", "3 Line items". */
 export function FormSection({
@@ -283,7 +276,7 @@ export function LineItemsSection({
                     aria-label={`Description, line ${index + 1}`}
                     value={row.description}
                     onChange={(e) => updateRow(index, { description: e.target.value })}
-                    className={`${LINE_INPUT_CLASS} min-w-48`}
+                    className={`${CELL_INPUT_CLASS} min-w-48`}
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -291,7 +284,7 @@ export function LineItemsSection({
                     aria-label={`Category, line ${index + 1}`}
                     value={row.category}
                     onChange={(e) => updateRow(index, { category: e.target.value })}
-                    className={`${LINE_INPUT_CLASS} min-w-28`}
+                    className={`${CELL_INPUT_CLASS} min-w-28`}
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -299,7 +292,7 @@ export function LineItemsSection({
                     aria-label={`Article number, line ${index + 1}`}
                     value={row.articleNo}
                     onChange={(e) => updateRow(index, { articleNo: e.target.value })}
-                    className={`${LINE_INPUT_CLASS} w-28`}
+                    className={`${CELL_INPUT_CLASS} w-28`}
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -311,7 +304,7 @@ export function LineItemsSection({
                     aria-label={`Quantity, line ${index + 1}`}
                     value={row.quantity}
                     onChange={(e) => updateRow(index, { quantity: e.target.value })}
-                    className={`${LINE_INPUT_CLASS} w-20 text-right`}
+                    className={`${CELL_INPUT_CLASS} w-20 text-right`}
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -323,7 +316,7 @@ export function LineItemsSection({
                     aria-label={`Unit price, line ${index + 1}`}
                     value={row.unitPrice}
                     onChange={(e) => updateRow(index, { unitPrice: e.target.value })}
-                    className={`${LINE_INPUT_CLASS} w-28 text-right`}
+                    className={`${CELL_INPUT_CLASS} w-28 text-right`}
                   />
                 </td>
                 <td className="px-3 py-2">
@@ -337,7 +330,7 @@ export function LineItemsSection({
                     onChange={(e) =>
                       updateRow(index, { discountPercent: e.target.value })
                     }
-                    className={`${LINE_INPUT_CLASS} w-24 text-right`}
+                    className={`${CELL_INPUT_CLASS} w-24 text-right`}
                   />
                 </td>
                 <td className="px-3 py-2 text-right font-medium whitespace-nowrap">

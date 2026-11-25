@@ -95,10 +95,9 @@ function actionLabelFor(action: NotificationAction): string {
 }
 
 /**
- * The single most pressing thing about an LPO, or null when nothing needs
- * doing today. A passed client delivery date outranks a passed production
- * deadline, which outranks a passed assignment date; a plain "Under review"
- * LPO that is not yet late is listed last.
+ * The most pressing thing about an LPO, or null. Passed client delivery outranks
+ * passed production deadline, which outranks passed assignment date; a plain
+ * "Under review" LPO not yet late is last.
  */
 export function attentionFor(lpo: TodayLpo, now: Date): AttentionItem | null {
   let type: NotificationType;

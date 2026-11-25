@@ -6,21 +6,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { updateLpo } from "@/modules/lpo/application/update-lpo";
 import type { LpoLineItemValues } from "@/modules/lpo/schemas/line-items";
+import { readFormString, readOptionalFormString } from "@/lib/form-data";
 
 export type UpdateLpoActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
-
-function readOptionalFormString(formData: FormData, key: string): string | undefined {
-  const value = readFormString(formData, key).trim();
-  return value ? value : undefined;
-}
 
 function parseLineItemsFromForm(formData: FormData): LpoLineItemValues[] {
   const lineItemsJson = readFormString(formData, "lineItemsJson");

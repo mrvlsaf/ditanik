@@ -1,14 +1,8 @@
 /**
- * Terms & Conditions printed on every Quotation.
- *
- * `DEFAULT_QUOTATION_TERMS` is the standard 16-clause text from the client's
- * approved quotation format. It is used whenever Company Settings →
- * "Default terms & conditions" is blank; when that setting has text, it
- * replaces these defaults (one clause per line).
- *
- * A `**double asterisk**` pair marks bold text inside a clause. A leading
- * "Label:" (everything up to the first colon) is always bolded by the
- * workbook builder, so it does not need markers.
+ * Terms & Conditions printed on every Quotation. `DEFAULT_QUOTATION_TERMS` is the
+ * client's standard 16 clauses, used when Company Settings' default terms are blank
+ * (otherwise one clause per line replaces them). `**text**` marks bold; a leading
+ * "Label:" is always bolded by the workbook builder.
  */
 export const DEFAULT_QUOTATION_TERMS: readonly string[] = [
   "Approved Sample: All uniforms will be manufactured strictly in accordance with the approved sample, specifications, measurements, colours, branding and design confirmed by the client.",

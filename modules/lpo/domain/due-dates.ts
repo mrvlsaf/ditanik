@@ -60,7 +60,7 @@ export function isReceivedDateAllowed(receivedDate: Date, now = new Date()): boo
   return receivedLabel <= todayLabel;
 }
 
-export function isDateChangeReasonValid(reason: string): boolean {
+function isDateChangeReasonValid(reason: string): boolean {
   return reason.trim().length >= MIN_REASON_LENGTH;
 }
 

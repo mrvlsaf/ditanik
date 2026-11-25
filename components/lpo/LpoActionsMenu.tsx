@@ -6,14 +6,7 @@ import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { ActionsMenu, type ActionsMenuItem } from "@/components/ui/ActionsMenu";
 import { useConfirmDelete } from "@/components/ui/useConfirmDelete";
 import { deleteLpoAction } from "@/modules/lpo/application/delete-lpo-action";
-
-function fileUrl(fileKey: string, download = false): string {
-  const params = new URLSearchParams({ key: fileKey });
-  if (download) {
-    params.set("download", "1");
-  }
-  return `/api/files?${params.toString()}`;
-}
+import { fileUrl } from "@/lib/files/file-url";
 
 export function LpoActionsMenu({
   lpoId,

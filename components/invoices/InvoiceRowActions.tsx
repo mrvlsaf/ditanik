@@ -8,14 +8,7 @@ import { useConfirmDelete } from "@/components/ui/useConfirmDelete";
 import { deleteFabricInvoiceAction } from "@/modules/fabric/application/delete-fabric-action";
 import { deleteSupplierInvoiceAction } from "@/modules/invoices/application/delete-supplier-invoice-action";
 import type { InvoiceType } from "@/modules/invoices/domain/invoice-types";
-
-function fileUrl(fileKey: string, download = false): string {
-  const params = new URLSearchParams({ key: fileKey });
-  if (download) {
-    params.set("download", "1");
-  }
-  return `/api/files?${params.toString()}`;
-}
+import { fileUrl } from "@/lib/files/file-url";
 
 const OPEN_LINK: Record<InvoiceType, { label: string; href: string }> = {
   tax: { label: "Open in Documents", href: "/documents" },

@@ -11,17 +11,10 @@ export type UploadedFileRef = {
 };
 
 /**
- * Uploads a PDF straight from the browser to Vercel Blob storage — bypassing
- * this app's own Server Actions for the large binary — and returns a small
- * reference the caller hands to the matching Server Action instead of the
- * raw file. See DIRECT_UPLOAD_THRESHOLD_BYTES for why this exists at all,
- * and app/api/blob-upload/route.ts for the server half of the handshake
- * (`upload()` here calls that route itself to get a scoped token; this
- * function never talks to it directly).
- *
- * Only call this when `isUsingBlobStorage` (threaded down from a Server
- * Component via get-file-storage.ts) is true — local dev's disk-backed
- * storage has no direct-upload endpoint for the browser to PUT to.
+ * Uploads a PDF straight from the browser to Vercel Blob and returns a small
+ * reference for the matching Server Action (see DIRECT_UPLOAD_THRESHOLD_BYTES;
+ * server half is app/api/blob-upload/route.ts). Only call when `isUsingBlobStorage`
+ * is true; local disk storage has no direct-upload endpoint.
  */
 export async function uploadPdfDirectToBlob(
   file: File,
