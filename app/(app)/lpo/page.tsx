@@ -6,15 +6,38 @@ import { SectionLoading } from "@/components/app-shell/SectionLoading";
 import { CreateLpoForm } from "@/components/lpo/CreateLpoForm";
 import { LpoActionsMenu } from "@/components/lpo/LpoActionsMenu";
 import { LpoStatusBadge } from "@/components/lpo/LpoStatusBadge";
+import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
-import { listRecentLpos } from "@/modules/lpo/application/get-lpo";
+import { FilterChips, type FilterChipItem } from "@/components/ui/FilterChips";
+import { formatBusinessDate, formatCalendarDate } from "@/lib/dates/format";
+import { countLposByFilter, listLposPage } from "@/modules/lpo/application/get-lpo";
+import {
+  LPO_FILTERS,
+  lpoListHref,
+  parseLpoFilter,
+  parsePage,
+  type LpoFilterKey,
+} from "@/modules/lpo/domain/lpo-filters";
+import { isOverdue } from "@/modules/lpo/domain/today";
 import { isUsingBlobStorage } from "@/modules/files/infrastructure/get-file-storage";
 
-async function LpoDashboard() {
-  const lpos = await listRecentLpos();
+async function LpoDashboard({
+  filter,
+  requestedPage,
+}: Readonly<{
+  filter: LpoFilterKey;
+  requestedPage: number;
+}>) {
+  const now = new Date();
+  const counts = await countLposByFilter(now);
+  const { rows, total, window } = await listLposPage({
+    filter,
+    page: requestedPage,
+    total: counts[filter],
+    now,
+  });
 
-  if (lpos.length === 0) {
+  if (counts.all === 0) {
     return (
       <EmptyState title="No LPOs yet">
         Create the first one with the form above. It starts as Under review.
@@ -22,72 +45,170 @@ async function LpoDashboard() {
     );
   }
 
+  const chips: FilterChipItem[] = LPO_FILTERS.map((item) => ({
+    label: item.label,
+    href: lpoListHref(item.key),
+    count: counts[item.key],
+    active: item.key === filter,
+  }));
+
   return (
-    <div className="overflow-x-auto surface-card">
-      <table className="min-w-full text-left text-sm">
-        <thead className="border-b border-zinc-200 bg-zinc-50 text-xs font-medium tracking-wide text-zinc-500 uppercase">
-          <tr>
-            <th className="px-3 py-3">LPO</th>
-            <th className="px-3 py-3">Nickname</th>
-            <th className="px-3 py-3">Client</th>
-            <th className="px-3 py-3">Received</th>
-            <th className="px-3 py-3">Manufacturer</th>
-            <th className="px-3 py-3">Production due</th>
-            <th className="px-3 py-3">Client delivery</th>
-            <th className="px-3 py-3">Status</th>
-            <th className="px-3 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100">
-          {lpos.map((lpo) => (
-            <tr key={lpo.id} className="hover:bg-zinc-50">
-              <td className="px-3 py-3">
-                <Link
-                  href={`/lpo/${lpo.id}`}
-                  className="font-medium text-zinc-900 hover:underline"
-                >
-                  {lpo.lpoNumber}
+    <div className="space-y-4">
+      <FilterChips label="Filter LPOs by status" items={chips} />
+
+      <section className="surface-card" aria-label="LPO list">
+        {rows.length === 0 ? (
+          <div className="p-5">
+            <EmptyState
+              title="No LPOs here"
+              action={
+                <Link href={lpoListHref("all")} className="btn-secondary">
+                  Show all LPOs
                 </Link>
-              </td>
-              <td className="px-3 py-3 text-zinc-700">{lpo.nickname}</td>
-              <td className="px-3 py-3 text-zinc-700">{lpo.clientName}</td>
-              <td className="px-3 py-3 text-zinc-700">
-                {formatCalendarDate(lpo.receivedDate)}
-              </td>
-              <td className="px-3 py-3 text-zinc-700">
-                {lpo.manufacturer?.name ?? "Pending"}
-              </td>
-              <td className="px-3 py-3 text-zinc-700">
-                {formatBusinessDateTime(lpo.productionDeadlineAt)}
-              </td>
-              <td className="px-3 py-3 text-zinc-700">
-                {formatBusinessDateTime(lpo.clientDeliveryAt)}
-              </td>
-              <td className="px-3 py-3">
-                <LpoStatusBadge status={lpo.status} />
-              </td>
-              <td className="px-3 py-3 text-right">
-                <LpoActionsMenu
-                  lpoId={lpo.id}
-                  lpoNumber={lpo.lpoNumber}
-                  fileKey={lpo.originalFileKey}
-                  fileName={lpo.originalFileName}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              }
+            >
+              No LPO matches this filter right now.
+            </EmptyState>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-xs font-bold tracking-wide text-[#4d544d] uppercase">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    LPO
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Client
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Received
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Manufacturer
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Production due
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Client delivery
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#eef0ea]">
+                {rows.map((lpo) => (
+                  <tr key={lpo.id} className="hover:bg-[#fafbf9]">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/lpo/${lpo.id}`}
+                        className="font-bold text-[#2f5639] hover:text-[#1f3d27]"
+                      >
+                        {lpo.nickname}
+                      </Link>
+                      <div className="text-xs text-[#4d544d]">{lpo.lpoNumber}</div>
+                    </td>
+                    <td className="px-4 py-3">{lpo.clientName}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {formatCalendarDate(lpo.receivedDate)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {lpo.manufacturer?.name ?? "Not assigned"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {formatBusinessDate(lpo.productionDeadlineAt)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {formatBusinessDate(lpo.clientDeliveryAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="flex flex-wrap gap-1.5">
+                        <LpoStatusBadge status={lpo.status} />
+                        {isOverdue(
+                          {
+                            ...lpo,
+                            manufacturerName: lpo.manufacturer?.name ?? null,
+                          },
+                          now,
+                        ) ? (
+                          <Chip tone="red">Overdue</Chip>
+                        ) : null}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-2">
+                        <Link href={`/lpo/${lpo.id}`} className="btn-secondary">
+                          Open
+                        </Link>
+                        <LpoActionsMenu
+                          lpoId={lpo.id}
+                          lpoNumber={lpo.lpoNumber}
+                          fileKey={lpo.originalFileKey}
+                          fileName={lpo.originalFileName}
+                          trigger="more"
+                        />
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3.5 text-[13px] text-[#4d544d]">
+          <p>
+            Showing {window.from}–{window.to} of {total} {total === 1 ? "LPO" : "LPOs"},
+            newest first
+          </p>
+          {window.totalPages > 1 ? (
+            <nav aria-label="Pages" className="flex items-center gap-2">
+              {window.page > 1 ? (
+                <Link
+                  href={lpoListHref(filter, window.page - 1)}
+                  className="btn-secondary"
+                >
+                  Previous
+                </Link>
+              ) : null}
+              <span>
+                Page {window.page} of {window.totalPages}
+              </span>
+              {window.page < window.totalPages ? (
+                <Link
+                  href={lpoListHref(filter, window.page + 1)}
+                  className="btn-secondary"
+                >
+                  Next
+                </Link>
+              ) : null}
+            </nav>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }
 
-export default function LpoPage() {
+export default async function LpoPage({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ filter?: string; page?: string }>;
+}>) {
+  const params = await searchParams;
+  const filter = parseLpoFilter(params.filter);
+  const requestedPage = parsePage(params.page);
+
   return (
     <PageContainer
-      title="LPO"
-      description="Receive LPOs, track internal review and manufacturer production deadlines, then complete client delivery."
-      info="Every LPO follows the same path: Under review, then Assigned to manufacturer, then Client delivery completed. Dates are worked out from the date received."
+      title="LPOs"
+      description="Every customer order in one list. Open an LPO to assign a manufacturer, extend dates, and create its documents."
+      info="LPO stands for Local Purchase Order: the order your customer sends you. Each LPO moves from Under review, to Assigned to a manufacturer, to Client delivery completed. A red Overdue tag means a planned date has passed. Dates are worked out from the date received."
     >
       <div className="space-y-8">
         <section>
@@ -99,10 +220,10 @@ export default function LpoPage() {
 
         <section>
           <h2 className="mb-3 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
-            Dashboard
+            LPO list
           </h2>
           <Suspense fallback={<SectionLoading label="Loading dashboard…" />}>
-            <LpoDashboard />
+            <LpoDashboard filter={filter} requestedPage={requestedPage} />
           </Suspense>
         </section>
       </div>

@@ -22,6 +22,7 @@ export function LpoActionsMenu({
   fileName,
   redirectTo,
   includeDocumentActions = true,
+  trigger,
 }: Readonly<{
   lpoId: string;
   lpoNumber: string;
@@ -30,6 +31,8 @@ export function LpoActionsMenu({
   redirectTo?: string;
   /** When false, only Delete stays in the ⋮ menu (detail page shows View/Download inline). */
   includeDocumentActions?: boolean;
+  /** "more" shows a text button reading More instead of the three-dot icon. */
+  trigger?: "kebab" | "more";
 }>) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { requestDelete, isPending, dialog } = useConfirmDelete({
@@ -77,7 +80,11 @@ export function LpoActionsMenu({
 
   return (
     <>
-      <ActionsMenu items={items} label={`Actions for LPO ${lpoNumber}`} />
+      <ActionsMenu
+        items={items}
+        label={`Actions for LPO ${lpoNumber}`}
+        trigger={trigger}
+      />
       {dialog}
       {includeDocumentActions && isViewerOpen ? (
         <DocumentViewer

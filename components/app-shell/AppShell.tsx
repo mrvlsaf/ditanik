@@ -104,7 +104,7 @@ function SidebarBrand() {
   return (
     <div className="shrink-0 border-b border-white/10 px-4 py-4">
       <Link
-        href="/lpo"
+        href="/"
         className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-white"
       >
         <PandaMark className="h-9 w-9 shrink-0" title="Ditanik" />

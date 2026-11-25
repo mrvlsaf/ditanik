@@ -10,6 +10,7 @@ import {
 describe("grouped navigation", () => {
   it("groups the menu by purpose", () => {
     expect(APP_NAV_GROUPS.map((group) => group.title)).toEqual([
+      undefined,
       "Orders",
       "Stock",
       "Setup",
@@ -25,6 +26,7 @@ describe("grouped navigation", () => {
   it("keeps every existing page reachable from the menu or the top bar", () => {
     const hrefs = APP_NAV_ITEMS.map((item) => item.href);
     for (const href of [
+      "/",
       "/lpo",
       "/fabric",
       "/invoices",
@@ -49,6 +51,12 @@ describe("grouped navigation", () => {
     expect(activeNavItem("/documents")?.href).toBe("/documents");
     expect(activeNavItem("/documents/new")?.href).toBe("/documents");
     expect(activeNavItem("/documents/convert")?.href).toBe("/documents/convert");
+  });
+
+  it("lights up Today only on the home page", () => {
+    expect(activeNavItem("/")?.href).toBe("/");
+    expect(activeNavItem("/lpo")?.href).toBe("/lpo");
+    expect(navContextForPath("/")?.group).toBeNull();
   });
 
   it("returns nothing for pages outside the menu", () => {

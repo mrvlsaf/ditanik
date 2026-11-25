@@ -14,6 +14,16 @@ export type NavGroup = {
 /** Sidebar / mobile nav, grouped by purpose: Orders, Stock, Setup. */
 export const APP_NAV_GROUPS: readonly NavGroup[] = [
   {
+    // No heading: Today stands on its own above the groups.
+    items: [
+      {
+        href: "/",
+        label: "Today",
+        icon: "M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4M12 8a4 4 0 100 8 4 4 0 000-8z",
+      },
+    ],
+  },
+  {
     title: "Orders",
     items: [
       {
@@ -77,6 +87,10 @@ export const APP_NAV_ITEMS: readonly NavItem[] = APP_NAV_GROUPS.flatMap(
 );
 
 function matchesPath(pathname: string, href: string): boolean {
+  // "/" is the Today page only; every other path starts with "/".
+  if (href === "/") {
+    return pathname === "/";
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
