@@ -54,6 +54,7 @@ describe("buildQuotationWorkbook", () => {
 
   it("fills company header, document number, and customer block", async () => {
     const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("B3").value).toBe(sampleData.companyLegalName);
     expect(sheet.getCell("B4").value).toBe(`TRN:${sampleData.companyTrn}`);
     expect(sheet.getCell("G9").value).toBe(sampleData.documentNumber);
     expect(sheet.getCell("B11").value).toBe(`TRN: ${sampleData.clientTrn}`);
@@ -65,21 +66,82 @@ describe("buildQuotationWorkbook", () => {
     expect(sheet.getCell("B15").value).toBe("AE - 8668 Dubai");
   });
 
+  it("fills DATE and a VALIDITY# of the document date plus 30 days by default", async () => {
+    const sheet = await readBackWorkbook(sampleData);
+    expect(sheet.getCell("F10").value).toBe("VALIDITY#");
+    expect(sheet.getCell("G8").value).toEqual(new Date("2026-07-23T00:00:00.000Z"));
+    expect(sheet.getCell("G10").value).toEqual(new Date("2026-08-22T00:00:00.000Z"));
+  });
+
+  it("uses an explicit validity date when one is given", async () => {
+    const sheet = await readBackWorkbook({
+      ...sampleData,
+      validityDate: new Date("2026-09-01T00:00:00.000Z"),
+    });
+    expect(sheet.getCell("G10").value).toEqual(new Date("2026-09-01T00:00:00.000Z"));
+  });
+
   it("shrinks the template's two sample rows down to one when there's a single line item", async () => {
     const sheet = await readBackWorkbook(sampleData);
     expect(sheet.getCell("B18").value).toBe(1);
     expect(sheet.getCell("C18").value).toBe("SHIRT");
     expect(sheet.getCell("D18").value).toBe("SHIRT MADE IN POLY VISCOSE");
+    expect(sheet.getCell("E18").value).toBe(1);
+    expect(sheet.getCell("F18").value).toBe(95);
+    expect(sheet.getCell("G18").value).toBe(95);
     // totals should now sit at row 19, not 20
     expect(sheet.getCell("G19").value).toBe(95);
     expect(sheet.getCell("G20").value).toBe(4.75);
     expect(sheet.getCell("G21").value).toBe(99.75);
-    expect(sheet.getCell("C24").value).toContain("DEEZANO");
+  });
+
+  it("prints no Terms & Conditions box when none are supplied", async () => {
+    const sheet = await readBackWorkbook(sampleData);
+    for (let row = 20; row <= 30; row += 1) {
+      expect(sheet.getCell(`B${row}`).value).not.toBe("TERMS AND CONDITIONS");
+    }
+    // totals end at row 21; the footer follows four rows later
+    expect(sheet.getCell("B25").value).toBe(
+      "DEEZANO CLOTHING LINE LLC , 971502641611 , info@deezanoae.com",
+    );
+    expect(sheet.getCell("B26").value).toBe(sampleData.companyAddressLine2);
+  });
+
+  it("prints every address line on its own row and shifts the rest down", async () => {
+    const sheet = await readBackWorkbook({
+      ...sampleData,
+      invoiceAddress: "VALCO\nTRN: 100251158812109\nAkal Ibn al noaman\nJeddah\n23514 Makkah\nSaudi Arabia",
+    });
+    // TRN, name, branch, then six address lines = 9 rows (11-19)
+    expect(sheet.getCell("B14").value).toBe("VALCO");
+    expect(sheet.getCell("B15").value).toBe("TRN: 100251158812109");
+    expect(sheet.getCell("B16").value).toBe("Akal Ibn al noaman");
+    expect(sheet.getCell("B17").value).toBe("Jeddah");
+    expect(sheet.getCell("B18").value).toBe("23514 Makkah");
+    expect(sheet.getCell("B19").value).toBe("Saudi Arabia");
+    expect(sheet.getCell("B21").value).toBe("NO.");
+    expect(sheet.getCell("C22").value).toBe("SHIRT");
+  });
+
+  it("uses custom Terms & Conditions (and resizes the box) when supplied", async () => {
+    const sheet = await readBackWorkbook({
+      ...sampleData,
+      termsAndConditions: ["Payment: 100% **upfront**.", "Delivery: Two weeks."],
+    });
+    expect(sheet.getCell("B24").value).toBe(1);
+    expect(sheet.getCell("B25").value).toBe(2);
+    expect(sheet.getCell("B26").value).toBeNull();
+    expect(JSON.stringify(sheet.getCell("C24").value)).toContain("upfront");
+    expect(JSON.stringify(sheet.getCell("C25").value)).toContain("Two weeks");
+    expect(sheet.getCell("B28").value).toBe(
+      "DEEZANO CLOTHING LINE LLC , 971502641611 , info@deezanoae.com",
+    );
   });
 
   it("grows beyond the template's two sample rows for more line items", async () => {
     const fourLineData: QuotationWorkbookData = {
       ...sampleData,
+      termsAndConditions: ["Delivery: Two weeks."],
       lineItems: [
         sampleData.lineItems[0]!,
         { position: 2, category: "PANT", description: "Pant made in Poly viscose", quantity: 1, unitPrice: 75, lineTotal: 75 },
@@ -98,5 +160,8 @@ describe("buildQuotationWorkbook", () => {
     expect(sheet.getCell("G22").value).toBe(380);
     expect(sheet.getCell("G23").value).toBe(19);
     expect(sheet.getCell("G24").value).toBe(399);
+    // Terms box moved down by the three extra rows
+    expect(sheet.getCell("B26").value).toBe("TERMS AND CONDITIONS");
+    expect(sheet.getCell("B27").value).toBe(1);
   });
 });

@@ -5,21 +5,12 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { upsertCompanyProfile } from "@/modules/company/application/company-profile";
+import { readFormString, readOptionalFormString } from "@/lib/form-data";
 
 export type CompanyProfileActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
-
-function readOptionalFormString(formData: FormData, key: string): string | undefined {
-  const value = readFormString(formData, key).trim();
-  return value ? value : undefined;
-}
 
 export async function saveCompanyProfileAction(
   _previous: CompanyProfileActionState,

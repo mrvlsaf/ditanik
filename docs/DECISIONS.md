@@ -481,6 +481,91 @@ Deep links: `/lpo/{id}?action=assign|dates|complete` via `APP_BASE_URL` (fallbac
 
 ---
 
+## D-028 — Supplier invoice PDF optional on fabric receive (supersedes D-014's requirement)
+
+| | |
+|---|---|
+| **Date** | 2026-10-12 |
+| **Status** | accepted |
+
+**Context:** Fabric is sometimes received before the supplier invoice exists; requiring a PDF blocked recording the stock.
+
+**Decision:** The invoice PDF is optional on receive. The invoice record is still created (supplier, reference, date, batches); `invoiceFileKey/FileName/MimeType` are null when no PDF is given. `/invoices` shows such rows with Delete only (no View/Download). The rest of D-014 (filterable, newest-first list) stands.
+
+**Alternatives:** Allow attaching the PDF later on an existing invoice (not built — can be added if needed).
+
+**Consequences:** No migration (columns were already nullable). There is currently no way to attach a PDF to an invoice after the fact.
+
+---
+
+## D-029 — "Quote" removed; Quotation in the client's approved format
+
+| | |
+|---|---|
+| **Date** | 2026-10-12 |
+| **Status** | accepted |
+
+**Context:** The app shipped four document types, treating Quote and Quotation as different documents. The client confirmed they are the same document, and supplied the approved Quotation format (new logo, VALIDITY date, CATEGORY column, 16-clause Terms & Conditions box).
+
+**Decision:** There is one Quotation, no Quote. The `QUOTE` value is removed from the `DocumentType` enum (migration `20261012190000_remove_quote_document_type`, which deletes any existing QUOTE rows and their daily counters), along with the generator, workbook builder, `quote.xlsx` template, button, `QUO` numbering code and tests. The Quotation template/builder now carries the Terms & Conditions box (clauses from Company Settings → default terms, one per line; blank = the standard 16 clauses in `quotation-terms.ts`), a VALIDITY# date (always document date + 30 days), and AMOUNT PER UNIT = price after line discount. Tax Invoice and Delivery Note keep their own fields and wording but use the same look and the new logo. Numbering stays `{SITE}-{TYPE}-{DDMMYYYY}-{NN}`.
+
+**Alternatives:** Keep a hidden QUOTE enum value for old rows (rejected: dead value forever); convert old QUOTE rows to QUOTATION (offered; the client chose to delete them).
+
+**Consequences:** Files already generated as Quotes stay in storage but are no longer referenced by any row. A terms text saved in Company Settings before this change overrides the new standard clauses — clear it to get the new text. Validity days are not configurable.
+
+---
+
+## D-030 — Independent documents (Quotation / Tax Invoice / Delivery Note without an LPO)
+
+| | |
+|---|---|
+| **Date** | 2026-10-13 |
+| **Status** | accepted |
+
+**Context:** Documents could only be generated from an LPO, but the client sometimes needs a Quotation, Tax Invoice or Delivery Note with no LPO behind it (a quotation sent before an order exists, a one-off job).
+
+**Decision:** `generated_documents.lpo_id` becomes nullable (migration `20261013090000_independent_documents`; FK and `ON DELETE RESTRICT` unchanged) and a `client_name` column is added and backfilled from existing snapshots. A new **Documents** page lists every document (LPO-linked and independent) with type and source (linked to an LPO / not linked) filters and search by number / client / LPO number, and **Documents → New document** generates the three types from a typed form: site code (free text with suggestions from earlier codes, no fixed prefix), free-text client details (no client records, no autofill from LPOs), line items with optional discount %. Document date is always today. Numbering is the existing `{SITE}-{TYPE}-{DDMMYYYY}-{NN}` with the same per-type daily counter. All generators now go through one shared `createGeneratedDocument`, so LPO and independent documents cannot diverge. Independent documents store `snapshot.lpo = null` and the typed details under `snapshot.client`.
+
+**Alternatives:** A fixed `GEN` site-code prefix (rejected by the client); autofilling client details from LPOs and a "link to LPO" action (deferred — independent documents stay permanently separate); editing or deleting generated documents (not offered — to correct one, generate a new one).
+
+**Consequences:** The only guard on site codes is letters/digits/hyphens (≤20 chars), so a typo creates a differently-prefixed number; suggestions mitigate it. Independent documents don't appear on any LPO page. Because a document's number is consumed on generation, a corrected re-issue gets a new number.
+
+---
+
+## D-031 — Urgent LPOs
+
+| | |
+|---|---|
+| **Date** | 2026-10-14 |
+| **Status** | accepted |
+
+**Context:** Rush orders are delivered in 1 to 2 days. The normal flow (customer PDF required, three planned dates, review and overdue reminders) does not fit them and would only produce noise.
+
+**Decision:** `lpos.is_urgent` (default false). An urgent LPO is created with the **Urgent LPO** switch on New LPO: the customer's PDF is optional, the number is generated as `URGENT_<n>` from a single-row counter (`urgent_lpo_counter`, one atomic increment inside the create transaction), and the three due dates and the original-file columns are nullable and stay null (migration `20261014090000_urgent_lpo`). No date means nothing can become overdue: the due-date rules return false for urgent or date-less LPOs, the daily job queries `is_urgent = false`, and the Today page skips them. The flow is unchanged otherwise: a manufacturer is still assigned (production PDF optional for urgent LPOs), then client delivery is marked completed. The LPO list gets an **Urgent** filter and an Urgent chip; the Dates tab explains why there are no dates; changing a date on an urgent LPO is refused. The shared `createLpo` still creates normal LPOs exactly as before, and a typed number that looks like `URGENT_<n>` is rejected so it cannot clash with a generated one.
+
+**Alternatives:** Reuse the normal flow with very short dates (rejected: still generates reminders and needs a PDF); a separate table for urgent LPOs (rejected: every list, document and fabric link would need two code paths).
+
+**Consequences:** Every reader of the date and original-file columns must handle null (list, details, notifications, Today, file route were updated). The counter never goes down, so deleting an urgent LPO leaves a gap in the numbers. There is no "add the PDF later" action yet.
+
+---
+
+## D-032 — Invoices hub (four invoice kinds, VAT summary)
+
+| | |
+|---|---|
+| **Date** | 2026-10-15 |
+| **Status** | accepted |
+
+**Context:** The Invoices page only listed fabric supplier invoices. For VAT filing the client needs every invoice in one place: tax invoices they send, and the invoices they receive for fabric, accessories and manufacturing.
+
+**Decision:** `/invoices` now merges three sources into one list: tax invoices (`generated_documents` of type TAX_INVOICE, amounts read from the frozen snapshot), fabric invoices (`fabric_supplier_invoices`, which gain an optional `total_incl_vat`; the VAT part is worked out at 5%), and new **accessory** and **manufacturing** invoices in `supplier_invoices` / `supplier_invoice_lines` (migration `20261015090000_supplier_invoices`). These two are added on **Invoices -> Add invoice** with a free-text supplier, optional reference, date received, a **required** PDF and manual lines (description, quantity, unit price, VAT %, default 5). They are deliberately not linked to an LPO or a manufacturer. The list filters by type, month, search and (tax invoices only) with/without an LPO, and shows VAT charged, VAT paid and net for what is on screen. Amounts are AED and include VAT. Fabric invoices without a total show a dash and are left out of the VAT tiles, which say so. The fabric invoice PDF stays optional.
+
+**Alternatives:** Put accessory and manufacturing invoices into the fabric invoice table (rejected: it creates stock batches); link them to manufacturers or LPOs (rejected by the client for now); compute fabric VAT from batch prices (there are none).
+
+**Consequences:** The list reads up to 1,000 rows per kind and filters in memory, which is fine for this volume but would need paging later. Tax invoices are not deletable from Invoices (they stay in Documents). Deleting a supplier invoice keeps its PDF in storage. The old fabric-only invoice menu and list were removed as unused.
+
+---
+
 ## How to add a new decision
 
 When you change something that would confuse a future reader (library, pattern, product rule, intentional omission), append **D-0XX** with the same sections. Prefer honesty about tradeoffs over marketing the choice.

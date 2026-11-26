@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { Field, FormMessage, INPUT_CLASS } from "@/components/ui/Field";
 
 import {
   createManufacturerAction,
@@ -32,31 +33,29 @@ export function CreateManufacturerForm() {
     <form
       ref={formRef}
       action={formAction}
-      className="flex flex-col gap-3 surface-card p-4 sm:flex-row sm:flex-wrap sm:items-end sm:p-6"
+      aria-labelledby="add-manufacturer"
+      className="surface-card flex flex-wrap items-end gap-4 p-5"
     >
-      <label className="block min-w-0 flex-1 basis-full text-sm sm:basis-0 sm:min-w-[16rem]">
-        <span className="mb-1 block font-medium text-zinc-800">Name</span>
-        <input
-          name="name"
-          required
-          className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
-          placeholder="e.g. XYZ Garments"
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={isPending}
-        className="btn-primary min-h-11 shrink-0"
-      >
+      <div className="flex min-w-[260px] flex-[1_1_300px] flex-col gap-3">
+        <h2 id="add-manufacturer" className="text-[17px] font-bold">
+          Add a manufacturer
+        </h2>
+        <Field label="Name">
+          <input
+            name="name"
+            required
+            className={INPUT_CLASS}
+            placeholder="e.g. XYZ Garments"
+          />
+        </Field>
+      </div>
+      <button type="submit" disabled={isPending} className="btn-primary shrink-0">
         {isPending ? "Saving…" : "Add manufacturer"}
       </button>
       {state.message ? (
-        <p
-          className={`w-full basis-full text-sm ${state.ok ? "text-emerald-700" : "text-red-700"}`}
-          role="status"
-        >
-          {state.message}
-        </p>
+        <div className="w-full">
+          <FormMessage ok={state.ok} message={state.message} />
+        </div>
       ) : null}
     </form>
   );

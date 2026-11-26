@@ -42,7 +42,16 @@ export async function GET(request: Request) {
           select: { fileName: true, fileKey: true, pdfFileName: true, pdfFileKey: true },
         });
 
-  if (!lpo && !invoice && !generatedDocument) {
+  // Accessory and manufacturing invoices added on the Add invoice page.
+  const supplierInvoice =
+    lpo || invoice || generatedDocument
+      ? null
+      : await prisma.supplierInvoice.findFirst({
+          where: { fileKey },
+          select: { fileName: true },
+        });
+
+  if (!lpo && !invoice && !generatedDocument && !supplierInvoice) {
     return new Response("File not found", { status: 404 });
   }
 
@@ -55,9 +64,12 @@ export async function GET(request: Request) {
 
     const fileName = lpo
       ? fileKey === lpo.originalFileKey
-        ? lpo.originalFileName
+        ? (lpo.originalFileName ?? stored.fileName)
         : (lpo.productionFileName ?? stored.fileName)
-      : (invoice?.invoiceFileName ?? generatedDocumentName ?? stored.fileName);
+      : (invoice?.invoiceFileName ??
+        supplierInvoice?.fileName ??
+        generatedDocumentName ??
+        stored.fileName);
 
     const dispositionType = asDownload ? "attachment" : "inline";
     return new Response(new Uint8Array(stored.bytes), {

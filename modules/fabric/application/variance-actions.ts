@@ -4,16 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { createVariance } from "@/modules/fabric/application/variance";
+import { readFormString } from "@/lib/form-data";
 
 export type VarianceActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 export async function createVarianceAction(
   _previous: VarianceActionState,

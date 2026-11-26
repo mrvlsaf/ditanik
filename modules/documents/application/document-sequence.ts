@@ -4,10 +4,8 @@ import { prisma } from "@/lib/db";
 import { dubaiCalendarDayKey } from "@/modules/documents/domain/document-numbering";
 
 /**
- * Atomically allocates the next sequence number for (type, today-in-Dubai).
- * Postgres compiles Prisma's upsert to an INSERT ... ON CONFLICT DO UPDATE,
- * so concurrent generations of the same document type today cannot collide —
- * same pattern already used for fabric-code allocation.
+ * Atomically allocates the next sequence number for (type, today-in-Dubai) via an
+ * upsert (INSERT ... ON CONFLICT), so concurrent generations cannot collide.
  */
 export async function allocateDocumentSequence(
   type: DocumentType,

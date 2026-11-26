@@ -7,16 +7,12 @@ import {
   createRate,
   deactivateRate,
 } from "@/modules/fabric/application/consumption";
+import { readFormString } from "@/lib/form-data";
 
 export type ConsumptionActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 export async function createConsumptionRateAction(
   _previous: ConsumptionActionState,

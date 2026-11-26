@@ -12,6 +12,10 @@ import {
 } from "@/modules/lpo/domain/due-dates";
 import { calculateLineTotal } from "@/modules/lpo/domain/line-items";
 import { initialStatusAfterCreate } from "@/modules/lpo/domain/lpo-status";
+import {
+  formatUrgentLpoNumber,
+  looksLikeUrgentLpoNumber,
+} from "@/modules/lpo/domain/urgent-lpo";
 import { createLpoFormSchema } from "@/modules/lpo/schemas/create-lpo";
 import type { LpoLineItemValues } from "@/modules/lpo/schemas/line-items";
 
@@ -29,13 +33,18 @@ export type CreateLpoInput = {
   deliveryTerms?: string;
   currency?: string;
   lineItems: LpoLineItemValues[];
-  file: File | UploadedFileRef;
+  /** The customer's PDF. Required for a normal LPO, optional for an urgent one. */
+  file?: File | UploadedFileRef | null;
+  /** Urgent LPO: the number is generated and no dates or reminders are set. */
+  isUrgent?: boolean;
   createdByUserId: string;
 };
 
 export async function createLpo(input: CreateLpoInput) {
+  const isUrgent = input.isUrgent === true;
   const values = createLpoFormSchema.parse({
-    lpoNumber: input.lpoNumber,
+    // An urgent LPO's number is generated below, so any typed one is ignored.
+    lpoNumber: isUrgent ? "URGENT" : input.lpoNumber,
     nickname: input.nickname,
     clientName: input.clientName,
     receivedDate: input.receivedDate,
@@ -55,15 +64,28 @@ export async function createLpo(input: CreateLpoInput) {
     throw new Error("Received date cannot be in the future.");
   }
 
-  const existing = await prisma.lpo.findUnique({
-    where: { lpoNumber: values.lpoNumber },
-  });
-  if (existing) {
-    throw new Error("An LPO with this number already exists.");
+  if (!isUrgent) {
+    if (looksLikeUrgentLpoNumber(values.lpoNumber)) {
+      throw new Error(
+        "Numbers like URGENT_1 are reserved for urgent LPOs. Use the Urgent LPO option instead.",
+      );
+    }
+    if (!input.file) {
+      throw new Error("LPO document PDF is required.");
+    }
+    const existing = await prisma.lpo.findUnique({
+      where: { lpoNumber: values.lpoNumber },
+    });
+    if (existing) {
+      throw new Error("An LPO with this number already exists.");
+    }
   }
 
-  const storedFile = await storePdfUpload(input.file, "lpo-originals");
-  const dates = defaultLpoDatesFromReceived(receivedDate);
+  const storedFile = input.file
+    ? await storePdfUpload(input.file, "lpo-originals")
+    : null;
+  // Urgent LPOs have no planned dates, so nothing can go overdue or send reminders.
+  const dates = isUrgent ? null : defaultLpoDatesFromReceived(receivedDate);
   const status = initialStatusAfterCreate();
 
   // Compute line totals up front so a bad line fails before any writes happen.
@@ -79,21 +101,33 @@ export async function createLpo(input: CreateLpoInput) {
   }));
 
   return prisma.$transaction(async (tx) => {
+    let lpoNumber = values.lpoNumber;
+    if (isUrgent) {
+      // One atomic increment, so two people creating at once never share a number.
+      const counter = await tx.urgentLpoCounter.upsert({
+        where: { id: 1 },
+        create: { id: 1, lastValue: 1 },
+        update: { lastValue: { increment: 1 } },
+      });
+      lpoNumber = formatUrgentLpoNumber(counter.lastValue);
+    }
+
     const created = await tx.lpo.create({
       data: {
-        lpoNumber: values.lpoNumber,
+        lpoNumber,
+        isUrgent,
         nickname: values.nickname,
         clientName: values.clientName,
         // Stored for schema compatibility; business dates use receivedDate only.
         lpoDate: receivedDate,
         receivedDate,
-        originalFileKey: storedFile.fileKey,
-        originalFileName: storedFile.fileName,
-        originalMimeType: storedFile.mimeType,
+        originalFileKey: storedFile?.fileKey ?? null,
+        originalFileName: storedFile?.fileName ?? null,
+        originalMimeType: storedFile?.mimeType ?? null,
         status: LpoStatus.LPO_RECEIVED,
-        manufacturerAssignmentAt: dates.manufacturerAssignmentAt,
-        productionDeadlineAt: dates.productionDeadlineAt,
-        clientDeliveryAt: dates.clientDeliveryAt,
+        manufacturerAssignmentAt: dates?.manufacturerAssignmentAt ?? null,
+        productionDeadlineAt: dates?.productionDeadlineAt ?? null,
+        clientDeliveryAt: dates?.clientDeliveryAt ?? null,
         createdById: input.createdByUserId,
         clientSubEntityName: values.clientSubEntityName?.trim() || null,
         clientTrn: values.clientTrn?.trim() || null,
@@ -124,9 +158,10 @@ export async function createLpo(input: CreateLpoInput) {
           lpoNumber: created.lpoNumber,
           nickname: created.nickname,
           statusAfterCreate: status,
-          manufacturerAssignmentAt: dates.manufacturerAssignmentAt.toISOString(),
-          productionDeadlineAt: dates.productionDeadlineAt.toISOString(),
-          clientDeliveryAt: dates.clientDeliveryAt.toISOString(),
+          isUrgent,
+          manufacturerAssignmentAt: dates?.manufacturerAssignmentAt.toISOString() ?? null,
+          productionDeadlineAt: dates?.productionDeadlineAt.toISOString() ?? null,
+          clientDeliveryAt: dates?.clientDeliveryAt.toISOString() ?? null,
           siteCode: values.siteCode,
           lineItemCount: lineItemsWithTotals.length,
         },

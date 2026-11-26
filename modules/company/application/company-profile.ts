@@ -8,7 +8,7 @@ import {
  * CompanyProfile is a singleton settings row — there is exactly one, and it
  * always lives at this fixed id (no auto-generated id, so app code owns it).
  */
-export const COMPANY_PROFILE_ID = "singleton";
+const COMPANY_PROFILE_ID = "singleton";
 
 export async function getCompanyProfile() {
   return prisma.companyProfile.findUnique({

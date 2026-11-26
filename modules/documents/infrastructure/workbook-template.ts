@@ -3,14 +3,9 @@ import path from "node:path";
 import ExcelJS from "exceljs";
 
 /**
- * Loads one of the Deezano Excel templates checked into
- * templates/documents/ (extracted from the client's own workbooks).
- * `templates/` is included in the Vercel serverless bundle via
- * `outputFileTracingIncludes` in next.config.ts.
- *
- * Returns both the workbook (needed to serialize the result) and its one
- * worksheet, already resolved and non-null — every template is a single
- * extracted sheet, so callers never have to guard against a missing sheet.
+ * Loads a Deezano Excel template from templates/documents/ (bundled via
+ * `outputFileTracingIncludes` in next.config.ts). Returns the workbook and its
+ * single worksheet, already resolved.
  */
 export async function loadTemplateWorkbook(
   fileName: string,
@@ -38,17 +33,12 @@ function parseRange(range: string) {
 }
 
 /**
- * Inserts `count` extra copies of `templateRow` immediately after it (cloning
- * its style — the standard way to grow a line-item table from a template's
- * single sample row), shifting every row below it down by `count`.
- *
- * ExcelJS's own `duplicateRow` shifts cell values/styles correctly but does
- * NOT shift merged-cell ranges below the insertion point (verified against
- * the real templates) — so merges at/after the insertion point are manually
- * unmerged, the rows duplicated, then re-merged at their new coordinates.
- * A no-op when `count` is 0 or negative (e.g. exactly one line item).
+ * Inserts `count` copies of `templateRow` right after it (cloning its style) and
+ * shifts rows below down. ExcelJS `duplicateRow` does not shift merged ranges, so
+ * merges at/after the insertion point are unmerged, then re-merged at new rows.
+ * No-op when `count` <= 0.
  */
-export function insertTemplateRows(
+function insertTemplateRows(
   worksheet: ExcelJS.Worksheet,
   templateRow: number,
   count: number,
@@ -74,19 +64,10 @@ export function insertTemplateRows(
 }
 
 /**
- * The inverse of `insertTemplateRows`: removes `count` rows starting at
- * `firstRow` (used to trim a template's extra sample line-item rows down to
- * the actual number of items on a document), shifting every row below the
- * removed block up by `count` — including merges, which `spliceRows` alone
- * does not shift.
- *
- * Like `duplicateRow`, `spliceRows` doesn't touch the merge registry either:
- * left alone, merges that sat inside the removed block become stale ghosts
- * pointing at whatever row now occupies their old position (the physically
- * shifted-up content), which then collides with the real merge that belongs
- * there. So every merge at or after `firstRow` — inside the removed block or
- * below it — is unmerged first; only the ones that were below the block are
- * re-merged afterwards, shifted up by `count`.
+ * Inverse of `insertTemplateRows`: removes `count` rows from `firstRow` and
+ * shifts rows below up. `spliceRows` does not move merges either, so every merge
+ * at/after `firstRow` is unmerged first; only those below the block are re-merged,
+ * shifted up by `count`.
  */
 export function removeTemplateRows(
   worksheet: ExcelJS.Worksheet,
@@ -115,11 +96,8 @@ export function removeTemplateRows(
 }
 
 /**
- * Grows or shrinks a template's line-item table (which ships with
- * `templateRowCount` real sample rows starting at `firstItemRow`) to exactly
- * `desiredCount` rows, cloning the last sample row's style for extra rows or
- * trimming from the end — either way, shifting everything below the table
- * (totals, footer, and their merges) to match.
+ * Grows or shrinks a template's item table (`templateRowCount` sample rows from
+ * `firstItemRow`) to `desiredCount` rows, shifting totals, footer and merges.
  */
 export function setLineItemRowCount(
   worksheet: ExcelJS.Worksheet,

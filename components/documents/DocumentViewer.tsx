@@ -3,14 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
-// Same-origin, not pdfjs-dist's documented CDN default (unpkg.com): the
-// app's CSP only allows scripts from 'self' (next.config.ts), so a
-// CDN-hosted worker gets silently blocked by the browser and this viewer
-// fails with "Could not open this PDF." — no console-visible network
-// error, just a rejected getDocument() promise. This file is generated at
-// install time (scripts/copy-pdf-worker.mjs, wired up as "postinstall" in
-// package.json) from whichever pdfjs-dist version is actually installed,
-// so it can't drift out of sync with the version this bundle uses.
+// Same-origin worker: the CSP allows scripts from 'self' only, so the CDN default
+// is blocked. Copied by scripts/copy-pdf-worker.mjs from the installed pdfjs-dist.
 GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 type DocumentViewerProps = Readonly<{

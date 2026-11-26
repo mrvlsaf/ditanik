@@ -11,5 +11,3 @@ export const returnFabricSchema = z.object({
   lpoId: z.string().trim().optional(),
   note: z.string().trim().optional(),
 });
-
-export type ReturnFabricValues = z.infer<typeof returnFabricSchema>;

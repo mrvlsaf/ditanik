@@ -12,19 +12,10 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": [
       "./templates/documents/*.xlsx",
-      // pdfjs-dist's Node build loads its "worker" via a dynamically computed
-      // path (a fake in-process worker, since real Worker threads don't
-      // exist server-side) rather than a plain import, so Next's file
-      // tracer can't see it's needed and prunes it from the deployed
-      // function by default — breaking PDF prefill only on Vercel, never
-      // in local dev where the full package is always on disk.
-      //
-      // This must go through pnpm's real ".pnpm" store path, not the
-      // top-level "node_modules/pdfjs-dist" symlink pnpm creates — Vercel's
-      // packaging step rejects any serverless function whose files were
-      // reached via a symlinked directory ("invalid deployment package").
-      // The "*" wildcards the version segment so a future patch/minor bump
-      // of the ^6.3.289-ranged dependency doesn't silently break this.
+      // pdfjs-dist's Node build loads its fake worker via a computed path, so Next's
+      // file tracer prunes it on Vercel (PDF prefill breaks only there).
+      // Use the real ".pnpm" store path: Vercel rejects functions reached via the
+      // top-level symlink. "*" wildcards the version so minor bumps still work.
       "./node_modules/.pnpm/pdfjs-dist@*/node_modules/pdfjs-dist/legacy/build/*.mjs",
     ],
   },

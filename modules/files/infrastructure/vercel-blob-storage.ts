@@ -10,19 +10,9 @@ import type {
 } from "@/modules/files/infrastructure/file-storage";
 
 /**
- * Production storage backend — Vercel's serverless functions run on a
- * read-only, ephemeral filesystem, so `local-file-storage.ts`'s
- * `uploads/` folder on disk (fine for `pnpm dev`) silently loses every
- * upload and generated document once deployed. This talks to Vercel Blob
- * instead over its SDK; `get-file-storage.ts` picks this backend whenever
- * `BLOB_READ_WRITE_TOKEN` is set (which Vercel sets automatically once a
- * Blob store is linked to the project — see infra/gotenberg-style setup in
- * the deploy checklist) and falls back to local disk otherwise, so local
- * dev needs no extra setup.
- *
- * Files are stored **private** (`access: "private"`) — every download still
- * goes through the app's own authenticated `/api/files` route, matching how
- * local storage already works, rather than handing out public Blob URLs.
+ * Production storage backend (Vercel's filesystem is read-only). Chosen by
+ * `get-file-storage.ts` when `BLOB_READ_WRITE_TOKEN` is set, else local disk.
+ * Files are stored private; downloads go through the authenticated `/api/files` route.
  */
 
 function toBlobPath(fileKey: string): string {
@@ -74,13 +64,9 @@ export const vercelBlobStorage: FileStorage = {
   },
 
   /**
-   * The browser already PUT this file directly to Blob (see
-   * lib/direct-blob-upload.ts and app/api/blob-upload/route.ts) using the
-   * exact same fileKey convention `save()` above uses — that upload's own
-   * `onBeforeGenerateToken` check already confined it to an allowed folder
-   * prefix. This only has to confirm the blob genuinely exists at that path
-   * (never trust a client-supplied key without checking) before the caller
-   * commits it to the database; nothing is re-uploaded.
+   * The browser already uploaded this file directly (lib/direct-blob-upload.ts,
+   * app/api/blob-upload/route.ts). This only confirms the blob exists before the
+   * caller commits it to the database; nothing is re-uploaded.
    */
   async adopt({ fileKey, fileName, mimeType }): Promise<StoredFile> {
     if (!fileKey || fileKey.includes("..")) {
@@ -100,12 +86,7 @@ export const vercelBlobStorage: FileStorage = {
       throw new Error("Invalid file key.");
     }
 
-    // `head()` + a bare `fetch(metadata.url)` looked reasonable but silently
-    // 403'd: this store is private, and a private blob's content URL still
-    // requires the same auth as everything else in this SDK — `head()`
-    // never carries that over into the plain URL it returns. `get()` is the
-    // SDK's own helper for reading blob content and attaches that auth
-    // itself, so it's what actually works here.
+    // `head()` + `fetch(url)` 403s on a private store; `get()` attaches the auth itself.
     const blobPath = toBlobPath(fileKey);
     const result = await get(blobPath, { access: "private" });
     if (!result || result.statusCode !== 200) {

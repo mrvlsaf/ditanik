@@ -4,10 +4,8 @@ import { convertOfficeFileToPdf } from "@/modules/documents/infrastructure/pdf-c
 const ALLOWED_EXTENSIONS = [".xlsx", ".xls", ".ods"];
 
 /**
- * Standalone "browse and convert" flow — accepts a hand-edited Excel file
- * with no LPO context and no stored history, and streams the converted
- * PDF straight back as the response. A plain HTML file-upload form can POST
- * here directly; the browser handles the resulting download on its own.
+ * Standalone "browse and convert" flow: takes a hand-edited Excel file (no LPO,
+ * no stored history) and streams the converted PDF back. A plain HTML form can POST here.
  */
 export async function POST(request: Request) {
   const session = await auth();

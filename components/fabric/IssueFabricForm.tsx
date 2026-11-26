@@ -3,23 +3,28 @@
 import { useActionState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import {
+  Field,
+  FORM_CARD_CLASS,
+  FormHeader,
+  FormMessage,
+  INPUT_CLASS,
+} from "@/components/ui/Field";
+import { formatMeters } from "@/modules/fabric/domain/fabric-glance";
 
 import {
   issueFabricAction,
   type IssueFabricActionState,
 } from "@/modules/fabric/application/issue-fabric-action";
+import { todayInputValue } from "@/lib/dates/today-input";
 
 const initialState: IssueFabricActionState = { ok: false, message: null };
-
-function todayInputValue(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 export function IssueFabricForm({
   batches,
   manufacturers,
   lpos,
+  defaultBatchId,
 }: Readonly<{
   batches: Array<{
     id: string;
@@ -30,40 +35,44 @@ export function IssueFabricForm({
   }>;
   manufacturers: Array<{ id: string; name: string }>;
   lpos: Array<{ id: string; lpoNumber: string; nickname: string }>;
+  /** Batch to pre-select, when the page was opened from a batch's Issue button. */
+  defaultBatchId?: string;
 }>) {
   const [state, formAction, isPending] = useActionState(issueFabricAction, initialState);
   useGlobalPending(isPending);
   const today = todayInputValue();
+  const startBatch = batches.some((b) => b.id === defaultBatchId && b.stockMeters > 0)
+    ? (defaultBatchId ?? "")
+    : "";
 
   return (
-    <form action={formAction} className="space-y-4 surface-card p-4 sm:p-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm sm:col-span-2">
-          <span className="mb-1 block font-medium text-zinc-800">Batch</span>
+    <form action={formAction} className={FORM_CARD_CLASS}>
+      <FormHeader
+        title="Issue fabric to a manufacturer"
+        help="Sends metres from a batch to a manufacturer. Your stock goes down and a movement is recorded. You cannot issue more than is available."
+      />
+
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
+        <Field label="Batch" className="col-span-full">
           <select
             name="batchId"
             required
-            defaultValue=""
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            defaultValue={startBatch}
+            className={INPUT_CLASS}
           >
             <option value="" disabled>
               Select batch…
             </option>
             {batches.map((b) => (
               <option key={b.id} value={b.id} disabled={b.stockMeters <= 0}>
-                {b.fabricCode} · {b.fabricType} / {b.colour} ({b.stockMeters}m avail)
+                {b.fabricCode} · {b.fabricType} / {b.colour} (
+                {formatMeters(b.stockMeters)} available)
               </option>
             ))}
           </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">Manufacturer</span>
-          <select
-            name="manufacturerId"
-            required
-            defaultValue=""
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
-          >
+        </Field>
+        <Field label="Manufacturer">
+          <select name="manufacturerId" required defaultValue="" className={INPUT_CLASS}>
             <option value="" disabled>
               Select…
             </option>
@@ -73,76 +82,57 @@ export function IssueFabricForm({
               </option>
             ))}
           </select>
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">Quantity (meters)</span>
+        </Field>
+        <Field label="Quantity (metres)">
           <input
             type="number"
             name="quantityMeters"
             min="0.001"
             step="0.001"
             required
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            placeholder="e.g. 40"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">Date sent</span>
+        </Field>
+        <Field label="Date sent">
           <input
             type="date"
             name="occurredAt"
             required
             defaultValue={today}
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Transport / reference
-          </span>
-          <input
-            name="transportRef"
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
-          />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Related LPO (optional)
-          </span>
-          <select
-            name="lpoId"
-            defaultValue=""
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
-          >
-            <option value="">None — additional fabric (not tied to an LPO)</option>
+        </Field>
+        <Field label="Transport reference" optional>
+          <input name="transportRef" className={INPUT_CLASS} />
+        </Field>
+        <Field
+          label="LPO"
+          className="col-span-full"
+          tip="Link the fabric to an LPO so the manufacturer ledger can compare it with what that order needs. Leave it empty for additional fabric."
+        >
+          <select name="lpoId" defaultValue="" className={INPUT_CLASS}>
+            <option value="">None: additional fabric (not tied to an LPO)</option>
             {lpos.map((l) => (
               <option key={l.id} value={l.id}>
-                {l.lpoNumber} · {l.nickname}
+                LPO {l.lpoNumber} · {l.nickname}
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs text-zinc-500">
-            Leave empty to keep this issue as standalone fabric on the manufacturer
-            ledger. Choose an LPO to attribute meters to that job.
-          </span>
-        </label>
+        </Field>
       </div>
 
-      {state.message ? (
-        <p
-          className={`text-sm ${state.ok ? "text-emerald-700" : "text-red-700"}`}
-          role="status"
-        >
-          {state.message}
-        </p>
-      ) : null}
+      <FormMessage ok={state.ok} message={state.message} />
 
-      <button
-        type="submit"
-        disabled={isPending || batches.length === 0 || manufacturers.length === 0}
-        className="btn-primary min-h-11"
-      >
-        {isPending ? "Issuing…" : "Issue to manufacturer"}
-      </button>
+      <div>
+        <button
+          type="submit"
+          disabled={isPending || batches.length === 0 || manufacturers.length === 0}
+          className="btn-primary"
+        >
+          {isPending ? "Issuing…" : "Issue to manufacturer"}
+        </button>
+      </div>
     </form>
   );
 }

@@ -1,14 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import {
+  CELL_INPUT_CLASS,
+  Field,
+  FORM_CARD_CLASS,
+  FormHeader,
+  FormMessage,
+  INPUT_CLASS,
+} from "@/components/ui/Field";
 import { useDirectUploadOnSubmit } from "@/components/ui/useDirectUploadOnSubmit";
 
 import {
   receiveFabricAction,
   type ReceiveFabricActionState,
 } from "@/modules/fabric/application/receive-fabric-action";
+import { todayInputValue } from "@/lib/dates/today-input";
 
 const initialState: ReceiveFabricActionState = { ok: false, message: null };
 
@@ -18,11 +28,6 @@ type BatchRow = {
   remarks: string;
   qtyReceived: string;
 };
-
-function todayInputValue(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
 
 export function ReceiveFabricForm({
   usesBlobStorage,
@@ -66,12 +71,16 @@ export function ReceiveFabricForm({
 
   const today = todayInputValue();
 
+  function updateRow(index: number, patch: Partial<BatchRow>) {
+    setBatches((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  }
+
   return (
     <form
       ref={formRef}
       action={formAction}
       onSubmit={onDirectUploadSubmit}
-      className="space-y-4 surface-card p-4 sm:p-6"
+      className={FORM_CARD_CLASS}
     >
       <input
         type="hidden"
@@ -86,55 +95,161 @@ export function ReceiveFabricForm({
         )}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">Supplier</span>
+      <FormHeader
+        title="Receive fabric from a supplier"
+        help={
+          <>
+            Record the supplier invoice and each fabric line on it. Every line is added to
+            stock as its own batch. It is saved as a fabric invoice in{" "}
+            <Link
+              href="/invoices"
+              className="font-medium text-[var(--brand)] hover:underline"
+            >
+              Invoices
+            </Link>
+            , where you can find it later.
+          </>
+        }
+      />
+
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))]">
+        <Field label="Supplier">
           <input
             name="supplierName"
             required
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            placeholder="Supplier name"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Invoice / reference
-          </span>
+        </Field>
+        <Field label="Invoice reference">
           <input
             name="invoiceRef"
             required
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            placeholder="e.g. INV-2291"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">Date received</span>
+        </Field>
+        <Field label="Date received">
           <input
             type="date"
             name="receivedDate"
             required
             defaultValue={today}
             max={today}
-            className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+            className={INPUT_CLASS}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-zinc-800">
-            Invoice PDF (required)
-          </span>
+        </Field>
+        <Field
+          label="Invoice total incl. VAT (AED)"
+          optional
+          tip="Used for the VAT figures on the Invoices page. The VAT part is worked out at 5%. Leave it blank if you do not have it yet."
+        >
+          <input
+            type="number"
+            name="totalInclVat"
+            min="0"
+            step="0.01"
+            placeholder="e.g. 8400"
+            className={INPUT_CLASS}
+          />
+        </Field>
+        <Field
+          label="Invoice file (PDF)"
+          optional
+          tip="Optional, but recommended. If you add it, it is stored with the invoice so you can open it again later."
+        >
           <input
             type="file"
             name="invoiceFile"
             accept="application/pdf,.pdf"
-            required
             className="file-btn"
           />
-        </label>
+        </Field>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-medium text-zinc-800">
-            Fabric lines (same invoice)
-          </h3>
+      <div className="flex flex-col gap-2.5">
+        <p className="text-sm font-semibold text-[var(--foreground)]">Fabric lines</p>
+        <div className="overflow-x-auto">
+          <table className="table-stack w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="text-left text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
+                <th scope="col" className="py-2 pr-3">
+                  Type
+                </th>
+                <th scope="col" className="py-2 pr-3">
+                  Colour
+                </th>
+                <th scope="col" className="py-2 pr-3">
+                  Qty (metres)
+                </th>
+                <th scope="col" className="py-2 pr-3">
+                  Remarks
+                </th>
+                <th scope="col" className="py-2">
+                  <span className="sr-only">Remove</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {batches.map((row, index) => (
+                <tr key={index}>
+                  <td data-label="Type" className="py-1 pr-3">
+                    <input
+                      required
+                      value={row.fabricType}
+                      onChange={(e) => updateRow(index, { fabricType: e.target.value })}
+                      aria-label={`Type, line ${index + 1}`}
+                      className={`${CELL_INPUT_CLASS} min-w-36`}
+                    />
+                  </td>
+                  <td data-label="Colour" className="py-1 pr-3">
+                    <input
+                      required
+                      value={row.colour}
+                      onChange={(e) => updateRow(index, { colour: e.target.value })}
+                      aria-label={`Colour, line ${index + 1}`}
+                      className={`${CELL_INPUT_CLASS} min-w-28`}
+                    />
+                  </td>
+                  <td data-label="Qty (metres)" className="py-1 pr-3">
+                    <input
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      required
+                      value={row.qtyReceived}
+                      onChange={(e) => updateRow(index, { qtyReceived: e.target.value })}
+                      aria-label={`Metres, line ${index + 1}`}
+                      className={`${CELL_INPUT_CLASS} w-28`}
+                    />
+                  </td>
+                  <td data-label="Remarks" className="py-1 pr-3">
+                    <input
+                      value={row.remarks}
+                      onChange={(e) => updateRow(index, { remarks: e.target.value })}
+                      aria-label={`Remarks, line ${index + 1}`}
+                      className={`${CELL_INPUT_CLASS} min-w-40`}
+                    />
+                  </td>
+                  <td data-label="" className="py-1 text-right">
+                    {batches.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBatches((rows) => rows.filter((_, i) => i !== index))
+                        }
+                        className="btn-danger-outline text-xs"
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div>
           <button
             type="button"
             onClick={() =>
@@ -143,113 +258,28 @@ export function ReceiveFabricForm({
                 { fabricType: "", colour: "", remarks: "", qtyReceived: "" },
               ])
             }
-            className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
+            className="btn-secondary"
           >
-            + Add line
+            Add another line
           </button>
         </div>
-        {batches.map((row, index) => (
-          <div
-            key={index}
-            className="grid gap-3 rounded-md border border-zinc-100 bg-zinc-50 p-3 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            <label className="block text-sm">
-              <span className="mb-1 block text-zinc-700">Type</span>
-              <input
-                required
-                value={row.fabricType}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setBatches((rows) =>
-                    rows.map((r, i) => (i === index ? { ...r, fabricType: value } : r)),
-                  );
-                }}
-                className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-zinc-700">Colour</span>
-              <input
-                required
-                value={row.colour}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setBatches((rows) =>
-                    rows.map((r, i) => (i === index ? { ...r, colour: value } : r)),
-                  );
-                }}
-                className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-zinc-700">Qty (meters)</span>
-              <input
-                type="number"
-                min="0.001"
-                step="0.001"
-                required
-                value={row.qtyReceived}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setBatches((rows) =>
-                    rows.map((r, i) => (i === index ? { ...r, qtyReceived: value } : r)),
-                  );
-                }}
-                className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-zinc-700">Remarks</span>
-              <div className="flex gap-2">
-                <input
-                  value={row.remarks}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setBatches((rows) =>
-                      rows.map((r, i) => (i === index ? { ...r, remarks: value } : r)),
-                    );
-                  }}
-                  className="min-h-10 w-full rounded-md border border-zinc-300 px-3 text-sm"
-                />
-                {batches.length > 1 ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setBatches((rows) => rows.filter((_, i) => i !== index))
-                    }
-                    className="btn-danger-outline shrink-0 text-xs"
-                  >
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-            </label>
-          </div>
-        ))}
       </div>
 
-      {uploadError ? (
-        <p className="text-sm text-red-700" role="status">
-          {uploadError}
-        </p>
-      ) : null}
+      {uploadError ? <FormMessage ok={false} message={uploadError} /> : null}
+      <FormMessage ok={state.ok} message={state.message} />
 
-      {state.message ? (
-        <p
-          className={`text-sm ${state.ok ? "text-emerald-700" : "text-red-700"}`}
-          role="status"
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={isPending || isUploadingFile}
+          className="btn-primary"
         >
-          {state.message}
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={isPending || isUploadingFile}
-        className="btn-primary min-h-11"
-      >
-        {isUploadingFile ? "Uploading…" : isPending ? "Saving…" : "Receive fabric"}
-      </button>
+          {isUploadingFile ? "Uploading…" : isPending ? "Saving…" : "Receive fabric"}
+        </button>
+        <span className="text-sm text-[var(--text-muted)]">
+          Next: issue it to a manufacturer from the Stock tab.
+        </span>
+      </div>
     </form>
   );
 }

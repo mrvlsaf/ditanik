@@ -2,15 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { signOutAction } from "@/app/auth-actions";
-import {
-  PageHeaderProvider,
-  usePageHeader,
-} from "@/components/app-shell/page-header-context";
 import { PandaMark } from "@/components/brand/PandaMark";
-import { APP_NAV_ITEMS } from "@/lib/navigation";
+import { APP_NAV_GROUPS, activeNavItem } from "@/lib/navigation";
+
+function NavIcon({ path }: Readonly<{ path: string }>) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="nav-icon shrink-0"
+    >
+      <path d={path} />
+    </svg>
+  );
+}
 
 function NavLinks({
   onNavigate,
@@ -18,120 +33,153 @@ function NavLinks({
   onNavigate?: () => void;
 }>) {
   const pathname = usePathname();
-  const { setHeader } = usePageHeader();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const current = activeNavItem(pathname);
 
   return (
-    <nav className="flex flex-col gap-1 p-3">
-      {APP_NAV_ITEMS.map((item) => {
-        const isActive =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const isPending = pendingHref === item.href && !isActive;
+    <nav aria-label="Main menu" className="flex flex-col gap-5 p-3">
+      {APP_NAV_GROUPS.map((group) => (
+        <div key={group.title ?? "top"} className="flex flex-col gap-1">
+          {group.title ? <p className="nav-group-title">{group.title}</p> : null}
+          {group.items.map((item) => {
+            const isActive = current?.href === item.href;
+            const isPending = pendingHref === item.href && !isActive;
 
-        let linkClass = "nav-link";
-        if (isActive) {
-          linkClass += " nav-link-active";
-        } else if (isPending) {
-          linkClass += " nav-link-pending";
-        }
+            let linkClass = "nav-link";
+            if (isActive) {
+              linkClass += " nav-link-active";
+            } else if (isPending) {
+              linkClass += " nav-link-pending";
+            }
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            prefetch
-            onClick={() => {
-              if (isActive && pathname === item.href) {
-                return;
-              }
-              setPendingHref(item.href);
-              setHeader({ title: item.label });
-              onNavigate?.();
-            }}
-            className={linkClass}
-            aria-current={isActive ? "page" : undefined}
-            aria-busy={isPending || undefined}
-          >
-            {item.label}
-            {isPending ? (
-              <span className="ml-2 inline-block h-2 w-2 animate-pulse rounded-full bg-[var(--sidebar-active)]" />
-            ) : null}
-          </Link>
-        );
-      })}
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch
+                onClick={() => {
+                  if (isActive && pathname === item.href) {
+                    return;
+                  }
+                  setPendingHref(item.href);
+                  onNavigate?.();
+                }}
+                className={linkClass}
+                aria-current={isActive ? "page" : undefined}
+                aria-busy={isPending || undefined}
+              >
+                <NavIcon path={item.icon} />
+                <span>{item.label}</span>
+                {isPending ? (
+                  <span className="ml-auto inline-block h-2 w-2 animate-pulse rounded-full bg-[var(--sidebar-active)]" />
+                ) : null}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
     </nav>
   );
 }
 
-function UserFooter({
-  userEmail,
-}: Readonly<{
-  userEmail: string;
-}>) {
+function SidebarFooter({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
   return (
     <div className="shrink-0 border-t border-white/10 p-3">
-      <p
-        className="truncate px-1 text-xs text-[var(--sidebar-muted)]"
-        title={userEmail}
-      >
-        {userEmail}
+      <p className="px-3 text-sm font-semibold text-[var(--sidebar-fg)]">Need a hand?</p>
+      <p className="mt-1 px-3 text-xs leading-relaxed text-[var(--sidebar-muted)]">
+        Look for the (i) icons. They explain a term where you meet it.
       </p>
-      <form action={signOutAction} className="mt-2">
-        <button type="submit" className="btn-ghost min-h-10 w-full justify-start text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-hover)]">
-          Sign out
-        </button>
-      </form>
+      <Link
+        href="/help"
+        onClick={onNavigate}
+        className="nav-link mt-1 font-semibold text-[var(--sidebar-active)]"
+      >
+        Open the guide &rarr;
+      </Link>
     </div>
   );
 }
 
-function AppTopHeader({
+function SidebarBrand() {
+  return (
+    <div className="shrink-0 border-b border-white/10 px-4 py-4">
+      <Link
+        href="/"
+        className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-white"
+      >
+        <PandaMark className="h-9 w-9 shrink-0" title="Ditanik" />
+        <span>Ditanik</span>
+      </Link>
+      <p className="mt-1 pl-[2.625rem] text-[10px] tracking-[0.2em] text-[var(--sidebar-muted)] uppercase">
+        Operations
+      </p>
+    </div>
+  );
+}
+
+function AppTopBar({
+  workspaceSlot,
   notificationSlot,
+  userEmail,
   onOpenMobileMenu,
 }: Readonly<{
+  workspaceSlot: React.ReactNode;
   notificationSlot: React.ReactNode;
+  userEmail: string;
   onOpenMobileMenu: () => void;
 }>) {
-  const { header } = usePageHeader();
-
   return (
     <header className="app-header sticky top-0 z-30">
-      <div className="flex items-start justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
+      <div className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            className="btn-secondary mt-0.5 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center lg:hidden"
+            className="btn-secondary inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center lg:hidden"
             aria-label="Open menu"
             onClick={onOpenMobileMenu}
           >
             <PandaMark className="h-6 w-6" />
           </button>
-          <div className="min-w-0 pt-1">
-            <h1 className="truncate text-lg font-semibold tracking-tight text-[var(--foreground)] sm:text-xl">
-              {header.title || "Ditanik"}
-            </h1>
-            {header.description ? (
-              <p className="mt-0.5 line-clamp-2 text-sm text-[var(--text-muted)]">
-                {header.description}
-              </p>
-            ) : null}
-          </div>
+          <p className="min-w-0 truncate text-sm text-[var(--text-muted)]">
+            <span className="max-sm:sr-only">Workspace: </span>
+            <span className="font-semibold text-[var(--foreground)]">
+              {workspaceSlot}
+            </span>
+          </p>
         </div>
-        <div className="shrink-0 pt-0.5">{notificationSlot}</div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <Link href="/help" className="topbar-link max-sm:hidden">
+            Help
+          </Link>
+          {notificationSlot}
+          <span
+            className="hidden max-w-[14rem] truncate text-xs text-[var(--text-muted)] xl:inline"
+            title={userEmail}
+          >
+            {userEmail}
+          </span>
+          <form action={signOutAction}>
+            <button type="submit" className="topbar-link">
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
     </header>
   );
 }
 
-/** Shared chrome: sidebar nav + top header with page title and notifications. */
+/** Shared chrome: grouped sidebar + slim top bar (workspace, help, bell, sign out). */
 export function AppShell({
   children,
   userEmail,
   notificationSlot,
+  workspaceSlot,
 }: Readonly<{
   children: React.ReactNode;
   userEmail: string;
   notificationSlot: React.ReactNode;
+  workspaceSlot: React.ReactNode;
 }>) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -139,59 +187,62 @@ export function AppShell({
     setIsMobileMenuOpen(false);
   }
 
+  // While the phone menu is open: Escape closes it and the page behind does not scroll.
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isMobileMenuOpen]);
+
   return (
-    <PageHeaderProvider>
-      <div className="flex h-dvh min-h-0 w-full flex-col overflow-hidden lg:flex-row">
-        <aside className="app-sidebar hidden h-dvh w-56 shrink-0 flex-col lg:flex">
-          <div className="shrink-0 border-b border-white/10 px-4 py-4">
-            <Link
-              href="/lpo"
-              className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-white"
-            >
-              <PandaMark className="h-9 w-9 shrink-0" title="Ditanik" />
-              <span>Ditanik</span>
-            </Link>
-            <p className="mt-1 pl-[2.625rem] text-[10px] tracking-[0.2em] text-[var(--sidebar-muted)] uppercase">
-              Operations
-            </p>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <NavLinks />
-          </div>
-          <UserFooter userEmail={userEmail} />
-        </aside>
-
-        {isMobileMenuOpen ? (
-          <div className="lg:hidden">
-            <button
-              type="button"
-              className="fixed inset-0 z-40 bg-black/40"
-              aria-label="Close menu overlay"
-              onClick={closeMobileMenu}
-            />
-            <aside className="app-sidebar fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(18rem,85vw)] flex-col shadow-lg">
-              <div className="shrink-0 border-b border-white/10 px-4 py-4">
-                <p className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-white">
-                  <PandaMark className="h-9 w-9 shrink-0" title="Ditanik" />
-                  <span>Ditanik</span>
-                </p>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <NavLinks onNavigate={closeMobileMenu} />
-              </div>
-              <UserFooter userEmail={userEmail} />
-            </aside>
-          </div>
-        ) : null}
-
-        <div className="app-canvas flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
-          <AppTopHeader
-            notificationSlot={notificationSlot}
-            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
-          />
-          {children}
+    <div className="flex h-dvh min-h-0 w-full flex-col overflow-hidden lg:flex-row">
+      <aside className="app-sidebar hidden h-dvh w-56 shrink-0 flex-col lg:flex">
+        <SidebarBrand />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <NavLinks />
         </div>
+        <SidebarFooter />
+      </aside>
+
+      {isMobileMenuOpen ? (
+        <div className="lg:hidden">
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/40"
+            aria-label="Close menu overlay"
+            onClick={closeMobileMenu}
+          />
+          <aside className="app-sidebar fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(18rem,85vw)] flex-col shadow-lg">
+            <SidebarBrand />
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <NavLinks onNavigate={closeMobileMenu} />
+            </div>
+            <SidebarFooter onNavigate={closeMobileMenu} />
+          </aside>
+        </div>
+      ) : null}
+
+      <div className="app-canvas flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+        <AppTopBar
+          workspaceSlot={workspaceSlot}
+          notificationSlot={notificationSlot}
+          userEmail={userEmail}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
+        {children}
       </div>
-    </PageHeaderProvider>
+    </div>
   );
 }

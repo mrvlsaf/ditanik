@@ -10,7 +10,7 @@ export type StoredFileBytes = {
   mimeType: string;
 };
 
-/** A file already uploaded straight from the browser to Blob storage (see lib/direct-blob-upload.ts) — `adopt()` verifies it and folds it into this app's own StoredFile shape without re-uploading it. */
+/** A file the browser already uploaded to Blob (lib/direct-blob-upload.ts); `adopt()` verifies it into a StoredFile without re-uploading. */
 export type UploadedFileRef = {
   fileKey: string;
   fileName: string;
@@ -29,11 +29,8 @@ export type FileStorage = {
     }>,
   ): Promise<StoredFile>;
   /**
-   * Confirms a file the browser already uploaded directly to storage (bypassing
-   * this app's own serverless functions — see lib/direct-blob-upload.ts for why)
-   * and returns it in the same shape `save()` would have. Only meaningful for a
-   * backend that supports direct client uploads (Blob); local disk storage has
-   * no such path and rejects any call here.
+   * Confirms a file the browser already uploaded directly to storage and returns
+   * it in `save()`'s shape. Blob only; local disk rejects any call.
    */
   adopt(input: UploadedFileRef): Promise<StoredFile>;
   read(fileKey: string): Promise<StoredFileBytes>;

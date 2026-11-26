@@ -7,17 +7,12 @@ import {
   addRequirement,
   deleteRequirement,
 } from "@/modules/fabric/application/lpo-fabric-requirements";
-import { recordUsage } from "@/modules/fabric/application/record-usage";
+import { readFormString } from "@/lib/form-data";
 
 export type LpoFabricActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 export async function addLpoFabricRequirementAction(
   lpoId: string,
@@ -80,41 +75,6 @@ export async function deleteLpoFabricRequirementAction(
       error instanceof Error
         ? error.message
         : "Could not remove fabric requirement.";
-    return { ok: false, message };
-  }
-}
-
-export async function recordFabricUsageAction(
-  _previous: LpoFabricActionState,
-  formData: FormData,
-): Promise<LpoFabricActionState> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { ok: false, message: "You must be signed in." };
-  }
-
-  const lpoId = readFormString(formData, "lpoId");
-
-  try {
-    await recordUsage({
-      batchId: readFormString(formData, "batchId"),
-      manufacturerId: readFormString(formData, "manufacturerId"),
-      lpoId,
-      quantityMeters: Number(readFormString(formData, "quantityMeters")),
-      occurredAt: readFormString(formData, "occurredAt"),
-      note: readFormString(formData, "note") || undefined,
-      createdByUserId: session.user.id,
-    });
-
-    revalidatePath("/fabric");
-    revalidatePath("/manufacturers");
-    if (lpoId) {
-      revalidatePath(`/lpo/${lpoId}`);
-    }
-    return { ok: true, message: "Fabric usage recorded." };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Could not record fabric usage.";
     return { ok: false, message };
   }
 }

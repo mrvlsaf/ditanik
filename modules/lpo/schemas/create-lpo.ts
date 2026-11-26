@@ -9,7 +9,7 @@ export const createLpoFormSchema = z.object({
   receivedDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Received date must be YYYY-MM-DD"),
-  // Client & commercial details — feed the Quotation / Quote / Invoice / Delivery Note templates.
+  // Client & commercial details — feed the Quotation / Invoice / Delivery Note templates.
   clientSubEntityName: z.string().trim().optional(),
   clientTrn: z.string().trim().optional(),
   invoiceAddress: z.string().trim().min(1, "Invoice address is required"),
@@ -20,5 +20,3 @@ export const createLpoFormSchema = z.object({
   currency: z.string().trim().min(1).default("AED"),
   lineItems: lpoLineItemsSchema,
 });
-
-export type CreateLpoFormValues = z.infer<typeof createLpoFormSchema>;

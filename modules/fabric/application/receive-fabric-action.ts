@@ -6,16 +6,12 @@ import { auth } from "@/auth";
 import { receiveFabric } from "@/modules/fabric/application/receive-fabric";
 import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import type { ReceiveFabricBatchValues } from "@/modules/fabric/schemas/receive-fabric";
+import { readFormString } from "@/lib/form-data";
 
 export type ReceiveFabricActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 function parseBatchesFromForm(formData: FormData): ReceiveFabricBatchValues[] {
   const batchesJson = readFormString(formData, "batchesJson");
@@ -73,17 +69,21 @@ export async function receiveFabricAction(
     return { ok: false, message: "You must be signed in." };
   }
 
+  // Supplier invoice PDF is optional: null simply means none was provided.
   const fileValue = readPdfUploadFromForm(formData, "invoiceFile", "invoiceFileRef");
-  if (!fileValue) {
-    return { ok: false, message: "Supplier invoice PDF is required." };
-  }
 
   try {
     const batches = parseBatchesFromForm(formData);
+    const totalText = readFormString(formData, "totalInclVat").trim();
+    const totalInclVat = totalText === "" ? undefined : Number(totalText);
+    if (totalInclVat !== undefined && !Number.isFinite(totalInclVat)) {
+      return { ok: false, message: "Invoice total must be a number." };
+    }
     await receiveFabric({
       supplierName: readFormString(formData, "supplierName"),
       invoiceRef: readFormString(formData, "invoiceRef"),
       receivedDate: readFormString(formData, "receivedDate"),
+      totalInclVat,
       batches,
       invoiceFile: fileValue,
       createdByUserId: session.user.id,

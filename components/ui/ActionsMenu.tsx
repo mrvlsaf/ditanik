@@ -72,9 +72,12 @@ function coordsFromTrigger(
 export function ActionsMenu({
   items,
   label = "Actions",
+  trigger = "kebab",
 }: Readonly<{
   items: ActionsMenuItem[];
   label?: string;
+  /** A three-dot icon (default) or a text button reading "More". */
+  trigger?: "kebab" | "more";
 }>) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<MenuCoords | null>(null);
@@ -238,9 +241,13 @@ export function ActionsMenu({
           }
           openMenu();
         }}
-        className="inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
+        className={
+          trigger === "more"
+            ? "inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-3.5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
+            : "inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)]"
+        }
       >
-        <KebabIcon />
+        {trigger === "more" ? "More" : <KebabIcon />}
       </button>
       {menu}
     </>

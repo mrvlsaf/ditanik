@@ -4,6 +4,8 @@ export type LpoStatusGate = {
   status: LpoStatus;
   productionFileKey: string | null;
   manufacturerId: string | null;
+  /** Urgent LPOs may go through without a production PDF. */
+  isUrgent?: boolean;
 };
 
 /** Create lands briefly as Received; app auto-moves to Under Review in the same flow. */
@@ -19,7 +21,7 @@ export function canMarkClientDeliveryCompleted(lpo: LpoStatusGate): boolean {
   return (
     lpo.status === LpoStatus.ASSIGNED_TO_MANUFACTURER &&
     Boolean(lpo.manufacturerId) &&
-    Boolean(lpo.productionFileKey)
+    (Boolean(lpo.isUrgent) || Boolean(lpo.productionFileKey))
   );
 }
 

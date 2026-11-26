@@ -70,6 +70,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3001/api/cron/over
 |-------|---------|
 | `/lpo` | LPO dashboard + create |
 | `/invoices` | Supplier invoices (filter by supplier/month) |
+| `/documents` | All generated Quotations / Tax Invoices / Delivery Notes (LPO-linked and independent); `/documents/new` generates one without an LPO |
 | `/manufacturers` | Registry + fabric ledger per manufacturer |
 | `/consumption` | Garment meters table |
 | `/notifications` | Due reminders inbox |

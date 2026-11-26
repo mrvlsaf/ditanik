@@ -45,6 +45,7 @@ export async function generateInvoiceAction(
     });
 
     revalidatePath(`/lpo/${lpoId}`);
+    revalidatePath("/documents");
     return {
       ok: true,
       message: `Tax invoice ${generated.documentNumber} generated.`,

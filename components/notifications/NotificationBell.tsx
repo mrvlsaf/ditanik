@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { useNavigateWithLoader } from "@/components/ui/useNavigateWithLoader";
 import { withRequestNonce } from "@/lib/with-request-nonce";
 
 import {
@@ -32,6 +33,7 @@ export function NotificationBell({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const navigate = useNavigateWithLoader();
   const [isPending, startTransition] = useTransition();
   useGlobalPending(isPending);
 
@@ -95,7 +97,7 @@ export function NotificationBell({
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg">
+        <div className="fixed inset-x-4 top-[68px] z-50 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[22rem]">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2">
             <p className="text-sm font-semibold text-[var(--foreground)]">
               Notifications
@@ -122,7 +124,7 @@ export function NotificationBell({
               No notifications yet.
             </p>
           ) : (
-            <ul className="max-h-80 overflow-y-auto">
+            <ul className="max-h-[60dvh] overflow-y-auto sm:max-h-80">
               {recent.map((item) => {
                 const unread = !item.readAt;
                 return (
@@ -130,12 +132,7 @@ export function NotificationBell({
                     <Link
                       href={item.actionPath}
                       onClick={(event) => {
-                        // Always navigate manually with a fresh nonce, even
-                        // when this notification's actionPath is identical
-                        // to the URL already loaded (e.g. re-clicking the
-                        // same "Client delivery overdue" item twice) —
-                        // otherwise Next.js treats it as a no-op and
-                        // LpoDeepLinkFocus never re-scrolls/re-highlights.
+                        // Navigate with a fresh nonce so re-clicking the same notification still re-focuses (see with-request-nonce.ts).
                         event.preventDefault();
                         setOpen(false);
                         if (unread) {
@@ -144,7 +141,7 @@ export function NotificationBell({
                             refresh();
                           });
                         }
-                        router.push(withRequestNonce(item.actionPath), { scroll: false });
+                        navigate(withRequestNonce(item.actionPath), { scroll: false });
                       }}
                       className={`block px-3 py-3 hover:bg-[var(--surface-muted)] ${
                         unread ? "bg-[var(--brand-muted)]/40" : ""

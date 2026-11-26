@@ -4,16 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { returnFabric } from "@/modules/fabric/application/return-fabric";
+import { readFormString } from "@/lib/form-data";
 
 export type ReturnFabricActionState = {
   ok: boolean;
   message: string | null;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
 
 export async function returnFabricAction(
   _previous: ReturnFabricActionState,

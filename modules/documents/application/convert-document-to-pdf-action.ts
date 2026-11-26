@@ -30,6 +30,8 @@ export async function convertDocumentToPdfAction(
   try {
     const updated = await convertGeneratedDocumentToPdf(generatedDocumentId);
 
+    // The Documents list shows every document; the LPO page only its own.
+    revalidatePath("/documents");
     if (typeof lpoId === "string" && lpoId) {
       revalidatePath(`/lpo/${lpoId}`);
     }

@@ -22,7 +22,3 @@ export const addLpoFabricRequirementSchema = z
       });
     }
   });
-
-export type AddLpoFabricRequirementValues = z.infer<
-  typeof addLpoFabricRequirementSchema
->;

@@ -9,11 +9,25 @@ export type LpoDueSnapshot = {
   lpoNumber: string;
   nickname: string;
   status: LpoStatus;
-  manufacturerAssignmentAt: Date;
-  productionDeadlineAt: Date;
-  clientDeliveryAt: Date;
+  /** Null for urgent LPOs, which have no planned dates. */
+  manufacturerAssignmentAt: Date | null;
+  productionDeadlineAt: Date | null;
+  clientDeliveryAt: Date | null;
+  /** Urgent LPOs never get reminders or overdue flags. */
+  isUrgent?: boolean;
   manufacturerName?: string | null;
 };
+
+/**
+ * A date that the overdue rules have just confirmed is set. Reminders only
+ * ever fire for normal LPOs, which always have all three dates.
+ */
+export function requireDate(value: Date | null): Date {
+  if (!value) {
+    throw new Error("Expected a planned date on this LPO.");
+  }
+  return value;
+}
 
 export type NotificationAction = "assign" | "dates" | "complete";
 
@@ -27,14 +41,9 @@ export function actionPathFor(
 }
 
 /**
- * A client-delivery date can lapse before the LPO has even been assigned to
- * a manufacturer (e.g. it's been stuck Under Review). "Mark client delivery
- * completed" only exists once assigned — see canMarkClientDeliveryCompleted
- * in lpo-status.ts — so CLIENT_DELIVERY_OVERDUE must route to "assign"
- * (the real blocking step) in that case. Routing it to "complete"
- * regardless of status used to send people to a deep link with no matching
- * section on the page; LpoDeepLinkFocus's fallback then silently landed
- * them on the assignment panel with no explanation of why.
+ * A client-delivery date can lapse before the LPO is assigned. "Mark client
+ * delivery completed" only exists once assigned (canMarkClientDeliveryCompleted),
+ * so CLIENT_DELIVERY_OVERDUE routes to "assign" in that case.
  */
 export function actionForType(
   type: NotificationType,
@@ -76,11 +85,13 @@ export function pendingDedupeKey(
 }
 
 export function isReviewPending(lpo: LpoDueSnapshot): boolean {
-  return lpo.status === LpoStatus.UNDER_REVIEW;
+  return !lpo.isUrgent && lpo.status === LpoStatus.UNDER_REVIEW;
 }
 
 export function isAssignmentOverdue(lpo: LpoDueSnapshot, now: Date): boolean {
   return (
+    !lpo.isUrgent &&
+    lpo.manufacturerAssignmentAt !== null &&
     lpo.status === LpoStatus.UNDER_REVIEW &&
     lpo.manufacturerAssignmentAt.getTime() < now.getTime()
   );
@@ -88,6 +99,8 @@ export function isAssignmentOverdue(lpo: LpoDueSnapshot, now: Date): boolean {
 
 export function isProductionOverdue(lpo: LpoDueSnapshot, now: Date): boolean {
   return (
+    !lpo.isUrgent &&
+    lpo.productionDeadlineAt !== null &&
     lpo.status === LpoStatus.ASSIGNED_TO_MANUFACTURER &&
     lpo.productionDeadlineAt.getTime() < now.getTime()
   );
@@ -95,6 +108,8 @@ export function isProductionOverdue(lpo: LpoDueSnapshot, now: Date): boolean {
 
 export function isClientDeliveryOverdue(lpo: LpoDueSnapshot, now: Date): boolean {
   return (
+    !lpo.isUrgent &&
+    lpo.clientDeliveryAt !== null &&
     lpo.status !== LpoStatus.CLIENT_DELIVERY_COMPLETED &&
     lpo.clientDeliveryAt.getTime() < now.getTime()
   );

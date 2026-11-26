@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { readOptionalFormString } from "@/lib/form-data";
 import { generateQuotationDocument } from "@/modules/documents/application/generate-quotation";
 
 export type GenerateQuotationActionState = {
@@ -42,9 +43,11 @@ export async function generateQuotationAction(
     const generated = await generateQuotationDocument({
       lpoId,
       generatedByUserId: dbUser.id,
+      paymentTerms: readOptionalFormString(formData, "paymentTerms"),
     });
 
     revalidatePath(`/lpo/${lpoId}`);
+    revalidatePath("/documents");
     return {
       ok: true,
       message: `Quotation ${generated.documentNumber} generated.`,

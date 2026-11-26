@@ -12,3 +12,8 @@ export function formatCalendarDate(date: Date): string {
 export function formatBusinessDateTime(date: Date): string {
   return formatInTimeZone(date, BUSINESS_TIMEZONE, "dd MMM yyyy HH:mm");
 }
+
+/** A business due date in Asia/Dubai, without the time ("14 Nov 2026"). */
+export function formatBusinessDate(date: Date): string {
+  return formatInTimeZone(date, BUSINESS_TIMEZONE, "d MMM yyyy");
+}

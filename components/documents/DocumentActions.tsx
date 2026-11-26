@@ -3,19 +3,12 @@
 import { useState } from "react";
 
 import { DocumentViewer } from "@/components/documents/DocumentViewer";
+import { fileUrl } from "@/lib/files/file-url";
 
 type DocumentActionsProps = Readonly<{
   fileKey: string;
   fileName: string;
 }>;
-
-function fileUrl(fileKey: string, download = false): string {
-  const params = new URLSearchParams({ key: fileKey });
-  if (download) {
-    params.set("download", "1");
-  }
-  return `/api/files?${params.toString()}`;
-}
 
 /** Explicit View + Download buttons for a stored PDF. */
 export function DocumentActions({ fileKey, fileName }: DocumentActionsProps) {

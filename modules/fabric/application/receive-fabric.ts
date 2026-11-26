@@ -16,8 +16,11 @@ export type ReceiveFabricInput = {
   supplierName: string;
   invoiceRef: string;
   receivedDate: string;
+  /** Optional invoice total including VAT (AED). */
+  totalInclVat?: number;
   batches: ReadonlyArray<ReceiveFabricBatchValues>;
-  invoiceFile: File | UploadedFileRef;
+  /** Optional: a receive can be recorded without a supplier invoice PDF. */
+  invoiceFile?: File | UploadedFileRef | null;
   createdByUserId: string;
 };
 
@@ -51,20 +54,20 @@ export async function receiveFabric(input: ReceiveFabricInput) {
     supplierName: input.supplierName,
     invoiceRef: input.invoiceRef,
     receivedDate: input.receivedDate,
+    totalInclVat: input.totalInclVat,
     batches: input.batches,
   });
 
-  // `input.invoiceFile` is either a raw upload (validated the normal way)
-  // or an UploadedFileRef the browser already PUT to Blob directly (see
-  // lib/direct-blob-upload.ts) — `storePdfUpload` below validates/adopts
-  // whichever it is, so this only needs to reject the raw-upload case being
-  // empty; an UploadedFileRef always has real content by construction.
-  if (input.invoiceFile instanceof File && input.invoiceFile.size === 0) {
-    throw new Error("Supplier invoice PDF is required.");
-  }
+  // Optional supplier invoice PDF: a raw upload or an UploadedFileRef (`storePdfUpload` handles both). An empty input counts as none.
+  const invoiceFile =
+    input.invoiceFile instanceof File && input.invoiceFile.size === 0
+      ? null
+      : (input.invoiceFile ?? null);
 
   const receivedDate = parseCalendarDateInput(values.receivedDate);
-  const storedFile = await storePdfUpload(input.invoiceFile, "fabric-invoices");
+  const storedFile = invoiceFile
+    ? await storePdfUpload(invoiceFile, "fabric-invoices")
+    : null;
   const fabricCodes = await resolveFabricCodes(values.batches.length);
 
   try {
@@ -74,9 +77,10 @@ export async function receiveFabric(input: ReceiveFabricInput) {
           supplierName: values.supplierName,
           invoiceRef: values.invoiceRef,
           receivedDate,
-          invoiceFileKey: storedFile.fileKey,
-          invoiceFileName: storedFile.fileName,
-          invoiceMimeType: storedFile.mimeType,
+          totalInclVat: values.totalInclVat ?? null,
+          invoiceFileKey: storedFile?.fileKey ?? null,
+          invoiceFileName: storedFile?.fileName ?? null,
+          invoiceMimeType: storedFile?.mimeType ?? null,
           createdById: input.createdByUserId,
         },
       });
@@ -121,6 +125,7 @@ export async function receiveFabric(input: ReceiveFabricInput) {
             supplierName: invoice.supplierName,
             invoiceRef: invoice.invoiceRef,
             receivedDate: values.receivedDate,
+            totalInclVat: values.totalInclVat ?? null,
             batchCount: createdBatches.length,
             batchIds: createdBatches.map((batch) => batch.id),
             fabricCodes: createdBatches.map((batch) => batch.fabricCode),

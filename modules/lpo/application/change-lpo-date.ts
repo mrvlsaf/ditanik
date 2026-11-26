@@ -17,12 +17,12 @@ export type ChangeLpoDateInput = {
 
 function currentValueForField(
   lpo: {
-    manufacturerAssignmentAt: Date;
-    productionDeadlineAt: Date;
-    clientDeliveryAt: Date;
+    manufacturerAssignmentAt: Date | null;
+    productionDeadlineAt: Date | null;
+    clientDeliveryAt: Date | null;
   },
   field: LpoDateField,
-): Date {
+): Date | null {
   switch (field) {
     case LpoDateField.ASSIGNMENT:
       return lpo.manufacturerAssignmentAt;
@@ -58,7 +58,14 @@ export async function changeLpoDate(input: ChangeLpoDateInput) {
     throw new Error("LPO not found.");
   }
 
+  if (lpo.isUrgent) {
+    throw new Error("Urgent LPOs have no planned dates to change.");
+  }
+
   const oldValue = currentValueForField(lpo, values.field);
+  if (!oldValue) {
+    throw new Error("This LPO has no planned date to change.");
+  }
   const newValue = calculateDueAtFromCalendarDate(values.newDate);
 
   if (oldValue.getTime() === newValue.getTime()) {

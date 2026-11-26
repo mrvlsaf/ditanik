@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/app-shell/AppShell";
 import {
+  WorkspaceName,
+  WORKSPACE_FALLBACK_NAME,
+} from "@/components/app-shell/WorkspaceName";
+import {
   NotificationBellLoader,
   NotificationBellSkeleton,
 } from "@/components/notifications/NotificationBellLoader";
@@ -22,6 +26,11 @@ export default async function AppSectionLayout({
   return (
     <AppShell
       userEmail={session.user.email}
+      workspaceSlot={
+        <Suspense fallback={WORKSPACE_FALLBACK_NAME}>
+          <WorkspaceName />
+        </Suspense>
+      }
       notificationSlot={
         <Suspense fallback={<NotificationBellSkeleton />}>
           <NotificationBellLoader />

@@ -16,6 +16,7 @@ export async function markClientDeliveryCompleted(input: {
     status: lpo.status,
     productionFileKey: lpo.productionFileKey,
     manufacturerId: lpo.manufacturerId,
+    isUrgent: lpo.isUrgent,
   });
 
   return prisma.$transaction(async (tx) => {

@@ -10,5 +10,3 @@ export const issueFabricSchema = z.object({
   transportRef: z.string().trim().optional(),
   lpoId: z.string().trim().min(1).optional(),
 });
-
-export type IssueFabricValues = z.infer<typeof issueFabricSchema>;

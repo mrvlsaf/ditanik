@@ -30,7 +30,7 @@ export default auth((request) => {
   }
 
   if (isLoggedIn && isLoginPage) {
-    return NextResponse.redirect(new URL("/lpo", request.nextUrl.origin));
+    return NextResponse.redirect(new URL("/", request.nextUrl.origin));
   }
 
   return NextResponse.next();

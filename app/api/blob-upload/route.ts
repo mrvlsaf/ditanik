@@ -5,19 +5,17 @@ import { auth } from "@/auth";
 import { BLOB_KEY_PREFIX } from "@/modules/files/domain/pdf-rules";
 
 /**
- * Server half of the browser's direct-to-Blob upload (see
- * lib/direct-blob-upload.ts for why this exists — Vercel's Serverless
- * Function payload cap). The browser calls `upload()` from
- * `@vercel/blob/client`, which POSTs here first to get a short-lived,
- * scoped client token before it PUTs the actual file straight to Blob
- * storage; this route never sees the file's bytes.
- *
- * `onUploadCompleted` is intentionally omitted: nothing here needs to react
- * to the browser's PUT finishing, because the Server Action that follows it
- * (with the resulting file reference in the form) is what commits anything
- * to the database — see readPdfUploadFromForm / FileStorage.adopt().
+ * Server half of the browser's direct-to-Blob upload (lib/direct-blob-upload.ts):
+ * issues a short-lived scoped client token; the file bytes never pass through here.
+ * No `onUploadCompleted`: the Server Action that follows commits to the database
+ * (see readPdfUploadFromForm / FileStorage.adopt()).
  */
-const ALLOWED_FOLDERS = new Set(["lpo-originals", "lpo-production", "fabric-invoices"]);
+const ALLOWED_FOLDERS = new Set([
+  "lpo-originals",
+  "lpo-production",
+  "fabric-invoices",
+  "supplier-invoices",
+]);
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: Request): Promise<NextResponse> {

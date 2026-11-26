@@ -58,7 +58,6 @@ enum NotificationEmailStatus {
 
 enum DocumentType {
   QUOTATION
-  QUOTE
   TAX_INVOICE
   DELIVERY_NOTE
 }
@@ -76,6 +75,7 @@ model User {
   lpoDateChanges    LpoDateChange[]
   manufacturersCreated Manufacturer[]  @relation("ManufacturerCreatedBy")
   fabricInvoices    FabricSupplierInvoice[]
+  supplierInvoices  SupplierInvoice[]
   fabricMovements   FabricMovement[]
   fabricVariances   FabricVariance[]
   auditLogs         AuditLog[]
@@ -109,13 +109,17 @@ model Lpo {
   clientName                 String    @map("client_name")
   lpoDate                    DateTime  @db.Date @map("lpo_date")
   receivedDate               DateTime  @db.Date @map("received_date")
-  originalFileKey            String    @map("original_file_key")
-  originalFileName           String    @map("original_file_name")
-  originalMimeType           String    @map("original_mime_type")
+  /// Urgent LPOs may be created without the customer's PDF, so the original file is optional.
+  originalFileKey            String?   @map("original_file_key")
+  originalFileName           String?   @map("original_file_name")
+  originalMimeType           String?   @map("original_mime_type")
   status                     LpoStatus @default(LPO_RECEIVED)
-  manufacturerAssignmentAt   DateTime  @map("manufacturer_assignment_at")
-  productionDeadlineAt       DateTime  @map("production_deadline_at")
-  clientDeliveryAt           DateTime  @map("client_delivery_at")
+  /// Urgent LPOs skip the planned dates (and so every reminder); normal LPOs always have all three.
+  manufacturerAssignmentAt   DateTime? @map("manufacturer_assignment_at")
+  productionDeadlineAt       DateTime? @map("production_deadline_at")
+  clientDeliveryAt           DateTime? @map("client_delivery_at")
+  /// Urgent LPO: rushed through without planned dates, reminders or a required PDF.
+  isUrgent                   Boolean   @default(false) @map("is_urgent")
   manufacturerId             String?   @map("manufacturer_id")
   productionFileKey          String?   @map("production_file_key")
   productionFileName         String?   @map("production_file_name")
@@ -125,7 +129,7 @@ model Lpo {
   createdAt                  DateTime  @default(now()) @map("created_at")
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 
-  /// Client/commercial details captured for document generation (Quotation/Quote/Invoice/Delivery Note).
+  /// Client/commercial details captured for document generation (Quotation/Invoice/Delivery Note).
   clientSubEntityName        String?   @map("client_sub_entity_name")
   clientTrn                  String?   @map("client_trn")
   invoiceAddress             String?   @map("invoice_address") @db.Text
@@ -151,7 +155,17 @@ model Lpo {
   @@index([productionDeadlineAt])
   @@index([clientDeliveryAt])
   @@index([manufacturerId])
+  @@index([isUrgent])
   @@map("lpos")
+}
+
+/// Single-row counter behind the URGENT_1, URGENT_2 ... LPO numbers. It only
+/// ever goes up, so a number is never reused even if an urgent LPO is removed.
+model UrgentLpoCounter {
+  id        Int @id @default(1)
+  lastValue Int @default(0) @map("last_value")
+
+  @@map("urgent_lpo_counter")
 }
 
 model LpoDateChange {
@@ -212,6 +226,9 @@ model FabricSupplierInvoice {
   invoiceFileKey  String? @map("invoice_file_key")
   invoiceFileName String? @map("invoice_file_name")
   invoiceMimeType String? @map("invoice_mime_type")
+  /// Optional invoice total including VAT (AED), for the Invoices VAT summary.
+  /// The VAT part is worked out from it at the standard rate.
+  totalInclVat  Decimal? @map("total_incl_vat") @db.Decimal(14, 2)
   createdById   String   @map("created_by_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -224,6 +241,58 @@ model FabricSupplierInvoice {
   @@index([receivedDate])
   @@index([isActive])
   @@map("fabric_supplier_invoices")
+}
+
+enum SupplierInvoiceKind {
+  ACCESSORY
+  MANUFACTURING
+}
+
+/// An invoice received from a supplier for accessories (buttons, zips, thread) or for
+/// manufacturing (workshops, tailors). Kept on its own: not linked to an LPO or a
+/// manufacturer. Fabric invoices stay in FabricSupplierInvoice because they create batches.
+model SupplierInvoice {
+  id           String                @id @default(cuid())
+  kind         SupplierInvoiceKind
+  supplierName String                @map("supplier_name")
+  /// The supplier's own reference; may be blank.
+  invoiceRef   String?               @map("invoice_ref")
+  receivedDate DateTime              @db.Date @map("received_date")
+  /// The supplier's original PDF. Required, so the VAT records are complete.
+  fileKey      String                @map("file_key")
+  fileName     String                @map("file_name")
+  mimeType     String                @map("mime_type")
+  subtotal     Decimal               @db.Decimal(14, 2)
+  vatAmount    Decimal               @map("vat_amount") @db.Decimal(14, 2)
+  total        Decimal               @db.Decimal(14, 2)
+  createdById  String                @map("created_by_id")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  createdBy User                  @relation(fields: [createdById], references: [id])
+  lines     SupplierInvoiceLine[]
+
+  @@index([kind])
+  @@index([receivedDate])
+  @@map("supplier_invoices")
+}
+
+model SupplierInvoiceLine {
+  id          String   @id @default(cuid())
+  invoiceId   String   @map("invoice_id")
+  position    Int
+  description String
+  quantity    Decimal  @db.Decimal(12, 3)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(14, 4)
+  vatPercent  Decimal  @map("vat_percent") @db.Decimal(5, 2)
+  /// quantity x unit price, before VAT.
+  lineTotal   Decimal  @map("line_total") @db.Decimal(14, 2)
+  vatAmount   Decimal  @map("vat_amount") @db.Decimal(14, 2)
+
+  invoice SupplierInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("supplier_invoice_lines")
 }
 
 model FabricBatch {
@@ -369,7 +438,7 @@ model DocumentSequence {
   @@map("document_sequences")
 }
 
-/// One row per generated Quotation/Quote/Tax Invoice/Delivery Note file — the audit
+/// One row per generated Quotation/Tax Invoice/Delivery Note file — the audit
 /// trail and re-download source. Keeps its own snapshot of the data used so a document
 /// generated today still reads the same on re-download even if the LPO or company
 /// profile changes afterwards.
@@ -377,7 +446,10 @@ model GeneratedDocument {
   id             String       @id @default(cuid())
   type           DocumentType
   documentNumber String       @unique @map("document_number")
-  lpoId          String       @map("lpo_id")
+  /// Null for independent documents generated without an LPO (D-030).
+  lpoId          String?      @map("lpo_id")
+  /// Denormalised client name for list/search (also present inside `snapshot`).
+  clientName     String?      @map("client_name")
   fileKey        String       @map("file_key")
   fileName       String       @map("file_name")
   mimeType       String       @map("mime_type")
@@ -391,8 +463,8 @@ model GeneratedDocument {
   generatedById  String       @map("generated_by_id")
   generatedAt    DateTime     @default(now()) @map("generated_at")
 
-  lpo         Lpo  @relation(fields: [lpoId], references: [id], onDelete: Restrict)
-  generatedBy User @relation(fields: [generatedById], references: [id])
+  lpo         Lpo?  @relation(fields: [lpoId], references: [id], onDelete: Restrict)
+  generatedBy User  @relation(fields: [generatedById], references: [id])
 
   @@index([lpoId])
   @@index([type, generatedAt])

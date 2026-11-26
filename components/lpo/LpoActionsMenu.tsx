@@ -6,14 +6,7 @@ import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { ActionsMenu, type ActionsMenuItem } from "@/components/ui/ActionsMenu";
 import { useConfirmDelete } from "@/components/ui/useConfirmDelete";
 import { deleteLpoAction } from "@/modules/lpo/application/delete-lpo-action";
-
-function fileUrl(fileKey: string, download = false): string {
-  const params = new URLSearchParams({ key: fileKey });
-  if (download) {
-    params.set("download", "1");
-  }
-  return `/api/files?${params.toString()}`;
-}
+import { fileUrl } from "@/lib/files/file-url";
 
 export function LpoActionsMenu({
   lpoId,
@@ -22,14 +15,18 @@ export function LpoActionsMenu({
   fileName,
   redirectTo,
   includeDocumentActions = true,
+  trigger,
 }: Readonly<{
   lpoId: string;
   lpoNumber: string;
-  fileKey: string;
-  fileName: string;
+  /** Null for an urgent LPO created without the customer's PDF. */
+  fileKey: string | null;
+  fileName: string | null;
   redirectTo?: string;
   /** When false, only Delete stays in the ⋮ menu (detail page shows View/Download inline). */
   includeDocumentActions?: boolean;
+  /** "more" shows a text button reading More instead of the three-dot icon. */
+  trigger?: "kebab" | "more";
 }>) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const { requestDelete, isPending, dialog } = useConfirmDelete({
@@ -42,7 +39,7 @@ export function LpoActionsMenu({
 
   const items: ActionsMenuItem[] = [];
 
-  if (includeDocumentActions) {
+  if (includeDocumentActions && fileKey && fileName) {
     items.push(
       {
         kind: "button",
@@ -77,9 +74,13 @@ export function LpoActionsMenu({
 
   return (
     <>
-      <ActionsMenu items={items} label={`Actions for LPO ${lpoNumber}`} />
+      <ActionsMenu
+        items={items}
+        label={`Actions for LPO ${lpoNumber}`}
+        trigger={trigger}
+      />
       {dialog}
-      {includeDocumentActions && isViewerOpen ? (
+      {includeDocumentActions && fileKey && fileName && isViewerOpen ? (
         <DocumentViewer
           fileUrl={fileUrl(fileKey)}
           title={fileName}

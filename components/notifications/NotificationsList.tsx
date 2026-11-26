@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { useGlobalPending } from "@/components/app-shell/GlobalLoadingProvider";
+import { Chip } from "@/components/ui/Chip";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useNavigateWithLoader } from "@/components/ui/useNavigateWithLoader";
 import { withRequestNonce } from "@/lib/with-request-nonce";
+import {
+  countUnread,
+  filterByView,
+  notificationActionLabel,
+  notificationKind,
+  type NotificationView,
+} from "@/modules/notification/domain/notification-view";
 
 import {
   markAllNotificationsReadAction,
@@ -30,27 +40,53 @@ export function NotificationsList({
   items: NotificationListItem[];
 }>) {
   const router = useRouter();
+  const navigate = useNavigateWithLoader();
   const [isPending, startTransition] = useTransition();
+  const [view, setView] = useState<NotificationView>("all");
   useGlobalPending(isPending);
 
-  if (items.length === 0) {
-    return (
-      <p className="surface-card px-4 py-8 text-center text-sm text-zinc-500">
-        No notifications yet. The daily cron creates them when LPOs need action.
-      </p>
-    );
+  const unreadCount = countUnread(items);
+  const shown = filterByView(items, view);
+
+  function markRead(id: string) {
+    startTransition(async () => {
+      await markNotificationReadAction(id);
+      router.refresh();
+    });
   }
 
-  const hasUnread = items.some((item) => !item.readAt);
+  const filters: Array<{ key: NotificationView; label: string }> = [
+    { key: "all", label: "All" },
+    { key: "unread", label: `Unread (${unreadCount})` },
+  ];
 
   return (
-    <div className="space-y-3">
-      {hasUnread ? (
-        <div className="flex justify-end">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div
+          role="group"
+          aria-label="Filter notifications"
+          className="flex flex-wrap gap-2.5"
+        >
+          {filters.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              aria-pressed={view === filter.key}
+              onClick={() => setView(filter.key)}
+              className={
+                view === filter.key ? "filter-chip filter-chip-on" : "filter-chip"
+              }
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        {unreadCount > 0 ? (
           <button
             type="button"
             disabled={isPending}
-            className="text-sm font-medium text-zinc-700 hover:text-zinc-900 disabled:opacity-60"
+            className="btn-secondary"
             onClick={() => {
               startTransition(async () => {
                 await markAllNotificationsReadAction();
@@ -60,69 +96,79 @@ export function NotificationsList({
           >
             Mark all as read
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
-      <ul className="divide-y divide-zinc-100 overflow-hidden surface-card">
-        {items.map((item) => {
-          const unread = !item.readAt;
-          return (
-            <li key={item.id}>
-              <div
-                className={`flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between ${
-                  unread ? "bg-amber-50/50" : ""
-                }`}
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-zinc-900">{item.title}</p>
-                  <p className="mt-1 text-sm text-zinc-600">{item.body}</p>
-                  <p className="mt-1 text-xs text-zinc-400">
-                    LPO {item.lpoNumber} · {item.nickname} ·{" "}
-                    {new Date(item.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Link
-                    href={item.actionPath}
-                    onClick={(event) => {
-                      // Force navigation with a fresh nonce even when this
-                      // item's actionPath matches the URL already loaded —
-                      // otherwise Next.js no-ops the navigation and
-                      // LpoDeepLinkFocus never re-scrolls/re-highlights.
-                      event.preventDefault();
-                      if (unread) {
-                        startTransition(async () => {
-                          await markNotificationReadAction(item.id);
-                          router.refresh();
-                        });
-                      }
-                      router.push(withRequestNonce(item.actionPath), { scroll: false });
-                    }}
-                    className="btn-primary"
-                  >
-                    Open
-                  </Link>
-                  {unread ? (
-                    <button
-                      type="button"
-                      disabled={isPending}
-                      className="inline-flex min-h-10 items-center rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
-                      onClick={() => {
-                        startTransition(async () => {
-                          await markNotificationReadAction(item.id);
-                          router.refresh();
-                        });
+      {shown.length === 0 ? (
+        <EmptyState
+          title={items.length === 0 ? "You are all caught up" : "No unread notifications"}
+        >
+          {items.length === 0
+            ? "New reminders appear here when an LPO needs attention."
+            : "Every reminder has been read. Choose All to see them again."}
+        </EmptyState>
+      ) : (
+        <section className="surface-card overflow-hidden" aria-label="Notification list">
+          <ul>
+            {shown.map((item) => {
+              const unread = !item.readAt;
+              const kind = notificationKind(item.type);
+              return (
+                <li
+                  key={item.id}
+                  className={`flex flex-wrap items-center justify-between gap-3.5 border-b border-[var(--border)] px-5 py-4 last:border-b-0 ${
+                    unread ? "bg-[#fffaf0]" : ""
+                  }`}
+                >
+                  <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Chip tone={kind.tone}>{kind.label}</Chip>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {new Date(item.createdAt).toLocaleString()}
+                      </span>
+                      {unread ? <Chip tone="gray">New</Chip> : null}
+                    </div>
+                    <p className="text-[15px] font-bold">{item.title}</p>
+                    <p className="text-sm leading-relaxed text-[#3a413a]">{item.body}</p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      LPO {item.lpoNumber} · {item.nickname}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={item.actionPath}
+                      onClick={(event) => {
+                        // Force navigation with a fresh nonce even when this
+                        // item's actionPath matches the URL already loaded:
+                        // otherwise Next.js no-ops the navigation and the LPO
+                        // page never reopens the right tab.
+                        event.preventDefault();
+                        if (unread) {
+                          markRead(item.id);
+                        }
+                        navigate(withRequestNonce(item.actionPath), { scroll: false });
                       }}
+                      className="btn-primary"
                     >
-                      Mark read
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                      {notificationActionLabel(item.type, item.actionPath)}
+                    </Link>
+                    {unread ? (
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        className="btn-secondary"
+                        onClick={() => markRead(item.id)}
+                      >
+                        Mark read
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

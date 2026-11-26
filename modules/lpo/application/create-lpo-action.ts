@@ -7,21 +7,14 @@ import { prisma } from "@/lib/db";
 import { createLpo } from "@/modules/lpo/application/create-lpo";
 import { readPdfUploadFromForm } from "@/modules/files/application/store-pdf";
 import type { LpoLineItemValues } from "@/modules/lpo/schemas/line-items";
+import { readFormString, readOptionalFormString } from "@/lib/form-data";
 
 export type CreateLpoActionState = {
   ok: boolean;
   message: string | null;
+  /** Set when the LPO was created, so the form can open it. */
+  lpoId?: string;
 };
-
-function readFormString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
-
-function readOptionalFormString(formData: FormData, key: string): string | undefined {
-  const value = readFormString(formData, key).trim();
-  return value ? value : undefined;
-}
 
 function parseLineItemsFromForm(formData: FormData): LpoLineItemValues[] {
   const lineItemsJson = readFormString(formData, "lineItemsJson");
@@ -92,15 +85,17 @@ export async function createLpoAction(
     };
   }
 
+  const isUrgent = readFormString(formData, "isUrgent") === "on";
   const fileValue = readPdfUploadFromForm(formData, "file", "fileRef");
-  if (!fileValue) {
+  // The customer's PDF is only optional for an urgent LPO.
+  if (!fileValue && !isUrgent) {
     return { ok: false, message: "LPO document PDF is required." };
   }
 
   try {
     const lineItems = parseLineItemsFromForm(formData);
 
-    await createLpo({
+    const created = await createLpo({
       lpoNumber: readFormString(formData, "lpoNumber"),
       nickname: readFormString(formData, "nickname"),
       clientName: readFormString(formData, "clientName"),
@@ -115,11 +110,16 @@ export async function createLpoAction(
       currency: readOptionalFormString(formData, "currency"),
       lineItems,
       file: fileValue,
+      isUrgent,
       createdByUserId: dbUser.id,
     });
 
     revalidatePath("/lpo");
-    return { ok: true, message: "LPO created." };
+    return {
+      ok: true,
+      message: isUrgent ? `Urgent LPO created as ${created.lpoNumber}.` : "LPO created.",
+      lpoId: created.id,
+    };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Could not create LPO.";
     return { ok: false, message };

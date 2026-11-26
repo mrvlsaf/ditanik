@@ -3,14 +3,9 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import { BUSINESS_TIMEZONE } from "@/lib/dates/timezone";
 
-/**
- * Type code embedded in generated document numbers. QUO for Quote has not
- * been confirmed against a real generated Quote number — verify it is
- * correct before relying on it operationally.
- */
-export const DOCUMENT_TYPE_CODE: Record<DocumentType, string> = {
+/** Type code embedded in generated document numbers. */
+const DOCUMENT_TYPE_CODE: Record<DocumentType, string> = {
   [DocumentType.QUOTATION]: "QTN",
-  [DocumentType.QUOTE]: "QUO",
   [DocumentType.TAX_INVOICE]: "INV",
   [DocumentType.DELIVERY_NOTE]: "DN",
 };
@@ -22,7 +17,7 @@ export function dubaiCalendarDayKey(date: Date): Date {
 }
 
 /** Full 8-digit DDMMYYYY in Asia/Dubai — the app always emits all 8 digits. */
-export function formatDdMmYyyy(date: Date): string {
+function formatDdMmYyyy(date: Date): string {
   return formatInTimeZone(date, BUSINESS_TIMEZONE, "ddMMyyyy");
 }
 

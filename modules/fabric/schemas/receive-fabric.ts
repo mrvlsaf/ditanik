@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const receiveFabricBatchSchema = z.object({
+const receiveFabricBatchSchema = z.object({
   fabricType: z.string().trim().min(1, "Fabric type is required"),
   colour: z.string().trim().min(1, "Colour is required"),
   remarks: z.string().trim().optional(),
@@ -13,10 +13,15 @@ export const receiveFabricSchema = z.object({
   receivedDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Received date must be YYYY-MM-DD"),
+  /** Optional invoice total including VAT (AED), for the Invoices VAT summary. */
+  totalInclVat: z
+    .number()
+    .min(0, "Invoice total cannot be negative")
+    .max(999_999_999_999, "Invoice total is too large")
+    .optional(),
   batches: z
     .array(receiveFabricBatchSchema)
     .min(1, "At least one fabric batch is required"),
 });
 
 export type ReceiveFabricBatchValues = z.infer<typeof receiveFabricBatchSchema>;
-export type ReceiveFabricValues = z.infer<typeof receiveFabricSchema>;
