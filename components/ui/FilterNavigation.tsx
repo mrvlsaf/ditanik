@@ -107,11 +107,13 @@ export function FilterLink({
   children: React.ReactNode;
 }>) {
   const onClick = useFilterClick();
+  const nav = useFilterNavigation();
   return (
     <Link
       href={href}
       className={className}
       scroll={scroll}
+      data-no-global-loader={nav ? "" : undefined}
       onClick={(event) => onClick(event, href, { scroll })}
     >
       {children}
@@ -132,9 +134,11 @@ export function FilterOptionLink({
   children: React.ReactNode;
 }>) {
   const onClick = useFilterClick();
+  const nav = useFilterNavigation();
   return (
     <Link
       href={href}
+      data-no-global-loader={nav ? "" : undefined}
       aria-current={active ? "true" : undefined}
       className={className}
       onClick={(event) => onClick(event, href)}

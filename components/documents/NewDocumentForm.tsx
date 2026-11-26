@@ -11,10 +11,12 @@ import {
   INPUT_CLASS,
   TEXTAREA_CLASS,
 } from "@/components/ui/Field";
+import { editQuotationAction } from "@/modules/documents/application/edit-quotation-action";
 import {
   generateIndependentDocumentAction,
   type GenerateIndependentDocumentActionState,
 } from "@/modules/documents/application/generate-independent-document-action";
+import type { QuotationEditInitial } from "@/modules/documents/domain/quotation-edit";
 import {
   DOCUMENT_TYPE_LABEL,
   INDEPENDENT_DOCUMENT_TYPES,
@@ -28,6 +30,7 @@ import {
 } from "@/modules/lpo/domain/line-item-rows";
 import { fileUrl } from "@/lib/files/file-url";
 import { formatAmount } from "@/lib/format-amount";
+import { PaymentTermsInput } from "@/components/documents/PaymentTermsInput";
 
 const initialState: GenerateIndependentDocumentActionState = {
   ok: false,
@@ -40,18 +43,33 @@ const DOCUMENT_TYPE_HELP: Record<IndependentDocumentType, string> = {
   DELIVERY_NOTE: "Lists what goes out with the delivery.",
 };
 
+/** Set when an existing quotation is being edited instead of a new document made. */
+export type QuotationEditConfig = {
+  documentId: string;
+  documentNumber: string;
+  /** Edited on the day it was made, so it keeps its number. */
+  sameDay: boolean;
+  createdLabel: string;
+  initial: QuotationEditInitial;
+};
+
 function DocumentForm({
   siteCodeSuggestions,
+  edit,
   onAnother,
 }: Readonly<{
   siteCodeSuggestions: string[];
+  edit?: QuotationEditConfig;
   onAnother: () => void;
 }>) {
+  const initial = edit?.initial;
   const [type, setType] = useState<IndependentDocumentType>("QUOTATION");
-  const [clientName, setClientName] = useState("");
-  const [lines, setLines] = useState<LpoLineItemRow[]>([{ ...EMPTY_LINE_ITEM_ROW }]);
+  const [clientName, setClientName] = useState(initial?.clientName ?? "");
+  const [lines, setLines] = useState<LpoLineItemRow[]>(
+    initial && initial.lines.length > 0 ? initial.lines : [{ ...EMPTY_LINE_ITEM_ROW }],
+  );
   const [state, formAction, isPending] = useActionState(
-    generateIndependentDocumentAction,
+    edit ? editQuotationAction : generateIndependentDocumentAction,
     initialState,
   );
   useGlobalPending(isPending);
@@ -72,9 +90,9 @@ function DocumentForm({
           {state.message}
         </p>
         <p className="text-sm text-[var(--text-muted)]">
-          It&apos;s saved in Documents, where you can download it again or convert it to
-          PDF. Generated documents can&apos;t be edited. To correct one, create a new
-          document.
+          {edit
+            ? "It's saved in Documents, where you can download it again or convert it to PDF."
+            : "It's saved in Documents, where you can download it again or convert it to PDF. To change a quotation later, use Edit on its row in Documents."}
         </p>
         <div className="flex flex-wrap gap-3">
           <a href={fileUrl(state.fileKey, true)} className="btn-primary">
@@ -83,9 +101,11 @@ function DocumentForm({
           <Link href="/documents" className="btn-secondary">
             View in Documents
           </Link>
-          <button type="button" onClick={onAnother} className="btn-secondary">
-            Create another
-          </button>
+          {edit ? null : (
+            <button type="button" onClick={onAnother} className="btn-secondary">
+              Create another
+            </button>
+          )}
         </div>
       </div>
     );
@@ -109,47 +129,64 @@ function DocumentForm({
         )}
       />
 
+      {edit ? (
+        <>
+          <input type="hidden" name="documentId" value={edit.documentId} />
+          <input type="hidden" name="type" value="QUOTATION" />
+        </>
+      ) : null}
+
       <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-5">
-        <FormSection step={1} title="What are you making?">
-          <div
-            role="radiogroup"
-            aria-label="Document type"
-            className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))]"
-          >
-            {INDEPENDENT_DOCUMENT_TYPES.map((value) => (
-              <label
-                key={value}
-                className={`flex cursor-pointer flex-col gap-1 rounded-xl border-2 p-3.5 focus-within:ring-2 focus-within:ring-[var(--ring)] ${
-                  type === value
-                    ? "border-[var(--brand)] bg-[var(--brand-muted)]"
-                    : "border-[var(--border)] bg-white hover:bg-[var(--surface-muted)]"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="type"
-                  value={value}
-                  checked={type === value}
-                  onChange={() => setType(value)}
-                  className="sr-only"
-                />
-                <span className="text-[15px] font-bold">
-                  {DOCUMENT_TYPE_LABEL[value]}
-                </span>
-                <span className="text-xs text-[var(--text-muted)]">
-                  {DOCUMENT_TYPE_HELP[value]}
-                </span>
-              </label>
-            ))}
-          </div>
-          <p className="text-xs text-[var(--text-muted)]">
-            Dated today and numbered like every other document (SITE-TYPE-DDMMYYYY-NN).
-            Not linked to any LPO.
-            {type === "QUOTATION"
-              ? " Validity (30 days) and the standard terms are added automatically."
-              : null}
-          </p>
-        </FormSection>
+        {edit ? (
+          <FormSection step={1} title={`Editing ${edit.documentNumber}`}>
+            <p className="text-sm leading-relaxed text-[var(--text-muted)]">
+              {edit.sameDay
+                ? "This quotation was made today, so saving keeps its number and date and replaces its file. A PDF made from the old file is removed; convert it again afterwards."
+                : `This quotation was made on ${edit.createdLabel}. Saving replaces it with the edited version, dated today and with a new number. ${edit.documentNumber} will no longer exist.`}
+            </p>
+          </FormSection>
+        ) : (
+          <FormSection step={1} title="What are you making?">
+            <div
+              role="radiogroup"
+              aria-label="Document type"
+              className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))]"
+            >
+              {INDEPENDENT_DOCUMENT_TYPES.map((value) => (
+                <label
+                  key={value}
+                  className={`flex cursor-pointer flex-col gap-1 rounded-xl border-2 p-3.5 focus-within:ring-2 focus-within:ring-[var(--ring)] ${
+                    type === value
+                      ? "border-[var(--brand)] bg-[var(--brand-muted)]"
+                      : "border-[var(--border)] bg-white hover:bg-[var(--surface-muted)]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="type"
+                    value={value}
+                    checked={type === value}
+                    onChange={() => setType(value)}
+                    className="sr-only"
+                  />
+                  <span className="text-[15px] font-bold">
+                    {DOCUMENT_TYPE_LABEL[value]}
+                  </span>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {DOCUMENT_TYPE_HELP[value]}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Dated today and numbered like every other document (SITE-TYPE-DDMMYYYY-NN).
+              Not linked to any LPO.
+              {type === "QUOTATION"
+                ? " Validity (30 days) is added automatically, and the terms come from your company profile."
+                : null}
+            </p>
+          </FormSection>
+        )}
 
         <FormSection step={2} title="Who is it for?">
           <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))]">
@@ -161,6 +198,8 @@ function DocumentForm({
               <input
                 name="siteCode"
                 required
+                defaultValue={initial?.siteCode}
+                readOnly={edit?.sameDay}
                 list="site-code-suggestions"
                 maxLength={20}
                 autoComplete="off"
@@ -183,25 +222,40 @@ function DocumentForm({
               />
             </Field>
             <Field label="Branch or sub-entity" optional>
-              <input name="clientSubEntityName" className={INPUT_CLASS} />
+              <input
+                name="clientSubEntityName"
+                defaultValue={initial?.clientSubEntityName}
+                className={INPUT_CLASS}
+              />
             </Field>
             <Field
               label="Client TRN"
               optional
               tip="The client's tax registration number. Optional, but tax invoices usually need it."
             >
-              <input name="clientTrn" className={INPUT_CLASS} />
+              <input
+                name="clientTrn"
+                defaultValue={initial?.clientTrn}
+                className={INPUT_CLASS}
+              />
             </Field>
           </div>
           <Field
-            label={type === "DELIVERY_NOTE" ? "Delivery address" : "Invoice address"}
+            label={
+              type === "DELIVERY_NOTE"
+                ? "Delivery address"
+                : type === "QUOTATION"
+                  ? "Customer address"
+                  : "Invoice address"
+            }
           >
             <textarea
               name="address"
               required
+              defaultValue={initial?.address}
               rows={3}
               className={TEXTAREA_CLASS}
-              placeholder="One line per row. The first line is printed on its own line."
+              placeholder="One line per row. Each line is printed on its own line."
             />
           </Field>
         </FormSection>
@@ -217,9 +271,13 @@ function DocumentForm({
                 <input name="lpoReference" className={INPUT_CLASS} />
               </Field>
             ) : (
-              <p className="text-sm text-[var(--text-muted)]">
-                A quotation has no extra details. Add the items below.
-              </p>
+              <Field
+                label="Payment terms"
+                optional
+                hint="Printed in bold in the Payment Terms clause. Leave blank to use the wording in your company terms and conditions."
+              >
+                <PaymentTermsInput initialValue={initial?.paymentTerms} />
+              </Field>
             )}
             {type === "DELIVERY_NOTE" ? (
               <>
@@ -429,15 +487,25 @@ function DocumentForm({
             </p>
           ) : null}
           <button type="submit" disabled={isPending} className="btn-primary w-full">
-            {isPending ? "Creating…" : `Create ${typeLower}`}
+            {isPending
+              ? edit
+                ? "Saving…"
+                : "Creating…"
+              : edit
+                ? edit.sameDay
+                  ? "Save changes"
+                  : "Save and renumber"
+                : `Create ${typeLower}`}
           </button>
         </section>
         <section className="surface-card flex flex-col gap-2 p-5">
           <h2 className="text-[15px] font-bold">What happens next</h2>
           <p className="text-sm text-[var(--text-muted)]">
-            The document gets its number, such as ABC-… with today&apos;s date, and is
-            saved in Documents. You can download it or convert it to PDF there, straight
-            away.
+            {edit
+              ? edit.sameDay
+                ? "The quotation keeps its number and date, and its file is replaced in Documents."
+                : "The quotation is replaced in Documents by the edited version, with today's date and a new number. The old number is retired."
+              : "The document gets its number, such as ABC-… with today's date, and is saved in Documents. You can download it or convert it to PDF there, straight away."}
           </p>
         </section>
       </aside>
@@ -448,7 +516,8 @@ function DocumentForm({
 /** "New document" form: Quotation / Tax Invoice / Delivery Note without an LPO. */
 export function NewDocumentForm({
   siteCodeSuggestions,
-}: Readonly<{ siteCodeSuggestions: string[] }>) {
+  edit,
+}: Readonly<{ siteCodeSuggestions: string[]; edit?: QuotationEditConfig }>) {
   // Remounting the form (new key) is the reset: it clears the action state,
   // the typed fields and the line items in one go.
   const [formKey, setFormKey] = useState(0);
@@ -456,6 +525,7 @@ export function NewDocumentForm({
     <DocumentForm
       key={formKey}
       siteCodeSuggestions={siteCodeSuggestions}
+      edit={edit}
       onAnother={() => setFormKey((key) => key + 1)}
     />
   );

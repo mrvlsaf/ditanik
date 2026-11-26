@@ -58,6 +58,7 @@ export async function generateIndependentDocumentAction(
         clientTrn: text(formData, "clientTrn"),
         address: text(formData, "address"),
         lpoReference: text(formData, "lpoReference"),
+        paymentTerms: text(formData, "paymentTerms"),
         noteType: text(formData, "noteType"),
         dispatchDate: text(formData, "dispatchDate"),
         notes: text(formData, "notes"),

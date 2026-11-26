@@ -5,8 +5,8 @@ import { getCompanyProfile } from "@/modules/company/application/company-profile
 import { allocateDocumentSequence } from "@/modules/documents/application/document-sequence";
 import { formatDocumentNumber } from "@/modules/documents/domain/document-numbering";
 import {
+  applyPaymentTerms,
   calculateQuotationValidityDate,
-  DEFAULT_QUOTATION_TERMS,
   parseTermsText,
 } from "@/modules/documents/domain/quotation-terms";
 import {
@@ -53,11 +53,23 @@ type CreateGeneratedDocumentBase = {
   lpo: { id: string; snapshot: Record<string, unknown> } | null;
   /** Injectable for tests; defaults to now. */
   generatedAt?: Date;
+  /**
+   * Re-generate an existing document in place instead of adding a row: the row gets the
+   * new file and loses any PDF made from the old file. With `documentNumber` it keeps
+   * that number (pass its original `generatedAt`); without it, it is numbered afresh
+   * for `generatedAt`, so the old number is gone.
+   */
+  replace?: { id: string; documentNumber?: string };
 };
 
 export type CreateGeneratedDocumentInput = CreateGeneratedDocumentBase &
   (
-    | { type: "QUOTATION"; lineItems: QuotationLineItemRow[] }
+    | {
+        type: "QUOTATION";
+        lineItems: QuotationLineItemRow[];
+        /** Replaces the value of the "Payment Terms" clause; blank keeps the company wording. */
+        paymentTerms?: string | null;
+      }
     | {
         type: "TAX_INVOICE";
         lineItems: InvoiceLineItemRow[];
@@ -94,13 +106,14 @@ export async function createGeneratedDocument(input: CreateGeneratedDocumentInpu
 
   // Atomic sequence numbering: concurrent generators still get distinct numbers.
   const documentType = DocumentType[input.type];
-  const sequence = await allocateDocumentSequence(documentType, generatedAt);
-  const documentNumber = formatDocumentNumber({
-    siteCode: input.siteCode,
-    type: documentType,
-    generatedAt,
-    sequence,
-  });
+  const documentNumber =
+    input.replace?.documentNumber ??
+    formatDocumentNumber({
+      siteCode: input.siteCode,
+      type: documentType,
+      generatedAt,
+      sequence: await allocateDocumentSequence(documentType, generatedAt),
+    });
 
   const company = {
     companyLegalName: companyProfile.legalName,
@@ -130,9 +143,11 @@ export async function createGeneratedDocument(input: CreateGeneratedDocumentInpu
   switch (input.type) {
     case "QUOTATION": {
       const validityDate = calculateQuotationValidityDate(generatedAt);
-      const termsAndConditions = parseTermsText(companyProfile.defaultTermsText) ?? [
-        ...DEFAULT_QUOTATION_TERMS,
-      ];
+      const paymentTerms = input.paymentTerms?.trim() || null;
+      const termsAndConditions = applyPaymentTerms(
+        parseTermsText(companyProfile.defaultTermsText),
+        paymentTerms,
+      );
       workbook = await buildQuotationWorkbook({
         ...company,
         ...client,
@@ -145,7 +160,8 @@ export async function createGeneratedDocument(input: CreateGeneratedDocumentInpu
       });
       typeExtras = {
         validityDate: validityDate.toISOString(),
-        termsAndConditions,
+        paymentTerms,
+        termsAndConditions: termsAndConditions ?? [],
       };
       break;
     }
@@ -188,41 +204,58 @@ export async function createGeneratedDocument(input: CreateGeneratedDocumentInpu
     folder: "generated-documents",
   });
 
+  const data = {
+    clientName: input.client.clientName,
+    fileKey: storedFile.fileKey,
+    fileName: storedFile.fileName,
+    mimeType: storedFile.mimeType,
+    snapshot: {
+      companyProfile: {
+        legalName: companyProfile.legalName,
+        trn: companyProfile.trn,
+        phone: companyProfile.phone,
+        email: companyProfile.email,
+        website: companyProfile.website,
+        addressLine1: companyProfile.addressLine1,
+        addressLine2: companyProfile.addressLine2,
+      },
+      // LPO-linked: frozen LPO block. Independent: typed client details under `client`.
+      lpo: input.lpo?.snapshot ?? null,
+      client: {
+        clientName: input.client.clientName,
+        clientSubEntityName: input.client.clientSubEntityName,
+        clientTrn: input.client.clientTrn,
+        address: input.client.address,
+        siteCode: input.siteCode,
+      },
+      ...typeExtras,
+      lineItems: input.lineItems,
+      subtotal,
+      vatAmount,
+      grandTotal,
+    },
+  };
+
+  if (input.replace) {
+    return prisma.generatedDocument.update({
+      where: { id: input.replace.id },
+      data: {
+        ...data,
+        documentNumber,
+        generatedAt,
+        generatedById: input.generatedByUserId,
+        pdfFileKey: null,
+        pdfFileName: null,
+      },
+    });
+  }
   return prisma.generatedDocument.create({
     data: {
+      ...data,
       type: documentType,
       documentNumber,
       lpoId: input.lpo?.id ?? null,
-      clientName: input.client.clientName,
-      fileKey: storedFile.fileKey,
-      fileName: storedFile.fileName,
-      mimeType: storedFile.mimeType,
       generatedById: input.generatedByUserId,
-      snapshot: {
-        companyProfile: {
-          legalName: companyProfile.legalName,
-          trn: companyProfile.trn,
-          phone: companyProfile.phone,
-          email: companyProfile.email,
-          website: companyProfile.website,
-          addressLine1: companyProfile.addressLine1,
-          addressLine2: companyProfile.addressLine2,
-        },
-        // LPO-linked: frozen LPO block. Independent: typed client details under `client`.
-        lpo: input.lpo?.snapshot ?? null,
-        client: {
-          clientName: input.client.clientName,
-          clientSubEntityName: input.client.clientSubEntityName,
-          clientTrn: input.client.clientTrn,
-          address: input.client.address,
-          siteCode: input.siteCode,
-        },
-        ...typeExtras,
-        lineItems: input.lineItems,
-        subtotal,
-        vatAmount,
-        grandTotal,
-      },
     },
   });
 }

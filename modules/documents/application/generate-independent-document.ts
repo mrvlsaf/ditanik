@@ -52,7 +52,12 @@ export async function generateIndependentDocument(
 
   switch (values.type) {
     case "QUOTATION":
-      return createGeneratedDocument({ ...base, type: "QUOTATION", lineItems: rows });
+      return createGeneratedDocument({
+        ...base,
+        type: "QUOTATION",
+        lineItems: rows,
+        paymentTerms: values.paymentTerms || null,
+      });
     case "TAX_INVOICE":
       return createGeneratedDocument({
         ...base,

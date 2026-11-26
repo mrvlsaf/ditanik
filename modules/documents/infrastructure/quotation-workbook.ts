@@ -1,11 +1,9 @@
 import ExcelJS from "exceljs";
 
-import {
-  DEFAULT_QUOTATION_TERMS,
-  calculateQuotationValidityDate,
-} from "@/modules/documents/domain/quotation-terms";
+import { calculateQuotationValidityDate } from "@/modules/documents/domain/quotation-terms";
 import {
   loadTemplateWorkbook,
+  removeTemplateRows,
   setLineItemRowCount,
 } from "@/modules/documents/infrastructure/workbook-template";
 
@@ -15,6 +13,8 @@ import {
  * grow or shrink to fit; everything below shifts.
  */
 
+const CUSTOMER_FIRST_ROW = 11; // the customer block has five rows (11-15), one line each.
+const CUSTOMER_TEMPLATE_ROW_COUNT = 5;
 const TEMPLATE_ROW = 18; // the template's two sample line-item rows (18-19).
 const TEMPLATE_ROW_COUNT = 2;
 
@@ -106,7 +106,7 @@ export type QuotationWorkbookData = {
   vatPercent: number;
   vatAmount: number;
   grandTotal: number;
-  /** One clause per entry. Omit/empty to use DEFAULT_QUOTATION_TERMS. */
+  /** One clause per entry. Omit/empty to print no Terms & Conditions box. */
   termsAndConditions?: readonly string[] | null;
 };
 
@@ -127,18 +127,37 @@ export async function buildQuotationWorkbook(
   sheet.getCell("G10").value =
     data.validityDate ?? calculateQuotationValidityDate(data.documentDate);
 
-  sheet.getCell("B11").value = data.clientTrn ? `TRN: ${data.clientTrn}` : "";
-  sheet.getCell("B12").value = data.clientName;
-  sheet.getCell("B13").value = data.clientSubEntityName ?? "";
-  const [addressLine1 = "", ...addressRest] = data.invoiceAddress.split(/\r?\n/);
-  sheet.getCell("B14").value = addressLine1;
-  sheet.getCell("B15").value = addressRest.join(", ");
+  // Customer block: one row per line (TRN, name, branch, then each address line).
+  const customerLines = [
+    data.clientTrn ? `TRN: ${data.clientTrn}` : "",
+    data.clientName,
+    data.clientSubEntityName ?? "",
+    ...data.invoiceAddress.split(/\r?\n/),
+  ]
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const customerRowCount = Math.max(customerLines.length, 1);
+  setLineItemRowCount(
+    sheet,
+    CUSTOMER_FIRST_ROW,
+    CUSTOMER_TEMPLATE_ROW_COUNT,
+    customerRowCount,
+  );
+  customerLines.forEach((line, index) => {
+    const row = CUSTOMER_FIRST_ROW + index;
+    // Cloned rows are not merged (only the template rows are), so merge B:D here.
+    if (index >= CUSTOMER_TEMPLATE_ROW_COUNT) {
+      sheet.mergeCells(`B${row}:D${row}`);
+    }
+    sheet.getCell(`B${row}`).value = line;
+  });
 
+  const itemsFirstRow = TEMPLATE_ROW + customerRowCount - CUSTOMER_TEMPLATE_ROW_COUNT;
   const itemCount = Math.max(data.lineItems.length, 1);
-  setLineItemRowCount(sheet, TEMPLATE_ROW, TEMPLATE_ROW_COUNT, itemCount);
+  setLineItemRowCount(sheet, itemsFirstRow, TEMPLATE_ROW_COUNT, itemCount);
 
   data.lineItems.forEach((line, index) => {
-    const row = TEMPLATE_ROW + index;
+    const row = itemsFirstRow + index;
     sheet.getCell(`B${row}`).value = line.position;
     sheet.getCell(`C${row}`).value = line.category ?? "";
     sheet.getCell(`D${row}`).value = line.description;
@@ -147,18 +166,20 @@ export async function buildQuotationWorkbook(
     sheet.getCell(`G${row}`).value = line.lineTotal;
   });
 
-  const subtotalRow = TEMPLATE_ROW + itemCount;
+  const subtotalRow = itemsFirstRow + itemCount;
   sheet.getCell(`G${subtotalRow}`).value = data.subtotal;
   sheet.getCell(`G${subtotalRow + 1}`).value = data.vatAmount;
   sheet.getCell(`G${subtotalRow + 2}`).value = data.grandTotal;
 
   // ---- Terms & Conditions box
-  const terms =
-    data.termsAndConditions && data.termsAndConditions.length > 0
-      ? data.termsAndConditions
-      : DEFAULT_QUOTATION_TERMS;
+  const terms = data.termsAndConditions ?? [];
   const termsFirstRow = subtotalRow + TERMS_FIRST_ROW_OFFSET;
-  setLineItemRowCount(sheet, termsFirstRow, TERMS_TEMPLATE_ROW_COUNT, terms.length);
+  if (terms.length > 0) {
+    setLineItemRowCount(sheet, termsFirstRow, TERMS_TEMPLATE_ROW_COUNT, terms.length);
+  } else {
+    // No terms: drop the heading and sample clause rows.
+    removeTemplateRows(sheet, termsFirstRow - 1, 2);
+  }
 
   terms.forEach((term, index) => {
     const row = termsFirstRow + index;
@@ -193,7 +214,8 @@ export async function buildQuotationWorkbook(
   });
 
   // ---- Footer: sits a fixed two rows below the terms box.
-  const footerRow1 = termsFirstRow + terms.length + 2;
+  const footerRow1 =
+    terms.length > 0 ? termsFirstRow + terms.length + 2 : subtotalRow + 6;
   const footerLine1 = [data.companyLegalName, data.companyPhone, data.companyEmail]
     .filter(Boolean)
     .join(" , ");

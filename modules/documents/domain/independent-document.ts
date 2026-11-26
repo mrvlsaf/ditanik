@@ -43,6 +43,12 @@ export const independentDocumentSchema = z.object({
   address: z.string().trim().min(1, "Address is required.").max(1000),
   /** Tax Invoice: printed in the LPO-reference box. Delivery Note: LPO reference. */
   lpoReference: z.string().trim().max(100).optional(),
+  /** Quotation only: replaces the payment terms in the company's Terms & Conditions. */
+  paymentTerms: z
+    .string()
+    .trim()
+    .max(200, "Payment terms must be 200 characters or fewer.")
+    .optional(),
   /** Delivery Note only. */
   noteType: z.string().trim().max(100).optional(),
   dispatchDate: z

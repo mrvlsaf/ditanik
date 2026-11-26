@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { DocumentActions } from "@/components/documents/DocumentActions";
 import { GenerateDocumentButton } from "@/components/documents/GenerateDocumentButton";
+import { PaymentTermsInput } from "@/components/documents/PaymentTermsInput";
 import { GeneratedDocumentRow } from "@/components/documents/GeneratedDocumentRow";
 import { formatBusinessDateTime, formatCalendarDate } from "@/lib/dates/format";
 import { listActiveRates } from "@/modules/fabric/application/consumption";
@@ -373,6 +374,12 @@ export default async function LpoDetailPage({
               label="Generate Quotation"
               pendingLabel="Generating…"
               action={generateQuotationAction}
+              extraFields={
+                <PaymentTermsInput
+                  className="min-h-11 w-full rounded-md border border-zinc-300 px-3 text-sm"
+                  wrapperClassName="flex-1 basis-64"
+                />
+              }
             />
             <GenerateDocumentButton
               lpoId={lpo.id}

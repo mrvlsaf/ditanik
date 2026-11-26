@@ -1,7 +1,6 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_QUOTATION_TERMS } from "@/modules/documents/domain/quotation-terms";
 import {
   buildQuotationWorkbook,
   type QuotationWorkbookData,
@@ -96,20 +95,32 @@ describe("buildQuotationWorkbook", () => {
     expect(sheet.getCell("G21").value).toBe(99.75);
   });
 
-  it("prints the 16 standard Terms & Conditions below the totals when none are supplied", async () => {
+  it("prints no Terms & Conditions box when none are supplied", async () => {
     const sheet = await readBackWorkbook(sampleData);
-    // totals end at row 21 -> header at 23, first clause at 24
-    expect(sheet.getCell("B23").value).toBe("TERMS AND CONDITIONS");
-    expect(sheet.getCell("B24").value).toBe(1);
-    expect(sheet.getCell("B39").value).toBe(16);
-    expect(DEFAULT_QUOTATION_TERMS).toHaveLength(16);
-    expect(JSON.stringify(sheet.getCell("C24").value)).toContain("Approved Sample:");
-    expect(JSON.stringify(sheet.getCell("C31").value)).toContain("50% ADVANCE . 50% UPON DELIVERY.");
-    // footer sits two rows below the last clause
-    expect(sheet.getCell("B42").value).toBe(
+    for (let row = 20; row <= 30; row += 1) {
+      expect(sheet.getCell(`B${row}`).value).not.toBe("TERMS AND CONDITIONS");
+    }
+    // totals end at row 21; the footer follows four rows later
+    expect(sheet.getCell("B25").value).toBe(
       "DEEZANO CLOTHING LINE LLC , 971502641611 , info@deezanoae.com",
     );
-    expect(sheet.getCell("B43").value).toBe(sampleData.companyAddressLine2);
+    expect(sheet.getCell("B26").value).toBe(sampleData.companyAddressLine2);
+  });
+
+  it("prints every address line on its own row and shifts the rest down", async () => {
+    const sheet = await readBackWorkbook({
+      ...sampleData,
+      invoiceAddress: "VALCO\nTRN: 100251158812109\nAkal Ibn al noaman\nJeddah\n23514 Makkah\nSaudi Arabia",
+    });
+    // TRN, name, branch, then six address lines = 9 rows (11-19)
+    expect(sheet.getCell("B14").value).toBe("VALCO");
+    expect(sheet.getCell("B15").value).toBe("TRN: 100251158812109");
+    expect(sheet.getCell("B16").value).toBe("Akal Ibn al noaman");
+    expect(sheet.getCell("B17").value).toBe("Jeddah");
+    expect(sheet.getCell("B18").value).toBe("23514 Makkah");
+    expect(sheet.getCell("B19").value).toBe("Saudi Arabia");
+    expect(sheet.getCell("B21").value).toBe("NO.");
+    expect(sheet.getCell("C22").value).toBe("SHIRT");
   });
 
   it("uses custom Terms & Conditions (and resizes the box) when supplied", async () => {
@@ -130,6 +141,7 @@ describe("buildQuotationWorkbook", () => {
   it("grows beyond the template's two sample rows for more line items", async () => {
     const fourLineData: QuotationWorkbookData = {
       ...sampleData,
+      termsAndConditions: ["Delivery: Two weeks."],
       lineItems: [
         sampleData.lineItems[0]!,
         { position: 2, category: "PANT", description: "Pant made in Poly viscose", quantity: 1, unitPrice: 75, lineTotal: 75 },

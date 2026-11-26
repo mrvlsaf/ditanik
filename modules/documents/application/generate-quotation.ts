@@ -6,6 +6,8 @@ import { roundCurrency } from "@/modules/lpo/domain/line-items";
 export type GenerateQuotationInput = {
   lpoId: string;
   generatedByUserId: string;
+  /** Replaces the payment terms in the company's Terms & Conditions. */
+  paymentTerms?: string;
 };
 
 export async function generateQuotationDocument(input: GenerateQuotationInput) {
@@ -36,5 +38,6 @@ export async function generateQuotationDocument(input: GenerateQuotationInput) {
     },
     lpo: { id: lpo.id, snapshot: lpo.snapshot },
     lineItems,
+    paymentTerms: input.paymentTerms,
   });
 }

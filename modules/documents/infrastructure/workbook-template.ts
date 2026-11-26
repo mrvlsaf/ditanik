@@ -69,7 +69,7 @@ function insertTemplateRows(
  * at/after `firstRow` is unmerged first; only those below the block are re-merged,
  * shifted up by `count`.
  */
-function removeTemplateRows(
+export function removeTemplateRows(
   worksheet: ExcelJS.Worksheet,
   firstRow: number,
   count: number,

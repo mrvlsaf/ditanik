@@ -160,8 +160,8 @@ export function CompanyProfileForm({
           />
           <Field
             label="Terms and conditions (used on quotations)"
-            hint="One clause per line. Leave blank to use the standard 16 clauses. Wrap text in **double asterisks** to make it bold."
-            tip="One clause per line. Each line becomes one numbered clause on the quotation. Wrap text in double asterisks to make it bold. Leave this blank to use the standard 16 clauses."
+            hint="One clause per line, without numbers. Leave blank for a quotation with no terms. Wrap text in **double asterisks** to make it bold."
+            tip="One clause per line. Each line becomes one numbered clause on the quotation, so do not type numbers. Include a line starting with Payment Terms: so each quotation can change its payment terms. Wrap text in double asterisks to make it bold. With nothing here, quotations print no terms."
           >
             <textarea
               name="defaultTermsText"

@@ -92,3 +92,11 @@ export async function listKnownSiteCodes(): Promise<string[]> {
   }
   return [...codes].sort((a, b) => a.localeCompare(b));
 }
+
+/** One generated document with everything the edit page needs, or null. */
+export async function getGeneratedDocument(id: string) {
+  return prisma.generatedDocument.findUnique({
+    where: { id },
+    include: { lpo: { select: { id: true, lpoNumber: true } } },
+  });
+}

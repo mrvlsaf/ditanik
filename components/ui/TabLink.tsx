@@ -24,6 +24,7 @@ export function TabLink({
     <Link
       href={href}
       className={className}
+      data-no-global-loader=""
       onClick={(event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
           return;

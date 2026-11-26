@@ -1,39 +1,101 @@
 /**
- * Terms & Conditions printed on every Quotation. `DEFAULT_QUOTATION_TERMS` is the
- * client's standard 16 clauses, used when Company Settings' default terms are blank
- * (otherwise one clause per line replaces them). `**text**` marks bold; a leading
- * "Label:" is always bolded by the workbook builder.
+ * Terms & Conditions printed on a Quotation come from Company Settings
+ * (`CompanyProfile.defaultTermsText`, one clause per line); with no text there are none.
+ * `**text**` marks bold, and a leading "Label:" is always bolded by the workbook builder.
+ * Only the "Payment Terms" clause changes per quotation (see `applyPaymentTerms`).
  */
-export const DEFAULT_QUOTATION_TERMS: readonly string[] = [
-  "Approved Sample: All uniforms will be manufactured strictly in accordance with the approved sample, specifications, measurements, colours, branding and design confirmed by the client.",
-  "Order Confirmation: An order will be considered confirmed upon release of the Purchase Order (PO) by the client. In case of an urgent requirement where the PO cannot be released immediately, the client must provide written confirmation via email stating that the PO will be released and requesting DEEZANO to proceed with the order.",
-  "Fabric: The above quotation is based on the fabric selected and discussed for this requirement. Any request for a different, upgraded, specialised or additional fabric will be subject to revised pricing and availability.",
-  "Fabric & Colour Variation: Minor variations in fabric shade, texture and finish may occur between fabric batches and are considered normal manufacturing variations. Production will follow the approved reference/sample.",
-  "Measurements & Alterations: DEEZANO will provide reasonable alterations, where required, to ensure the garments meet the approved specifications and intended fit. Any alterations arising from client-requested changes to the approved design, specifications or measurements after production may result in a revised delivery timeline.",
-  "Quantity: Final production quantities will be based on the confirmed PO. Any increase or decrease in quantity after order confirmation may result in revised pricing and a revised delivery timeline.",
-  "Delivery: Delivery timelines will be communicated based on the confirmed order quantity, approved sample, fabric availability and production schedule. Delays caused by late approvals, delayed measurements, artwork changes, fabric availability or other circumstances beyond DEEZANO’s control may result in a revised delivery timeline.",
-  "Payment Terms: Payment terms are **50% ADVANCE . 50% UPON DELIVERY.**",
-  "Outstanding Payments: DEEZANO reserves the right to hold or delay further production, deliveries or new orders if previous invoices remain overdue.",
-  "Quality & Inspection: The client is requested to inspect the delivered goods within **two (2) working days** of delivery and notify DEEZANO of any manufacturing-related concerns within this period.",
-  "Care & Washing: Garments should be washed and maintained in accordance with the care instructions provided. Damage, colour fading, shrinkage or deterioration resulting from incorrect washing, ironing, chemical treatment or improper care shall not be considered a manufacturing defect.",
-  "VAT: 5% UAE VAT is applied as shown in the quotation above.",
-  "Additional Requirements: Any items, specifications, accessories, embroidery, printing, packaging or services not specifically mentioned in this quotation will be quoted separately.",
-  "Client Approvals: Delays in providing approvals, measurements, artwork or fabric confirmation may affect the production and delivery timeline.",
-  "Force Majeure: DEEZANO shall not be liable for delays caused by circumstances beyond its reasonable control, including but not limited to supplier delays, fabric shortages, transportation disruptions, government restrictions, strikes, natural events or other unforeseen circumstances.",
-  "Acceptance: Placement and confirmation of the order shall constitute the client's acceptance of the above terms and conditions.",
-];
+
+const TERMS_HEADING = /^terms\s*(and|&)\s*conditions\s*:?$/i;
+const OPENING_QUOTE = /^["“”]/;
+const CLOSING_QUOTE = /["“”]\s*$/;
+// "1 ", "1. ", "12) " in front of a clause: the quotation numbers the clauses itself.
+const LEADING_NUMBER = /^\d{1,2}\s*[.)]?\s+(?=\S)/;
+
+/** Joins a quoted clause that was pasted over several lines back into one line. */
+function joinQuotedLines(lines: string[]): string[] {
+  const joined: string[] = [];
+  let open: string | null = null;
+  for (const rawLine of lines) {
+    if (open !== null) {
+      open += ` ${rawLine}`;
+      if (CLOSING_QUOTE.test(rawLine)) {
+        joined.push(open);
+        open = null;
+      }
+      continue;
+    }
+    const line = rawLine.replace(LEADING_NUMBER, "");
+    if (OPENING_QUOTE.test(line) && !(line.length > 1 && CLOSING_QUOTE.test(line))) {
+      open = line;
+    } else {
+      joined.push(line);
+    }
+  }
+  if (open !== null) joined.push(open);
+  return joined;
+}
 
 /**
- * CompanyProfile.defaultTermsText holds one clause per line. Returns null
- * when unset (or blank) so the caller falls back to DEFAULT_QUOTATION_TERMS.
+ * CompanyProfile.defaultTermsText holds one clause per line. Text pasted from
+ * Excel or a PDF is cleaned up: the "TERMS AND CONDITIONS" heading, clause numbers,
+ * wrapping quotes and stray tabs are removed. Returns null when no clause is left.
  */
 export function parseTermsText(text: string | null | undefined): string[] | null {
   if (!text) return null;
-  const points = text
+  const lines = text
     .split(/\r?\n/)
-    .map((line) => line.trim())
+    .map((line) => line.replace(/\s+/g, " ").trim())
     .filter(Boolean);
-  return points.length > 0 ? points : null;
+  const clauses = joinQuotedLines(lines)
+    .map((line) => line.replace(/^["“”]+|["“”]+$/g, "").trim())
+    .filter((line) => line !== "" && !TERMS_HEADING.test(line) && !/^\d+$/.test(line));
+  return clauses.length > 0 ? clauses : null;
+}
+
+function clauseLabel(clause: string): string {
+  const colon = clause.indexOf(":");
+  return colon === -1 ? "" : clause.slice(0, colon).trim().toLowerCase();
+}
+
+/** Typed payment terms as they are printed: no markup, line breaks or repeated spaces. */
+export function normalizePaymentTerms(text: string | null | undefined): string {
+  return (text ?? "").replaceAll("**", "").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Applies this quotation's payment terms to the clauses. The "Payment Terms" clause
+ * is replaced by "Payment Terms: Payment terms are **<typed text>**"; with nothing typed
+ * the clause keeps the company wording, with its value in bold. Without terms there is
+ * nothing to print, so the typed text is ignored.
+ */
+export function applyPaymentTerms(
+  clauses: readonly string[] | null,
+  paymentTerms: string | null | undefined,
+): string[] | null {
+  if (!clauses || clauses.length === 0) return null;
+  const typed = normalizePaymentTerms(paymentTerms);
+  const result = [...clauses];
+  const index = result.findIndex((clause) => clauseLabel(clause) === "payment terms");
+
+  if (typed !== "") {
+    const clause = `Payment Terms: Payment terms are **${typed}**`;
+    if (index !== -1) {
+      result[index] = clause;
+    } else {
+      const before = result.findIndex((c) => clauseLabel(c) === "outstanding payments");
+      result.splice(before === -1 ? result.length : before, 0, clause);
+    }
+    return result;
+  }
+
+  const existing = index === -1 ? undefined : result[index];
+  if (existing && !existing.includes("**")) {
+    const match = /^(Payment Terms:\s*(?:Payment terms are\s+)?)(.+)$/i.exec(existing);
+    if (match) {
+      result[index] = `${match[1]}**${match[2]}**`;
+    }
+  }
+  return result;
 }
 
 /** Number of days a Quotation stays valid after its document date. */

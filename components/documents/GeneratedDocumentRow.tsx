@@ -92,6 +92,11 @@ export function GeneratedDocumentRow({
           <a href={fileUrl(doc.fileKey, true)} className="btn-secondary min-h-9">
             Download
           </a>
+          {doc.typeKey === "QUOTATION" ? (
+            <Link href={`/documents/${doc.id}/edit`} className="btn-secondary min-h-9">
+              Edit
+            </Link>
+          ) : null}
           {pdfFileKey ? (
             <a href={fileUrl(pdfFileKey, true)} className="btn-secondary min-h-9">
               Download PDF
